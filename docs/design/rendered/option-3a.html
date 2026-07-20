@@ -1,0 +1,73 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.googleapis.com" data-dc-tpl="2">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&amp;family=Caveat:wght@500;600&amp;family=ZCOOL+KuaiLe&amp;family=Ma+Shan+Zheng&amp;family=DotGothic16&amp;display=swap" rel="stylesheet" data-dc-tpl="3"><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<style>x-dc{display:none!important}</style>
+<style data-dc-canvas="">html,body{background:#f0eee6}#dc-root>.sc-host{position:relative}</style>
+<style id="__dc-atomics">.fx{display:flex}.col{display:flex;flex-direction:column}.grid{display:grid}.ac{align-items:center}.jc{justify-content:center}.jb{justify-content:space-between}.f1{flex:1}.noshrink{flex-shrink:0}.wrap{flex-wrap:wrap}.fw5{font-weight:500}.fw6{font-weight:600}.fw7{font-weight:700}.fw8{font-weight:800}.fs11{font-size:11px}.fs12{font-size:12px}.fs13{font-size:13px}.fs14{font-size:14px}.fs15{font-size:15px}.fs16{font-size:16px}.fs20{font-size:20px}.fs22{font-size:22px}.upper{text-transform:uppercase}.tc{text-align:center}.nowrap{white-space:nowrap}.gap8{gap:8px}.gap10{gap:10px}.gap12{gap:12px}.gap16{gap:16px}.gap24{gap:24px}.m0{margin:0}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.posrel{position:relative}.posabs{position:absolute}.round{border-radius:50%}.ohide{overflow:hidden}.bbox{box-sizing:border-box}.pointer{cursor:pointer}.w100{width:100%}.b0{border:none}</style>
+<style></style>
+<style>html,body{height:100%;margin:0}#dc-root,#dc-root>.sc-host{height:100%}</style>
+<style data-dc-tpl="4">
+body{margin:0;background:#EFEAE2;font-family:"PingFang SC","Hiragino Sans GB",system-ui,sans-serif}
+a{color:#B96B2E}a:hover{color:#8A5A2E}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-note{margin:0 0 20px;font:12px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:720px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+@keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.035) translateY(-2px)}}
+@keyframes hop{0%,100%{transform:translateY(0)}35%{transform:translateY(-26px)}65%{transform:translateY(0)}82%{transform:translateY(-9px)}}
+@keyframes showoff{0%,100%{transform:scale(1) rotate(-1.5deg)}50%{transform:scale(1.04) rotate(1.5deg)}}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes slidedown{from{transform:translateY(-90px);opacity:0}to{transform:translateY(0);opacity:1}}
+</style></head><body style="margin:20px;background:#EFEAE2"><div data-dc-tpl="12" class="dv-opt" id="3a"><div data-dc-tpl="13" class="dv-olabel"><a data-dc-tpl="14" class="dv-oid" href="#3a">3a</a>Notification · 锁屏样式 + 3 条口吻轮换 + 展开态</div><div data-dc-tpl="15" class="dv-card" style="width: 393px;"><div data-dc-tpl="16" style="width: 393px; height: 852px; position: relative; overflow: hidden; display: flex; flex-direction: column; background: linear-gradient(rgb(255, 235, 210) 0%, rgb(249, 211, 172) 55%, rgb(240, 190, 146) 100%);"><div data-dc-tpl="17" style="position: absolute; top: 40px; left: 50%; margin-left: -130px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 240, 214, 0.85) 0%, rgba(255, 240, 214, 0) 70%);"></div><div data-dc-tpl="18" style="position: relative; display: flex; justify-content: space-between; align-items: center; height: 44px; padding: 0px 24px 0px 28px;"><div data-dc-tpl="19" style="font-size: 15px; font-weight: 600; color: rgb(122, 82, 56);">Mon Jul 20</div><div data-dc-tpl="20" style="display: flex; gap: 5px; align-items: center;"><div data-dc-tpl="21" style="width: 16px; height: 10px; border-radius: 2px; background: rgb(201, 156, 111);"></div><div data-dc-tpl="22" style="width: 22px; height: 11px; border: 1.5px solid rgb(201, 156, 111); border-radius: 3px;"></div></div></div><div data-dc-tpl="23" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0px 8px;"><div data-dc-tpl="24" style="font-family: &quot;Baloo 2&quot;, &quot;ZCOOL KuaiLe&quot;; font-size: 48px; line-height: 1; color: rgb(122, 82, 56);">8:00</div><div data-dc-tpl="25" style="font-size: 12.5px; color: rgb(160, 117, 76);">Monday evening</div></div><div data-dc-tpl="26" style="position: relative; display: flex; flex-direction: column; gap: 9px; padding: 4px 18px 0px;"><div data-dc-tpl="27" style="font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: rgba(122, 82, 56, 0.65); padding-left: 6px;">variant A · 窗边等你（默认）</div><div data-dc-tpl="28" style="display: flex; flex-direction: column; gap: 7px; padding: 10px 14px; background: rgba(255, 255, 255, 0.85); border-radius: 22px; box-shadow: rgba(150, 95, 40, 0.14) 0px 8px 22px;"><div data-dc-tpl="29" style="display: flex; align-items: center; gap: 10px;"><div data-dc-tpl="30" style="flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; background: rgb(242, 166, 90); display: flex; align-items: center; justify-content: center;"><div data-dc-tpl="31" style="width: 18px; height: 20px; border-radius: 4px; border: 1.5px dashed rgb(255, 227, 194); background: rgb(255, 217, 168);"></div></div><div data-dc-tpl="32" style="flex: 1 1 0%; font-size: 13px; font-weight: 700; color: rgb(138, 90, 46);">PetTodo</div><div data-dc-tpl="33" style="font-size: 12px; color: rgb(176, 141, 99);">now</div></div><div data-dc-tpl="34" style="font-size: 15px; font-weight: 700; color: rgb(107, 74, 43);">Choco is waiting by the window ~</div><div data-dc-tpl="35" style="font-size: 13px; line-height: 1.4; color: rgb(138, 107, 76);">The evening light is warm. Come home and do one little thing with me?</div></div><div data-dc-tpl="36" style="font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: rgba(122, 82, 56, 0.65); padding-left: 6px;">variant B · 更轻更软</div><div data-dc-tpl="37" style="display: flex; flex-direction: column; gap: 7px; padding: 10px 14px; background: rgba(255, 255, 255, 0.85); border-radius: 22px; box-shadow: rgba(150, 95, 40, 0.14) 0px 8px 22px;"><div data-dc-tpl="38" style="display: flex; align-items: center; gap: 10px;"><div data-dc-tpl="39" style="flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; background: rgb(242, 166, 90); display: flex; align-items: center; justify-content: center;"><div data-dc-tpl="40" style="width: 18px; height: 20px; border-radius: 4px; border: 1.5px dashed rgb(255, 227, 194); background: rgb(255, 217, 168);"></div></div><div data-dc-tpl="41" style="flex: 1 1 0%; font-size: 13px; font-weight: 700; color: rgb(138, 90, 46);">PetTodo</div><div data-dc-tpl="42" style="font-size: 12px; color: rgb(176, 141, 99);">now</div></div><div data-dc-tpl="43" style="font-size: 15px; font-weight: 700; color: rgb(107, 74, 43);">A soft hello from Choco</div><div data-dc-tpl="44" style="font-size: 13px; line-height: 1.4; color: rgb(138, 107, 76);">No rush at all — I just wanted to see you. Even one little thing counts.</div></div><div data-dc-tpl="45" style="font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: rgba(122, 82, 56, 0.65); padding-left: 6px;">variant C · 顽皮一点</div><div data-dc-tpl="46" style="display: flex; flex-direction: column; gap: 7px; padding: 10px 14px; background: rgba(255, 255, 255, 0.85); border-radius: 22px; box-shadow: rgba(150, 95, 40, 0.14) 0px 8px 22px;"><div data-dc-tpl="47" style="display: flex; align-items: center; gap: 10px;"><div data-dc-tpl="48" style="flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; background: rgb(242, 166, 90); display: flex; align-items: center; justify-content: center;"><div data-dc-tpl="49" style="width: 18px; height: 20px; border-radius: 4px; border: 1.5px dashed rgb(255, 227, 194); background: rgb(255, 217, 168);"></div></div><div data-dc-tpl="50" style="flex: 1 1 0%; font-size: 13px; font-weight: 700; color: rgb(138, 90, 46);">PetTodo</div><div data-dc-tpl="51" style="font-size: 12px; color: rgb(176, 141, 99);">now</div></div><div data-dc-tpl="52" style="font-size: 15px; font-weight: 700; color: rgb(107, 74, 43);">Choco fluffed your cushion</div><div data-dc-tpl="53" style="font-size: 13px; line-height: 1.4; color: rgb(138, 107, 76);">I saved you the sunniest spot on the couch. Come tell me about your day?</div></div><div data-dc-tpl="54" style="font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: rgba(122, 82, 56, 0.65); padding-left: 6px;">长按展开态 · 带精灵图 + 两个动作</div><div data-dc-tpl="55" style="display: flex; flex-direction: column; gap: 8px; padding: 11px 14px; background: rgba(255, 255, 255, 0.92); border-radius: 24px; box-shadow: rgba(150, 95, 40, 0.2) 0px 12px 30px;"><div data-dc-tpl="56" style="display: flex; align-items: center; gap: 10px;"><div data-dc-tpl="57" style="flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; background: rgb(242, 166, 90); display: flex; align-items: center; justify-content: center;"><div data-dc-tpl="58" style="width: 18px; height: 20px; border-radius: 4px; border: 1.5px dashed rgb(255, 227, 194); background: rgb(255, 217, 168);"></div></div><div data-dc-tpl="59" style="flex: 1 1 0%; font-size: 13px; font-weight: 700; color: rgb(138, 90, 46);">PetTodo</div><div data-dc-tpl="60" style="font-size: 12px; color: rgb(176, 141, 99);">8:00 PM</div></div><div data-dc-tpl="61" style="height: 64px; border-radius: 14px; border: 2px dashed rgb(227, 185, 138); background: repeating-linear-gradient(45deg, rgb(255, 243, 226) 0px, rgb(255, 243, 226) 12px, rgb(251, 232, 208) 12px, rgb(251, 232, 208) 24px); display: flex; align-items: center; justify-content: center; gap: 10px;"><div data-dc-tpl="62" style="font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: rgb(185, 143, 99);">sprite: waiting · 6 frames · 8fps</div></div><div data-dc-tpl="63" style="font-size: 15px; font-weight: 700; color: rgb(107, 74, 43);">Choco is waiting by the window ~</div><div data-dc-tpl="64" style="display: flex; gap: 10px;"><div data-dc-tpl="65" style="flex: 1 1 0%; padding: 9px; border-radius: 999px; background: rgb(242, 166, 90); color: rgb(255, 255, 255); font-size: 14px; font-weight: 600; text-align: center;">See Choco</div><div data-dc-tpl="66" style="flex: 1 1 0%; padding: 9px; border-radius: 999px; background: rgba(242, 166, 90, 0.16); color: rgb(185, 107, 46); font-size: 14px; font-weight: 600; text-align: center;">Not now</div></div></div></div><div data-dc-tpl="67" style="position: relative; flex: 1 1 0%;"></div><div data-dc-tpl="68" style="position: relative; display: flex; justify-content: center; padding: 4px 0px 10px;"><div data-dc-tpl="69" style="width: 134px; height: 5px; border-radius: 3px; background: rgba(140, 100, 60, 0.3);"></div></div></div></div></div></body></html>
