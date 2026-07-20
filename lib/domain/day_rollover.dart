@@ -7,5 +7,6 @@ AppState rollOverIfNeeded(AppState state, DateTime localNow) {
   return state.copyWith(
     activeDay: today,
     completedToday: const <bool>[false, false, false],
+    fedToday: null,
   );
 }

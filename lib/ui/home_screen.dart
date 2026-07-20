@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
-import '../domain/unlocks.dart';
 import '../sprite/pet_sprite.dart';
+import 'collection_screen.dart';
 import 'settings_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
@@ -13,6 +13,7 @@ import 'theme/pet_motion.dart';
 import 'theme/pet_radii.dart';
 import 'theme/pet_shadows.dart';
 import 'theme/pet_spacing.dart';
+import 'theme/pet_stage_theme.dart';
 import 'theme/pet_text_styles.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -106,6 +107,7 @@ class _HomeContent extends StatelessWidget {
         ),
       ),
       Expanded(child: _PetStage(controller: controller)),
+      _TreatBar(controller: controller),
       _TaskList(controller: controller),
       const SizedBox(height: PetSpacing.s10),
     ],
@@ -142,11 +144,7 @@ class _PetStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = controller.state.petName;
-    final status = controller.petAnimation == 'jumping'
-        ? '$name is hopping with joy!'
-        : controller.state.allDone
-        ? '$name is happy and full today~'
-        : '$name is sunbathing, tail swishing softly';
+    final status = controller.statusLine;
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: SizedBox(
@@ -155,7 +153,7 @@ class _PetStage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            ExcludeSemantics(child: _BreathingSprite(controller: controller)),
+            _BreathingSprite(controller: controller),
             Transform.translate(
               offset: const Offset(PetSpacing.zero, -PetSpacing.s12),
               child: const DecoratedBox(
@@ -168,12 +166,37 @@ class _PetStage extends StatelessWidget {
             ),
             Transform.translate(
               offset: const Offset(PetSpacing.zero, -PetSpacing.s8),
-              child: Text(name, style: PetTextStyles.display30),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(name, style: PetTextStyles.display30),
+                  const SizedBox(width: PetSpacing.s8),
+                  DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: PetColors.badgeFill,
+                      borderRadius: PetRadii.pillBorder,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: PetSpacing.s10,
+                        vertical: PetSpacing.s4,
+                      ),
+                      child: Text(
+                        controller.growthStage.label,
+                        style: PetTextStyles.small.copyWith(
+                          color: PetColors.accentText,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             Transform.translate(
               offset: const Offset(PetSpacing.zero, -PetSpacing.s8),
               child: SizedBox(
-                height: PetSpacing.s20,
+                width: PetSpacing.s280,
+                height: PetSpacing.s38,
                 child: AnimatedSwitcher(
                   duration: PetMotion.task,
                   child: Text(
@@ -185,7 +208,6 @@ class _PetStage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: PetSpacing.zero),
             ExcludeSemantics(child: _Decorations(controller: controller)),
           ],
         ),
@@ -206,6 +228,10 @@ class _BreathingSprite extends StatefulWidget {
 class _BreathingSpriteState extends State<_BreathingSprite>
     with SingleTickerProviderStateMixin {
   late final AnimationController _breath;
+  Offset _lastTapPosition = const Offset(
+    PetSpacing.s192 / 2,
+    PetSpacing.s208 / 2,
+  );
 
   @override
   void initState() {
@@ -221,31 +247,87 @@ class _BreathingSpriteState extends State<_BreathingSprite>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _breath,
-    builder: (context, child) {
-      final eased = Curves.easeInOut.transform(_breath.value);
-      final isIdle = widget.controller.petAnimation == 'idle';
-      return Transform.translate(
-        offset: Offset(
-          PetSpacing.zero,
-          isIdle ? -PetSpacing.xxs * eased : PetSpacing.zero,
+  Widget build(BuildContext context) {
+    final treatment = PetStageTheme.treatment(widget.controller.growthStage);
+    return Semantics(
+      container: true,
+      button: true,
+      label: 'Touch ${widget.controller.state.petName}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (details) => _lastTapPosition = details.localPosition,
+        onTap: () {
+          widget.controller.touchPet(
+            dx: _lastTapPosition.dx - PetSpacing.s192 / 2,
+            dy: _lastTapPosition.dy - PetSpacing.s208 / 2,
+          );
+        },
+        onLongPress: widget.controller.nuzzlePet,
+        child: SizedBox(
+          width: PetSpacing.s192,
+          height: PetSpacing.s208,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _breath,
+                  builder: (context, child) {
+                    final eased = Curves.easeInOut.transform(_breath.value);
+                    final isIdle = widget.controller.petAnimation == 'idle';
+                    return Transform.translate(
+                      offset: Offset(
+                        PetSpacing.zero,
+                        isIdle ? -PetSpacing.xxs * eased : PetSpacing.zero,
+                      ),
+                      child: Transform.scale(
+                        scale:
+                            treatment.spriteScale *
+                            (isIdle
+                                ? 1 + (PetMotion.breathScale - 1) * eased
+                                : 1),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: treatment.frameColor,
+                        width: treatment.frameWidth,
+                      ),
+                      borderRadius: PetRadii.spriteBorder,
+                    ),
+                    child: PetSprite(
+                      atlas: widget.controller.spriteAtlas,
+                      stateName: widget.controller.petAnimation,
+                      fixedFrame: widget.controller.petAnimationFrame,
+                    ),
+                  ),
+                ),
+              ),
+              if (widget.controller.scheduleShowsZzz)
+                const Positioned(
+                  top: PetSpacing.s12,
+                  right: PetSpacing.s10,
+                  child: Text('zzz', style: PetTextStyles.body15Strong),
+                ),
+              if (widget.controller.momentParticle != null)
+                Positioned(
+                  key: ValueKey<int>(widget.controller.particleNonce),
+                  top: PetSpacing.s8,
+                  right: PetSpacing.s4,
+                  child: Text(
+                    widget.controller.momentParticle!,
+                    style: PetTextStyles.display24,
+                  ),
+                ),
+            ],
+          ),
         ),
-        child: Transform.scale(
-          scale: isIdle ? 1 + (PetMotion.breathScale - 1) * eased : 1,
-          child: child,
-        ),
-      );
-    },
-    child: SizedBox(
-      width: PetSpacing.s192,
-      height: PetSpacing.s208,
-      child: PetSprite(
-        atlas: widget.controller.spriteAtlas,
-        stateName: widget.controller.petAnimation,
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _Decorations extends StatelessWidget {
@@ -255,25 +337,85 @@ class _Decorations extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unlocked = decorUnlocks.where(
-      (item) => controller.state.unlockedDecorIds.contains(item.id),
-    );
+    final unlocked = controller.decorations
+        .where((item) => controller.state.unlockedDecorIds.contains(item.id))
+        .toList(growable: false);
+    const slots = <Offset>[
+      Offset(2, 16),
+      Offset(56, 25),
+      Offset(112, 8),
+      Offset(178, 24),
+      Offset(236, 10),
+      Offset(292, 20),
+    ];
     return SizedBox(
-      height: PetSpacing.s36,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      width: 336,
+      height: PetSpacing.s52,
+      child: Stack(
         children: unlocked
-            .map(
-              (item) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: PetSpacing.s8),
-                child: _DecorShape(id: item.id, enabled: true),
-              ),
-            )
+            .map((item) {
+              final offset = slots[item.slot.clamp(0, slots.length - 1)];
+              return Positioned(
+                left: offset.dx,
+                top: offset.dy,
+                child: DecorItemView(decor: item, unlocked: true),
+              );
+            })
             .toList(growable: false),
       ),
     );
   }
+}
+
+class _TreatBar extends StatelessWidget {
+  const _TreatBar({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      PetSpacing.s20,
+      PetSpacing.zero,
+      PetSpacing.s20,
+      PetSpacing.s10,
+    ),
+    child: Row(
+      children: <Widget>[
+        Expanded(
+          child: TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CollectionScreen(controller: controller),
+              ),
+            ),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: const Text('Collection'),
+          ),
+        ),
+        const SizedBox(width: PetSpacing.s10),
+        Expanded(
+          child: Semantics(
+            button: true,
+            enabled: controller.state.treats > 0,
+            label:
+                'Feed ${controller.state.petName}, ${controller.state.treats} ${controller.selectedPet.treatName}s available',
+            child: FilledButton(
+              onPressed: controller.state.treats > 0
+                  ? () async {
+                      final fed = await controller.feedTreat();
+                      if (fed) await HapticFeedback.lightImpact();
+                    }
+                  : null,
+              child: Text(
+                '${controller.selectedPet.treatEmoji} Feed · ${controller.state.treats}',
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _TaskList extends StatelessWidget {
@@ -437,19 +579,22 @@ class _UnlockBanner extends StatelessWidget {
               ),
               child: Row(
                 children: <Widget>[
-                  ExcludeSemantics(
-                    child: _DecorShape(
-                      id: unlock?.id ?? 'soft_ball',
-                      enabled: true,
+                  if (unlock != null)
+                    ExcludeSemantics(
+                      child: DecorItemView(
+                        decor: controller.decorations.firstWhere(
+                          (item) => item.id == unlock.id,
+                        ),
+                        unlocked: true,
+                      ),
                     ),
-                  ),
                   const SizedBox(width: PetSpacing.s14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          'New keepsake · ${_decorName(unlock?.id)} is here!',
+                          'New keepsake · ${unlock?.name ?? ''} is here!',
                           style: PetTextStyles.body15Strong.copyWith(
                             color: PetColors.display,
                           ),
@@ -576,55 +721,6 @@ class _PrimaryButton extends StatelessWidget {
   );
 }
 
-class _DecorShape extends StatelessWidget {
-  const _DecorShape({required this.id, required this.enabled});
-
-  final String id;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final opacity = enabled
-        ? PetEffects.fullOpacity
-        : PetEffects.upcomingDecorOpacity;
-    if (id == 'flower') {
-      return Opacity(
-        opacity: opacity,
-        child: const DecoratedBox(
-          decoration: BoxDecoration(
-            color: PetColors.stroke,
-            borderRadius: PetRadii.pillBorder,
-          ),
-          child: SizedBox(width: PetSpacing.s48, height: PetSpacing.s18),
-        ),
-      );
-    }
-    if (id == 'home') {
-      return Opacity(
-        opacity: opacity,
-        child: const Icon(
-          Icons.home_rounded,
-          color: PetColors.decorHouse,
-          size: PetSpacing.s36,
-        ),
-      );
-    }
-    return Opacity(
-      opacity: opacity,
-      child: const DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: PetEffects.ballHighlightCenter,
-            colors: <Color>[PetColors.ballHighlight, PetColors.primary],
-          ),
-        ),
-        child: SizedBox.square(dimension: PetSpacing.s34),
-      ),
-    );
-  }
-}
-
 class _TwinkleField extends StatefulWidget {
   const _TwinkleField();
 
@@ -685,12 +781,6 @@ class _StarPainter extends CustomPainter {
   bool shouldRepaint(covariant _StarPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
-
-String _decorName(String? id) => switch (id) {
-  'flower' => 'Cozy Cushion',
-  'home' => 'Little House',
-  _ => 'Bouncy Ball',
-};
 
 String _dateGreeting(DateTime value) {
   const weekdays = <String>['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

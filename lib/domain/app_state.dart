@@ -1,4 +1,5 @@
 import 'local_day.dart';
+import 'unlocks.dart';
 
 const List<String> defaultTaskTitles = <String>[
   'Drink 8 cups of water',
@@ -27,6 +28,8 @@ class AppState {
     required this.activeDay,
     required this.lifetimeCompletions,
     required List<String> unlockedDecorIds,
+    required this.treats,
+    required this.fedToday,
     required this.notificationPermission,
     required this.notificationEnabled,
     required this.notificationHour,
@@ -48,6 +51,8 @@ class AppState {
     activeDay: localDayKey(now),
     lifetimeCompletions: 0,
     unlockedDecorIds: const <String>[],
+    treats: 0,
+    fedToday: null,
     notificationPermission: NotificationPermissionState.notRequested,
     notificationEnabled: false,
     notificationHour: 20,
@@ -70,6 +75,13 @@ class AppState {
     final permission = NotificationPermissionState.fromName(
       json['notificationPermission'] as String?,
     );
+    final persistedTreats = json['treats'] as int? ?? 0;
+    final lifetimeCompletions = json['lifetimeCompletions'] as int? ?? 0;
+    final unlockedDecorIds = <String>{
+      ...(json['unlockedDecorIds'] as List<Object?>? ?? const <Object?>[])
+          .whereType<String>(),
+      ...unlocksEarnedAt(lifetimeCompletions).map((unlock) => unlock.id),
+    }.toList(growable: false);
     return AppState(
       onboardingComplete: json['onboardingComplete'] as bool? ?? false,
       selectedPetId: json['selectedPetId'] as String? ?? 'choco',
@@ -77,12 +89,10 @@ class AppState {
       taskTitles: strings(json['taskTitles'], defaultTaskTitles),
       completedToday: booleans(json['completedToday']),
       activeDay: json['activeDay'] as String? ?? localDayKey(now),
-      lifetimeCompletions: json['lifetimeCompletions'] as int? ?? 0,
-      unlockedDecorIds:
-          (json['unlockedDecorIds'] as List<Object?>?)
-              ?.whereType<String>()
-              .toList() ??
-          const <String>[],
+      lifetimeCompletions: lifetimeCompletions,
+      unlockedDecorIds: unlockedDecorIds,
+      treats: persistedTreats < 0 ? 0 : persistedTreats,
+      fedToday: json['fedToday'] as String?,
       notificationPermission: permission,
       notificationEnabled:
           permission == NotificationPermissionState.granted &&
@@ -103,12 +113,16 @@ class AppState {
   final String activeDay;
   final int lifetimeCompletions;
   final List<String> unlockedDecorIds;
+  final int treats;
+  final String? fedToday;
   final NotificationPermissionState notificationPermission;
   final bool notificationEnabled;
   final int notificationHour;
   final int notificationMinute;
 
   bool get allDone => completedToday.every((value) => value);
+
+  bool isFedOn(DateTime localDate) => fedToday == localDayKey(localDate);
 
   AppState copyWith({
     bool? onboardingComplete,
@@ -119,6 +133,8 @@ class AppState {
     String? activeDay,
     int? lifetimeCompletions,
     List<String>? unlockedDecorIds,
+    int? treats,
+    Object? fedToday = _notProvided,
     NotificationPermissionState? notificationPermission,
     bool? notificationEnabled,
     int? notificationHour,
@@ -132,6 +148,10 @@ class AppState {
     activeDay: activeDay ?? this.activeDay,
     lifetimeCompletions: lifetimeCompletions ?? this.lifetimeCompletions,
     unlockedDecorIds: unlockedDecorIds ?? this.unlockedDecorIds,
+    treats: treats ?? this.treats,
+    fedToday: identical(fedToday, _notProvided)
+        ? this.fedToday
+        : fedToday as String?,
     notificationPermission:
         notificationPermission ?? this.notificationPermission,
     notificationEnabled: notificationEnabled ?? this.notificationEnabled,
@@ -140,7 +160,7 @@ class AppState {
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'schemaVersion': 1,
+    'schemaVersion': 2,
     'onboardingComplete': onboardingComplete,
     'selectedPetId': selectedPetId,
     'petName': petName,
@@ -149,6 +169,8 @@ class AppState {
     'activeDay': activeDay,
     'lifetimeCompletions': lifetimeCompletions,
     'unlockedDecorIds': unlockedDecorIds,
+    'treats': treats,
+    'fedToday': fedToday,
     'notificationPermission': notificationPermission.name,
     'notificationEnabled': notificationEnabled,
     'notificationHour': notificationHour,
@@ -160,6 +182,8 @@ class AppState {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
+
+const Object _notProvided = Object();
 
 extension _FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;

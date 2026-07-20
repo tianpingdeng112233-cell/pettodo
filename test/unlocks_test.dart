@@ -6,6 +6,9 @@ void main() {
     (4, 5, 'soft_ball'),
     (14, 15, 'flower'),
     (29, 30, 'home'),
+    (49, 50, 'blanket'),
+    (79, 80, 'lamp'),
+    (119, 120, 'window'),
   ]) {
     test('${edge.$1} to ${edge.$2} unlocks ${edge.$3}', () {
       expect(unlocksCrossed(edge.$1, edge.$2).map((item) => item.id), <String>[
@@ -17,5 +20,16 @@ void main() {
   test('does not re-unlock an earned decoration', () {
     expect(unlocksCrossed(5, 6), isEmpty);
     expect(unlocksCrossed(30, 31), isEmpty);
+    expect(unlocksCrossed(120, 121), isEmpty);
+  });
+
+  test('earned decorations can be backfilled for existing users', () {
+    expect(unlocksEarnedAt(80).map((item) => item.id), <String>[
+      'soft_ball',
+      'flower',
+      'home',
+      'blanket',
+      'lamp',
+    ]);
   });
 }

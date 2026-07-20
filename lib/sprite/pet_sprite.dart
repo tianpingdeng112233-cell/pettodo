@@ -11,11 +11,13 @@ class PetSprite extends StatefulWidget {
     required this.atlas,
     this.stateName = 'idle',
     this.framesPerSecond = 8,
+    this.fixedFrame,
   });
 
   final LoadedSpriteAtlas atlas;
   final String stateName;
   final double framesPerSecond;
+  final int? fixedFrame;
 
   @override
   State<PetSprite> createState() => _PetSpriteState();
@@ -44,6 +46,7 @@ class _PetSpriteState extends State<PetSprite>
   }
 
   void _onTick(Duration elapsed) {
+    if (widget.fixedFrame != null) return;
     final sequence = widget.atlas.definition.sequence(widget.stateName);
     final next =
         (elapsed.inMicroseconds * widget.framesPerSecond ~/ 1000000) %
@@ -62,7 +65,7 @@ class _PetSpriteState extends State<PetSprite>
     painter: _SpritePainter(
       image: widget.atlas.image,
       source: widget.atlas.definition
-          .frameRect(widget.stateName, _frame)
+          .frameRect(widget.stateName, widget.fixedFrame ?? _frame)
           .uiRect,
     ),
     child: const SizedBox.expand(),

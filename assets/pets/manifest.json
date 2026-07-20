@@ -1,8 +1,17 @@
 {
+  "decor": [
+    {"id": "soft_ball", "display_name": "Bouncy Ball", "emoji": "🧶", "slot": 0},
+    {"id": "flower", "display_name": "Cozy Cushion", "emoji": "🌼", "slot": 1},
+    {"id": "home", "display_name": "Little House", "emoji": "🏡", "slot": 2},
+    {"id": "blanket", "display_name": "Sunny Blanket", "emoji": "🧺", "slot": 3},
+    {"id": "lamp", "display_name": "Warm Lantern", "emoji": "🏮", "slot": 4},
+    {"id": "window", "display_name": "Dreamy Window", "emoji": "🪟", "slot": 5}
+  ],
   "pets": [
     {
       "id": "choco",
       "display_name": "Choco",
+      "treat": {"name": "Little Bone", "emoji": "🦴"},
       "metadata": "assets/pets/choco/pet_request.json",
       "spritesheet": "assets/pets/choco/spritesheet-extended.webp"
     }

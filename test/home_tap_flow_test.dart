@@ -37,6 +37,9 @@ class _FakeSpriteLoader extends SpriteAtlasLoader {
         ('jumping', 4, 5),
         ('waving', 3, 4),
         ('review', 8, 6),
+        ('waiting', 6, 6),
+        ('look-row-9', 9, 8),
+        ('look-row-10', 10, 8),
       ])
         entry.$1: SpriteSequenceDefinition(
           state: entry.$1,
@@ -51,12 +54,24 @@ class _FakeSpriteLoader extends SpriteAtlasLoader {
   Future<List<PetAssetDescriptor>> loadManifest() async => const [_descriptor];
 
   @override
-  Future<LoadedSpriteAtlas> loadPet(PetAssetDescriptor descriptor) async =>
-      LoadedSpriteAtlas(
-        descriptor: descriptor,
-        definition: _definition,
-        image: _image,
-      );
+  Future<List<DecorAssetDescriptor>> loadDecorManifest() async => const [
+    DecorAssetDescriptor(
+      id: 'soft_ball',
+      displayName: 'Bouncy Ball',
+      emoji: '🧶',
+      slot: 0,
+    ),
+  ];
+
+  @override
+  Future<LoadedSpriteAtlas> loadPet(
+    PetAssetDescriptor descriptor, {
+    String? growthStage,
+  }) async => LoadedSpriteAtlas(
+    descriptor: descriptor,
+    definition: _definition,
+    image: _image,
+  );
 }
 
 Future<ui.Image> _makeImage() {
@@ -114,8 +129,20 @@ void main() {
       );
       await tester.pump();
       expect(controller.state.completedToday, everyElement(isFalse));
-      expect(controller.petAnimation, 'idle');
+      expect(controller.petAnimation, controller.currentSchedule.animation);
       expect(find.byIcon(Icons.check_rounded), findsNothing);
+
+      await tester.runAsync(() async {
+        await controller.touchPet(dx: 96, dy: 0);
+        expect(controller.petAnimation, 'look-row-9');
+        expect(controller.petAnimationFrame, 4);
+        expect(controller.affectionateMessage, contains('Choco'));
+      });
+      await tester.runAsync(
+        () => _waitReal(
+          () => controller.petAnimation == controller.currentSchedule.animation,
+        ),
+      );
 
       // Drive the controller directly rather than through a UI tap: tap +
       // pump + runAsync interleaving is timing-fragile under a parallel
@@ -131,6 +158,7 @@ void main() {
         await controller.completeTask(0);
         expect(controller.state.completedToday[0], isTrue);
         expect(controller.state.lifetimeCompletions, 1);
+        expect(controller.state.treats, 1);
         expect(controller.petAnimation, 'jumping');
       });
       await tester.pump();
@@ -138,10 +166,24 @@ void main() {
 
       // The celebration timer is a real-zone timer; wait it out by polling.
       await tester.runAsync(
-        () => _waitReal(() => controller.petAnimation == 'idle'),
+        () => _waitReal(
+          () => controller.petAnimation == controller.currentSchedule.animation,
+        ),
       );
       await tester.pump();
-      expect(controller.petAnimation, 'idle');
+      expect(controller.petAnimation, controller.currentSchedule.animation);
+
+      await tester.runAsync(() async {
+        await controller.feedTreat();
+        expect(controller.state.treats, 0);
+        expect(controller.state.isFedOn(DateTime.now()), isTrue);
+        expect(controller.petAnimation, 'waving');
+      });
+      await tester.runAsync(
+        () => _waitReal(
+          () => controller.petAnimation == controller.currentSchedule.animation,
+        ),
+      );
     },
   );
 }

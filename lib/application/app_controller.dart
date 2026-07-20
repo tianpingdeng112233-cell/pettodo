@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
@@ -8,6 +9,9 @@ import '../data/notification_service.dart';
 import '../domain/app_state.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
+import '../domain/growth.dart';
+import '../domain/pet_schedule.dart';
+import '../domain/treat_economy.dart';
 import '../domain/unlocks.dart';
 import '../sprite/sprite_atlas.dart';
 
@@ -40,29 +44,64 @@ class AppController extends ChangeNotifier {
   Timer? _bannerTimer;
   Timer? _theaterTimer;
   Timer? _dayBoundaryTimer;
+  Timer? _scheduleTimer;
+  final math.Random _random = math.Random();
 
   late AppState state;
   late List<PetAssetDescriptor> pets;
+  late List<DecorAssetDescriptor> decorations;
   late LoadedSpriteAtlas spriteAtlas;
+  late PetScheduleEntry currentSchedule;
   String petAnimation = 'idle';
+  int? petAnimationFrame;
   String? affectionateMessage;
+  String? momentStatus;
+  String? momentParticle;
   DecorUnlock? activeUnlock;
   bool theaterVisible = false;
   int celebrationNonce = 0;
+  int particleNonce = 0;
+  int treatDropNonce = 0;
+  int lastTreatDrop = 0;
+
+  PetGrowthStage get growthStage => growthStageFor(state.lifetimeCompletions);
+
+  PetAssetDescriptor get selectedPet => pets.firstWhere(
+    (pet) => pet.id == state.selectedPetId,
+    orElse: () => pets.first,
+  );
+
+  String get statusLine {
+    if (momentStatus != null) return momentStatus!;
+    if (affectionateMessage != null) return affectionateMessage!;
+    if (state.isFedOn(DateTime.now())) {
+      return '${state.petName} is happily full and feeling wonderful';
+    }
+    return currentSchedule.statusFor(state.petName);
+  }
+
+  bool get scheduleShowsZzz =>
+      momentStatus == null &&
+      _animationTimer?.isActive != true &&
+      currentSchedule.effect == PetScheduleEffect.zzz;
 
   Future<void> initialize() async {
     final now = DateTime.now();
     state = rollOverIfNeeded(await _stateStore.load(now), now);
     pets = await _spriteLoader.loadManifest();
-    final descriptor = pets.firstWhere(
-      (pet) => pet.id == state.selectedPetId,
-      orElse: () => pets.first,
+    decorations = await _spriteLoader.loadDecorManifest();
+    currentSchedule = petScheduleAt(now);
+    petAnimation = currentSchedule.animation;
+    petAnimationFrame = currentSchedule.fixedFrame;
+    spriteAtlas = await _spriteLoader.loadPet(
+      selectedPet,
+      growthStage: growthStage.name,
     );
-    spriteAtlas = await _spriteLoader.loadPet(descriptor);
     await _stateStore.save(state);
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
     _scheduleDayBoundary();
+    _scheduleScheduleBoundary();
   }
 
   Future<void> onResume() async {
@@ -72,13 +111,16 @@ class AppController extends ChangeNotifier {
       state = rolled;
       theaterVisible = false;
       activeUnlock = null;
-      petAnimation = 'idle';
+      _applySchedule(DateTime.now());
       await _stateStore.save(state);
       notifyListeners();
     }
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
     _scheduleDayBoundary();
+    _applySchedule(DateTime.now());
+    _scheduleScheduleBoundary();
+    notifyListeners();
   }
 
   Future<void> completeOnboarding({
@@ -113,7 +155,10 @@ class AppController extends ChangeNotifier {
     if (spriteAtlas.descriptor.id != selectedPetId) {
       final descriptor = pets.firstWhere((pet) => pet.id == selectedPetId);
       final previous = spriteAtlas;
-      spriteAtlas = await _spriteLoader.loadPet(descriptor);
+      spriteAtlas = await _spriteLoader.loadPet(
+        descriptor,
+        growthStage: growthStage.name,
+      );
       previous.image.dispose();
     }
     await _stateStore.save(state);
@@ -129,16 +174,27 @@ class AppController extends ChangeNotifier {
     final before = state.lifetimeCompletions;
     final after = before + 1;
     final newUnlocks = unlocksCrossed(before, after);
+    final newStages = stagesCrossed(before, after);
     final unlocked = <String>{...state.unlockedDecorIds};
     unlocked.addAll(newUnlocks.map((item) => item.id));
-    state = state.copyWith(
-      completedToday: checks,
-      lifetimeCompletions: after,
-      unlockedDecorIds: unlocked.toList(growable: false),
+    final allDoneAfter = checks.every((value) => value);
+    final treatDrop = treatDropForCompletion(
+      completesDailySet: allDoneAfter && !wasAllDone,
     );
+    state = awardTreats(
+      state.copyWith(
+        completedToday: checks,
+        lifetimeCompletions: after,
+        unlockedDecorIds: unlocked.toList(growable: false),
+      ),
+      treatDrop,
+    );
+    lastTreatDrop = treatDrop;
+    treatDropNonce++;
     await _stateStore.save(state);
     await _log(PetEventType.taskComplete, <String, Object?>{
       'taskIndex': index,
+      'treatDrop': treatDrop,
     });
     if (!wasAllDone && state.allDone) {
       await _log(PetEventType.allDone);
@@ -157,9 +213,71 @@ class AppController extends ChangeNotifier {
         'threshold': unlock.threshold,
       });
     }
+    for (final stage in newStages) {
+      await _log(PetEventType.stageUp, <String, Object?>{
+        'stage': stage.name,
+        'lifetimeCompletions': after,
+      });
+    }
+    if (newStages.isNotEmpty && selectedPet.stageAssets.isNotEmpty) {
+      final previous = spriteAtlas;
+      spriteAtlas = await _spriteLoader.loadPet(
+        selectedPet,
+        growthStage: growthStage.name,
+      );
+      previous.image.dispose();
+    }
     _playCompletionAnimation(newUnlocks);
     notifyListeners();
     return true;
+  }
+
+  Future<bool> feedTreat() async {
+    final now = DateTime.now();
+    state = rollOverIfNeeded(state, now);
+    final next = spendTreatToFeed(state, now);
+    if (next == null) return false;
+    state = next;
+    await _stateStore.save(state);
+    await _log(PetEventType.treatFeed, <String, Object?>{
+      'treat': selectedPet.treatName,
+      'remaining': state.treats,
+    });
+    _playMoment(
+      animation: 'waving',
+      status:
+          '${state.petName} savors the ${selectedPet.treatName.toLowerCase()}',
+      particle: selectedPet.treatEmoji,
+    );
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> touchPet({required double dx, required double dy}) async {
+    final degrees = (math.atan2(dx, -dy) * 180 / math.pi + 360) % 360;
+    final direction = (degrees / 22.5).round() % 16;
+    petAnimation = direction < 8 ? 'look-row-9' : 'look-row-10';
+    petAnimationFrame = direction % 8;
+    affectionateMessage =
+        _affectionateLines[_random.nextInt(_affectionateLines.length)]
+            .replaceAll('{petName}', state.petName);
+    await _log(PetEventType.petTouch, <String, Object?>{
+      'kind': 'tap',
+      'direction': direction,
+    });
+    _holdTouchReaction();
+    notifyListeners();
+  }
+
+  Future<void> nuzzlePet() async {
+    affectionateMessage =
+        '${state.petName} leans in close and gives you a gentle nuzzle';
+    await _log(PetEventType.petTouch, const <String, Object?>{
+      'kind': 'long_press',
+    });
+    _playMoment(animation: 'waving', particle: '♥');
+    _holdMessage();
+    notifyListeners();
   }
 
   Future<void> updatePetName(String value) async {
@@ -225,16 +343,20 @@ class AppController extends ChangeNotifier {
       });
     }
     petAnimation = 'jumping';
+    petAnimationFrame = null;
+    momentParticle = '+$lastTreatDrop ${selectedPet.treatEmoji}';
+    particleNonce++;
     if (state.allDone) {
       _theaterTimer = Timer(const Duration(milliseconds: 900), () {
         theaterVisible = true;
         petAnimation = 'review';
+        petAnimationFrame = null;
         notifyListeners();
       });
     } else {
       _animationTimer = Timer(
         const Duration(milliseconds: 2000),
-        _returnToIdle,
+        _returnToSchedule,
       );
     }
   }
@@ -242,11 +364,13 @@ class AppController extends ChangeNotifier {
   void dismissTheater() {
     theaterVisible = false;
     affectionateMessage = null;
-    _returnToIdle();
+    _returnToSchedule();
   }
 
-  void _returnToIdle() {
-    petAnimation = 'idle';
+  void _returnToSchedule() {
+    momentStatus = null;
+    momentParticle = null;
+    _applySchedule(DateTime.now());
     notifyListeners();
   }
 
@@ -259,10 +383,72 @@ class AppController extends ChangeNotifier {
       state = rollOverIfNeeded(state, DateTime.now());
       theaterVisible = false;
       activeUnlock = null;
-      petAnimation = 'idle';
+      _applySchedule(DateTime.now());
       await _stateStore.save(state);
       notifyListeners();
       _scheduleDayBoundary();
+      _scheduleScheduleBoundary();
+    });
+  }
+
+  void _applySchedule(DateTime now) {
+    currentSchedule = petScheduleAt(now);
+    if (theaterVisible ||
+        momentStatus != null ||
+        _animationTimer?.isActive == true ||
+        _theaterTimer?.isActive == true) {
+      return;
+    }
+    petAnimation = currentSchedule.animation;
+    petAnimationFrame = currentSchedule.fixedFrame;
+  }
+
+  void _scheduleScheduleBoundary() {
+    _scheduleTimer?.cancel();
+    final now = DateTime.now();
+    final entry = petScheduleAt(now);
+    var boundary = DateTime(now.year, now.month, now.day, entry.endHour);
+    if (!boundary.isAfter(now)) {
+      boundary = boundary.add(const Duration(days: 1));
+    }
+    _scheduleTimer = Timer(boundary.difference(now), () {
+      _applySchedule(DateTime.now());
+      notifyListeners();
+      _scheduleScheduleBoundary();
+    });
+  }
+
+  void _playMoment({
+    required String animation,
+    String? status,
+    String? particle,
+  }) {
+    _animationTimer?.cancel();
+    petAnimation = animation;
+    petAnimationFrame = null;
+    momentStatus = status;
+    momentParticle = particle;
+    if (particle != null) particleNonce++;
+    _animationTimer = Timer(
+      const Duration(milliseconds: 2000),
+      _returnToSchedule,
+    );
+  }
+
+  void _holdTouchReaction() {
+    _animationTimer?.cancel();
+    _animationTimer = Timer(
+      const Duration(milliseconds: 1400),
+      _returnToSchedule,
+    );
+    _holdMessage();
+  }
+
+  void _holdMessage() {
+    _messageTimer?.cancel();
+    _messageTimer = Timer(const Duration(seconds: 5), () {
+      affectionateMessage = null;
+      notifyListeners();
     });
   }
 
@@ -288,6 +474,9 @@ class AppController extends ChangeNotifier {
     _messageTimer?.cancel();
     _bannerTimer?.cancel();
     _theaterTimer?.cancel();
+    affectionateMessage = null;
+    momentStatus = null;
+    momentParticle = null;
   }
 
   static String _normalized(String value, String fallback) {
@@ -305,7 +494,25 @@ class AppController extends ChangeNotifier {
   void dispose() {
     _cancelMomentTimers();
     _dayBoundaryTimer?.cancel();
+    _scheduleTimer?.cancel();
     spriteAtlas.image.dispose();
     super.dispose();
   }
 }
+
+const List<String> _affectionateLines = <String>[
+  '{petName} noticed you right away',
+  '{petName} is always glad when you visit',
+  '{petName} scoots a little closer to you',
+  '{petName} gives you the softest hello',
+  '{petName} thinks this is a lovely moment together',
+  '{petName} is listening with both ears',
+  '{petName} has been saving this smile for you',
+  '{petName} looks at you with bright, curious eyes',
+  '{petName} would happily sit beside you awhile',
+  '{petName} gives a tiny, delighted tail wag',
+  '{petName} says your company makes home feel warm',
+  '{petName} is very pleased to see your face',
+  '{petName} settles nearby, content and cozy',
+  '{petName} sends a little pocket of warmth your way',
+];

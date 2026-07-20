@@ -21,6 +21,18 @@ void main() {
         timestamp: DateTime.utc(2026, 7, 20, 7, 12, 4),
         data: const <String, Object?>{'decorId': 'soft_ball', 'threshold': 5},
       ),
+      PetEvent(
+        type: PetEventType.treatFeed,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 13),
+      ),
+      PetEvent(
+        type: PetEventType.petTouch,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 14),
+      ),
+      PetEvent(
+        type: PetEventType.stageUp,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 15),
+      ),
     ];
 
     final decoded = decodeEventJsonl('${encodeEventJsonl(events)}\n\n');

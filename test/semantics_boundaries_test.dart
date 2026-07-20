@@ -39,6 +39,9 @@ class _FakeSpriteLoader extends SpriteAtlasLoader {
         ('jumping', 4, 5),
         ('waving', 3, 4),
         ('review', 8, 6),
+        ('waiting', 6, 6),
+        ('look-row-9', 9, 8),
+        ('look-row-10', 10, 8),
       ])
         entry.$1: SpriteSequenceDefinition(
           state: entry.$1,
@@ -53,12 +56,54 @@ class _FakeSpriteLoader extends SpriteAtlasLoader {
   Future<List<PetAssetDescriptor>> loadManifest() async => const [_descriptor];
 
   @override
-  Future<LoadedSpriteAtlas> loadPet(PetAssetDescriptor descriptor) async =>
-      LoadedSpriteAtlas(
-        descriptor: descriptor,
-        definition: _definition,
-        image: _image,
-      );
+  Future<List<DecorAssetDescriptor>> loadDecorManifest() async => const [
+    DecorAssetDescriptor(
+      id: 'soft_ball',
+      displayName: 'Bouncy Ball',
+      emoji: '🧶',
+      slot: 0,
+    ),
+    DecorAssetDescriptor(
+      id: 'flower',
+      displayName: 'Cozy Cushion',
+      emoji: '🌼',
+      slot: 1,
+    ),
+    DecorAssetDescriptor(
+      id: 'home',
+      displayName: 'Little House',
+      emoji: '🏡',
+      slot: 2,
+    ),
+    DecorAssetDescriptor(
+      id: 'blanket',
+      displayName: 'Sunny Blanket',
+      emoji: '🧺',
+      slot: 3,
+    ),
+    DecorAssetDescriptor(
+      id: 'lamp',
+      displayName: 'Warm Lantern',
+      emoji: '🏮',
+      slot: 4,
+    ),
+    DecorAssetDescriptor(
+      id: 'window',
+      displayName: 'Dreamy Window',
+      emoji: '🪟',
+      slot: 5,
+    ),
+  ];
+
+  @override
+  Future<LoadedSpriteAtlas> loadPet(
+    PetAssetDescriptor descriptor, {
+    String? growthStage,
+  }) async => LoadedSpriteAtlas(
+    descriptor: descriptor,
+    definition: _definition,
+    image: _image,
+  );
 }
 
 Future<ui.Image> _makeImage() {
@@ -162,6 +207,17 @@ void main() {
     }
     expect(taskNodes.map((node) => node.id).toSet(), hasLength(3));
     _expectButtonNode(tester, 'Settings');
+    _expectButtonNode(tester, 'Touch Choco');
+
+    await tester.tap(find.text('Collection'));
+    await tester.pumpAndSettle();
+    expect(find.text("Choco's collection"), findsOneWidget);
+    // GridView.builder lazily renders only the visible cells, so assert the
+    // domain truth (6 decorations, none unlocked at lifetime 0) rather than a
+    // fixed rendered count; the visible silhouettes prove the locked mapping.
+    expect(fixture.controller.decorations, hasLength(6));
+    expect(fixture.controller.state.unlockedDecorIds, isEmpty);
+    expect(find.text('A little mystery'), findsAtLeastNWidgets(1));
     semantics.dispose();
   });
 }

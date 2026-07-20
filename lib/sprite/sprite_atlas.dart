@@ -135,12 +135,49 @@ class PetAssetDescriptor {
     required this.displayName,
     required this.metadataAsset,
     required this.spritesheetAsset,
+    this.treatName = 'Treat',
+    this.treatEmoji = '🦴',
+    this.stageAssets = const <String, PetStageAssetDescriptor>{},
   });
 
   final String id;
   final String displayName;
   final String metadataAsset;
   final String spritesheetAsset;
+  final String treatName;
+  final String treatEmoji;
+  final Map<String, PetStageAssetDescriptor> stageAssets;
+
+  PetStageAssetDescriptor assetsForStage(String? stage) =>
+      stageAssets[stage] ??
+      PetStageAssetDescriptor(
+        metadataAsset: metadataAsset,
+        spritesheetAsset: spritesheetAsset,
+      );
+}
+
+class PetStageAssetDescriptor {
+  const PetStageAssetDescriptor({
+    required this.metadataAsset,
+    required this.spritesheetAsset,
+  });
+
+  final String metadataAsset;
+  final String spritesheetAsset;
+}
+
+class DecorAssetDescriptor {
+  const DecorAssetDescriptor({
+    required this.id,
+    required this.displayName,
+    required this.emoji,
+    required this.slot,
+  });
+
+  final String id;
+  final String displayName;
+  final String emoji;
+  final int slot;
 }
 
 class LoadedSpriteAtlas {
@@ -167,11 +204,44 @@ class SpriteAtlasLoader {
     return (raw['pets']! as List<Object?>)
         .map((entry) {
           final pet = entry! as Map<String, Object?>;
+          final treat = pet['treat'] as Map<String, Object?>?;
+          final rawStages = pet['stages'] as Map<String, Object?>?;
           return PetAssetDescriptor(
             id: pet['id']! as String,
             displayName: pet['display_name']! as String,
             metadataAsset: pet['metadata']! as String,
             spritesheetAsset: pet['spritesheet']! as String,
+            treatName: treat?['name'] as String? ?? 'Treat',
+            treatEmoji: treat?['emoji'] as String? ?? '🦴',
+            stageAssets:
+                rawStages?.map((key, value) {
+                  final assets = value! as Map<String, Object?>;
+                  return MapEntry(
+                    key,
+                    PetStageAssetDescriptor(
+                      metadataAsset: assets['metadata']! as String,
+                      spritesheetAsset: assets['spritesheet']! as String,
+                    ),
+                  );
+                }) ??
+                const <String, PetStageAssetDescriptor>{},
+          );
+        })
+        .toList(growable: false);
+  }
+
+  Future<List<DecorAssetDescriptor>> loadDecorManifest() async {
+    final raw =
+        jsonDecode(await _bundle.loadString('assets/pets/manifest.json'))
+            as Map<String, Object?>;
+    return (raw['decor'] as List<Object?>? ?? const <Object?>[])
+        .map((entry) {
+          final decor = entry! as Map<String, Object?>;
+          return DecorAssetDescriptor(
+            id: decor['id']! as String,
+            displayName: decor['display_name']! as String,
+            emoji: decor['emoji']! as String,
+            slot: decor['slot']! as int,
           );
         })
         .toList(growable: false);
@@ -182,9 +252,13 @@ class SpriteAtlasLoader {
     return SpriteAtlasDefinition.fromJson(raw as Map<String, Object?>);
   }
 
-  Future<LoadedSpriteAtlas> loadPet(PetAssetDescriptor descriptor) async {
-    final definition = await loadDefinition(descriptor.metadataAsset);
-    final bytes = await _bundle.load(descriptor.spritesheetAsset);
+  Future<LoadedSpriteAtlas> loadPet(
+    PetAssetDescriptor descriptor, {
+    String? growthStage,
+  }) async {
+    final assets = descriptor.assetsForStage(growthStage);
+    final definition = await loadDefinition(assets.metadataAsset);
+    final bytes = await _bundle.load(assets.spritesheetAsset);
     final codec = await ui.instantiateImageCodec(
       bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
     );

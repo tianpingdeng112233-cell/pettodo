@@ -10,6 +10,7 @@ void main() {
       final state = AppState.initial(beforeMidnight).copyWith(
         completedToday: const <bool>[true, false, true],
         lifetimeCompletions: 14,
+        fedToday: '2026-07-20',
       );
 
       final sameDay = rollOverIfNeeded(
@@ -22,6 +23,7 @@ void main() {
       expect(nextDay.activeDay, '2026-07-21');
       expect(nextDay.completedToday, <bool>[false, false, false]);
       expect(nextDay.lifetimeCompletions, 14);
+      expect(nextDay.fedToday, isNull);
       expect(nextDay.taskTitles, state.taskTitles);
     },
   );

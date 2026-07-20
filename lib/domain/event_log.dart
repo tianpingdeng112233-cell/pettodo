@@ -5,7 +5,10 @@ enum PetEventType {
   taskComplete('task_complete'),
   allDone('all_done'),
   notificationTap('notification_tap'),
-  unlock('unlock');
+  unlock('unlock'),
+  treatFeed('treat_feed'),
+  petTouch('pet_touch'),
+  stageUp('stage_up');
 
   const PetEventType(this.wireName);
   final String wireName;

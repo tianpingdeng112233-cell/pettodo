@@ -6,6 +6,7 @@ import '../data/event_log_store.dart';
 import '../data/export_service.dart';
 import '../domain/app_state.dart';
 import '../domain/unlocks.dart';
+import 'collection_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
@@ -79,7 +80,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = widget.controller.state;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: PetColors.transparent,
@@ -172,7 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPickTime: _pickTime,
                     ),
                     const SizedBox(height: PetSpacing.s14),
-                    _CollectionPanel(state: state),
+                    _CollectionPanel(controller: widget.controller),
                     const SizedBox(height: PetSpacing.s14),
                     _SettingsPanel(
                       compact: true,
@@ -450,143 +450,63 @@ class _SettingsTimeChip extends StatelessWidget {
 }
 
 class _CollectionPanel extends StatelessWidget {
-  const _CollectionPanel({required this.state});
+  const _CollectionPanel({required this.controller});
 
-  final AppState state;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
+    final state = controller.state;
     final next = nextUnlock(state.lifetimeCompletions);
     return _SettingsPanel(
       children: <Widget>[
-        Text(
-          "${state.petName}'s little collection",
-          style: PetTextStyles.body16Strong,
-        ),
-        const SizedBox(height: PetSpacing.xs),
-        Text(
-          '${state.lifetimeCompletions} little things done together',
-          style: PetTextStyles.captionSoft,
-        ),
-        const SizedBox(height: PetSpacing.s14),
-        for (final unlock in decorUnlocks) ...<Widget>[
-          _CollectionRow(
-            unlock: unlock,
-            unlocked: state.unlockedDecorIds.contains(unlock.id),
-            subtitle: state.unlockedDecorIds.contains(unlock.id)
-                ? 'Home already'
-                : unlock.id == next?.id
-                ? 'Coming after ${unlock.threshold - state.lifetimeCompletions} more together'
-                : 'Someday, no rush',
-          ),
-          if (unlock != decorUnlocks.last)
-            const SizedBox(height: PetSpacing.s14),
-        ],
-      ],
-    );
-  }
-}
-
-class _CollectionRow extends StatelessWidget {
-  const _CollectionRow({
-    required this.unlock,
-    required this.unlocked,
-    required this.subtitle,
-  });
-
-  final DecorUnlock unlock;
-  final bool unlocked;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    child: Row(
-      children: <Widget>[
-        SizedBox(
-          width: PetSpacing.s52,
-          height: PetSpacing.s44,
-          child: Center(
-            child: ExcludeSemantics(
-              child: _CollectionShape(id: unlock.id, enabled: unlocked),
+        Semantics(
+          container: true,
+          button: true,
+          child: InkWell(
+            borderRadius: PetRadii.cardSmallBorder,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => CollectionScreen(controller: controller),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: PetSpacing.s8),
+              child: Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: PetColors.primary,
+                  ),
+                  const SizedBox(width: PetSpacing.s14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          "${state.petName}'s little collection",
+                          style: PetTextStyles.body16Strong,
+                        ),
+                        const SizedBox(height: PetSpacing.xs),
+                        Text(
+                          next == null
+                              ? 'Every keepsake has found a home'
+                              : 'Next keepsake arrives after ${next.threshold - state.lifetimeCompletions} more together',
+                          style: PetTextStyles.captionSoft,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Text('›', style: PetTextStyles.chevron),
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(width: PetSpacing.s14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(_decorName(unlock.id), style: PetTextStyles.body15Strong),
-              const SizedBox(height: PetSpacing.xxs),
-              Text(
-                subtitle,
-                style: PetTextStyles.captionSoft.copyWith(
-                  color: unlocked ? PetColors.accentText : PetColors.bodySoft,
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
-    ),
-  );
-}
-
-class _CollectionShape extends StatelessWidget {
-  const _CollectionShape({required this.id, required this.enabled});
-
-  final String id;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final opacity = enabled
-        ? PetEffects.fullOpacity
-        : PetEffects.upcomingDecorOpacity;
-    if (id == 'flower') {
-      return Opacity(
-        opacity: opacity,
-        child: const DecoratedBox(
-          decoration: BoxDecoration(
-            color: PetColors.stroke,
-            borderRadius: PetRadii.pillBorder,
-          ),
-          child: SizedBox(width: PetSpacing.s48, height: PetSpacing.s18),
-        ),
-      );
-    }
-    if (id == 'home') {
-      return Opacity(
-        opacity: opacity,
-        child: const Icon(
-          Icons.home_rounded,
-          color: PetColors.decorHouse,
-          size: PetSpacing.s36,
-        ),
-      );
-    }
-    return Opacity(
-      opacity: opacity,
-      child: const DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: PetEffects.ballHighlightCenter,
-            colors: <Color>[PetColors.ballHighlight, PetColors.primary],
-          ),
-        ),
-        child: SizedBox.square(dimension: PetSpacing.s34),
-      ),
     );
   }
 }
-
-String _decorName(String id) => switch (id) {
-  'flower' => 'Cozy Cushion',
-  'home' => 'Little House',
-  _ => 'Bouncy Ball',
-};
 
 String _formatTime(TimeOfDay time) {
   final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
