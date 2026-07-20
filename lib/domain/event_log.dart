@@ -3,6 +3,10 @@ import 'dart:convert';
 enum PetEventType {
   appOpen('app_open'),
   taskComplete('task_complete'),
+  taskAdd('task_add'),
+  taskRemove('task_remove'),
+  taskEdit('task_edit'),
+  oneoffComplete('oneoff_complete'),
   allDone('all_done'),
   notificationTap('notification_tap'),
   unlock('unlock'),

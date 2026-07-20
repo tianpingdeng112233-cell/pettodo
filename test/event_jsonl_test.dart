@@ -14,7 +14,23 @@ void main() {
       PetEvent(
         type: PetEventType.taskComplete,
         timestamp: DateTime.parse('2026-07-20T08:12:03.456+01:00'),
-        data: const <String, Object?>{'taskIndex': 2},
+        data: const <String, Object?>{'taskId': 'daily-3', 'title': 'Walk'},
+      ),
+      PetEvent(
+        type: PetEventType.taskAdd,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 12, 4),
+      ),
+      PetEvent(
+        type: PetEventType.taskRemove,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 12, 5),
+      ),
+      PetEvent(
+        type: PetEventType.taskEdit,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 12, 6),
+      ),
+      PetEvent(
+        type: PetEventType.oneoffComplete,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 12, 7),
       ),
       PetEvent(
         type: PetEventType.unlock,
@@ -44,8 +60,11 @@ void main() {
       decoded.map((event) => event.timestamp.toIso8601String()),
       events.map((event) => event.timestamp.toIso8601String()),
     );
-    expect(decoded[1].data, <String, Object?>{'taskIndex': 2});
-    expect(decoded[2].data?['decorId'], 'soft_ball');
+    expect(decoded[1].data, <String, Object?>{
+      'taskId': 'daily-3',
+      'title': 'Walk',
+    });
+    expect(decoded[6].data?['decorId'], 'soft_ball');
   });
 
   test('event store appends and reads JSONL in order', () async {

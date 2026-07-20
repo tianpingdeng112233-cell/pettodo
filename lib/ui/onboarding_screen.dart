@@ -235,7 +235,7 @@ class _ChoosePetPage extends StatelessWidget {
                 const Text("Hi, I'm Choco!", style: PetTextStyles.display26),
                 const SizedBox(height: PetSpacing.s8),
                 const Text(
-                  "Three little things a day —\nI'll be right here with you",
+                  "Start with three little things —\nI'll be right here with you",
                   style: PetTextStyles.body15Soft,
                   textAlign: TextAlign.center,
                 ),

@@ -7,6 +7,8 @@ import '../data/export_service.dart';
 import '../domain/app_state.dart';
 import '../domain/unlocks.dart';
 import 'collection_screen.dart';
+import 'history_screen.dart';
+import 'task_editor_sheet.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
@@ -32,15 +34,11 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _name;
-  late final List<TextEditingController> _tasks;
 
   @override
   void initState() {
     super.initState();
     _name = TextEditingController(text: widget.controller.state.petName);
-    _tasks = widget.controller.state.taskTitles
-        .map((value) => TextEditingController(text: value))
-        .toList(growable: false);
     widget.controller.addListener(_refresh);
   }
 
@@ -52,10 +50,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     widget.controller.removeListener(_refresh);
     _name.dispose();
-    for (final field in _tasks) {
-      field.dispose();
-    }
     super.dispose();
+  }
+
+  Future<void> _editTask(TodoTask task) async {
+    final state = widget.controller.state;
+    final draft = await showTaskEditorSheet(
+      context: context,
+      task: task,
+      allowOneOff: task.kind == TaskKind.oneOff || state.dailyTasks.length > 1,
+      notificationDenied:
+          state.notificationPermission == NotificationPermissionState.denied,
+    );
+    if (draft == null) return;
+    final saved = await widget.controller.editTask(
+      taskId: task.id,
+      title: draft.title,
+      kind: draft.kind,
+      note: draft.note,
+    );
+    if (!saved) return;
+    final reminderSaved = await widget.controller.setTaskReminder(
+      taskId: task.id,
+      enabled: draft.reminderEnabled,
+      hour: draft.reminderTime.hour,
+      minute: draft.reminderTime.minute,
+    );
+    if (!reminderSaved && draft.reminderEnabled && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The task is safe. Notifications will stay quiet.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _addTask() async {
+    final draft = await showTaskEditorSheet(
+      context: context,
+      initialKind: TaskKind.daily,
+      notificationDenied:
+          widget.controller.state.notificationPermission ==
+          NotificationPermissionState.denied,
+    );
+    if (draft == null) return;
+    final added = await widget.controller.addTask(
+      title: draft.title,
+      kind: draft.kind,
+      note: draft.note,
+    );
+    if (!added) return;
+    final task = widget.controller.state.tasks.last;
+    await widget.controller.setTaskReminder(
+      taskId: task.id,
+      enabled: draft.reminderEnabled,
+      hour: draft.reminderTime.hour,
+      minute: draft.reminderTime.minute,
+    );
+  }
+
+  Future<void> _removeTask(TodoTask task) async {
+    final removed = await widget.controller.removeTask(task.id);
+    if (!removed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Keep one daily thing as a gentle home base.'),
+        ),
+      );
+    }
   }
 
   Future<void> _pickTime() async {
@@ -146,24 +208,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _SettingsPanel(
                       children: <Widget>[
                         const Text(
-                          'The daily three little things',
+                          'Your little things',
                           style: PetTextStyles.caption,
                         ),
                         const SizedBox(height: PetSpacing.s10),
-                        for (var index = 0; index < 3; index++) ...<Widget>[
-                          TextField(
-                            controller: _tasks[index],
-                            maxLength: 40,
-                            style: PetTextStyles.body16,
-                            decoration: InputDecoration(
-                              hintText: defaultTaskTitles[index],
-                              counterText: '',
+                        for (final task
+                            in widget.controller.state.tasks) ...<Widget>[
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              task.title,
+                              style: PetTextStyles.body16Strong,
                             ),
-                            onChanged: (value) =>
-                                widget.controller.updateTaskTitle(index, value),
+                            subtitle: Text(
+                              <String>[
+                                task.kind == TaskKind.daily
+                                    ? 'Every day'
+                                    : 'Just once',
+                                if (task.note != null) task.note!,
+                                if (task.reminder?.enabled ?? false)
+                                  'One reminder at ${_formatTime(TimeOfDay(hour: task.reminder!.hour, minute: task.reminder!.minute))}',
+                              ].join(' · '),
+                              style: PetTextStyles.captionSoft,
+                            ),
+                            onTap: () => _editTask(task),
+                            trailing: IconButton(
+                              tooltip: 'Remove ${task.title}',
+                              onPressed: () => _removeTask(task),
+                              icon: const Icon(
+                                Icons.remove_circle_outline_rounded,
+                              ),
+                            ),
                           ),
-                          if (index < 2) const SizedBox(height: PetSpacing.s10),
                         ],
+                        const SizedBox(height: PetSpacing.s8),
+                        OutlinedButton.icon(
+                          onPressed: widget.controller.state.canAddTask
+                              ? _addTask
+                              : null,
+                          icon: const Icon(Icons.add_rounded),
+                          label: Text(
+                            widget.controller.state.canAddTask
+                                ? 'Add one little thing'
+                                : 'Seven little things are plenty for now',
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: PetSpacing.s14),
@@ -173,6 +262,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: PetSpacing.s14),
                     _CollectionPanel(controller: widget.controller),
+                    const SizedBox(height: PetSpacing.s14),
+                    _SettingsPanel(
+                      compact: true,
+                      children: <Widget>[
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.favorite_outline_rounded),
+                          title: const Text(
+                            'Things we did together',
+                            style: PetTextStyles.body15Strong,
+                          ),
+                          subtitle: const Text(
+                            'Only warm memories — no streaks or missed days',
+                            style: PetTextStyles.captionSoft,
+                          ),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => HistoryScreen(
+                                eventLog: widget.eventLog,
+                                petName: widget.controller.state.petName,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: PetSpacing.s14),
                     _SettingsPanel(
                       compact: true,

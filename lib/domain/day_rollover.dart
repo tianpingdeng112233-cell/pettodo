@@ -6,7 +6,13 @@ AppState rollOverIfNeeded(AppState state, DateTime localNow) {
   if (state.activeDay == today) return state;
   return state.copyWith(
     activeDay: today,
-    completedToday: const <bool>[false, false, false],
+    tasks: state.tasks
+        .map(
+          (task) => task.kind == TaskKind.daily
+              ? task.copyWith(completedToday: false)
+              : task,
+        )
+        .toList(growable: false),
     fedToday: null,
   );
 }

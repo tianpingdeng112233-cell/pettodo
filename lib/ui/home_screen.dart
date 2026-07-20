@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
+import '../domain/app_state.dart';
 import '../sprite/pet_sprite.dart';
 import 'collection_screen.dart';
+import 'history_screen.dart';
 import 'settings_screen.dart';
+import 'task_editor_sheet.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
@@ -52,11 +55,132 @@ class HomeScreen extends StatelessWidget {
   );
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   const _HomeContent({required this.controller, required this.eventLog});
 
   final AppController controller;
   final EventLogStore eventLog;
+
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  bool _editing = false;
+
+  AppController get controller => widget.controller;
+  EventLogStore get eventLog => widget.eventLog;
+
+  Future<void> _quickAdd() async {
+    final field = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Jot it down'),
+        content: TextField(
+          controller: field,
+          autofocus: true,
+          maxLength: 60,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            hintText: 'A thought before it slips away',
+          ),
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              Navigator.of(dialogContext).pop(value.trim());
+            }
+          },
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (field.text.trim().isNotEmpty) {
+                Navigator.of(dialogContext).pop(field.text.trim());
+              }
+            },
+            child: const Text('Keep it'),
+          ),
+        ],
+      ),
+    );
+    field.dispose();
+    if (title != null) {
+      await controller.addTask(title: title);
+    }
+  }
+
+  Future<void> _addFromEditor() async {
+    final draft = await showTaskEditorSheet(
+      context: context,
+      initialKind: TaskKind.daily,
+      notificationDenied:
+          controller.state.notificationPermission ==
+          NotificationPermissionState.denied,
+    );
+    if (draft == null) return;
+    final added = await controller.addTask(
+      title: draft.title,
+      kind: draft.kind,
+      note: draft.note,
+    );
+    if (!added) return;
+    final task = controller.state.tasks.last;
+    await controller.setTaskReminder(
+      taskId: task.id,
+      enabled: draft.reminderEnabled,
+      hour: draft.reminderTime.hour,
+      minute: draft.reminderTime.minute,
+    );
+  }
+
+  Future<void> _editTask(TodoTask task) async {
+    final draft = await showTaskEditorSheet(
+      context: context,
+      task: task,
+      allowOneOff:
+          task.kind == TaskKind.oneOff ||
+          controller.state.dailyTasks.length > 1,
+      notificationDenied:
+          controller.state.notificationPermission ==
+          NotificationPermissionState.denied,
+    );
+    if (draft == null) return;
+    final edited = await controller.editTask(
+      taskId: task.id,
+      title: draft.title,
+      kind: draft.kind,
+      note: draft.note,
+    );
+    if (!edited || !mounted) return;
+    final reminderSaved = await controller.setTaskReminder(
+      taskId: task.id,
+      enabled: draft.reminderEnabled,
+      hour: draft.reminderTime.hour,
+      minute: draft.reminderTime.minute,
+    );
+    if (!reminderSaved && draft.reminderEnabled && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The task is safe. Notifications will stay quiet.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeTask(TodoTask task) async {
+    final removed = await controller.removeTask(task.id);
+    if (!removed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Keep one daily thing as a gentle home base.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Column(
@@ -106,9 +230,31 @@ class _HomeContent extends StatelessWidget {
           ),
         ),
       ),
-      Expanded(child: _PetStage(controller: controller)),
+      Flexible(flex: 4, child: _PetStage(controller: controller)),
       _TreatBar(controller: controller),
-      _TaskList(controller: controller),
+      Flexible(
+        flex: 5,
+        child: _TaskList(
+          controller: controller,
+          editing: _editing,
+          onToggleEditing: () => setState(() => _editing = !_editing),
+          onQuickAdd: controller.state.canAddTask
+              ? _editing
+                    ? _addFromEditor
+                    : _quickAdd
+              : null,
+          onEdit: _editTask,
+          onRemove: _removeTask,
+          onHistory: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => HistoryScreen(
+                eventLog: eventLog,
+                petName: controller.state.petName,
+              ),
+            ),
+          ),
+        ),
+      ),
       const SizedBox(height: PetSpacing.s10),
     ],
   );
@@ -419,9 +565,23 @@ class _TreatBar extends StatelessWidget {
 }
 
 class _TaskList extends StatelessWidget {
-  const _TaskList({required this.controller});
+  const _TaskList({
+    required this.controller,
+    required this.editing,
+    required this.onToggleEditing,
+    required this.onQuickAdd,
+    required this.onEdit,
+    required this.onRemove,
+    required this.onHistory,
+  });
 
   final AppController controller;
+  final bool editing;
+  final VoidCallback onToggleEditing;
+  final VoidCallback? onQuickAdd;
+  final ValueChanged<TodoTask> onEdit;
+  final ValueChanged<TodoTask> onRemove;
+  final VoidCallback onHistory;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -434,27 +594,67 @@ class _TaskList extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const Padding(
-          padding: EdgeInsets.only(
-            left: PetSpacing.s10,
-            bottom: PetSpacing.s12,
-          ),
-          child: Text(
-            "Today's three little things",
-            style: PetTextStyles.caption,
+        Padding(
+          padding: const EdgeInsets.only(left: PetSpacing.s10),
+          child: Row(
+            children: <Widget>[
+              const Expanded(
+                child: Text(
+                  "Today's little things",
+                  style: PetTextStyles.caption,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Things we did together',
+                onPressed: onHistory,
+                icon: const Icon(Icons.favorite_outline_rounded),
+              ),
+              TextButton(
+                onPressed: onToggleEditing,
+                child: Text(editing ? 'Done' : 'Edit'),
+              ),
+            ],
           ),
         ),
-        for (var index = 0; index < 3; index++) ...<Widget>[
-          _TaskCard(
-            title: controller.state.taskTitles[index],
-            checked: controller.state.completedToday[index],
-            onTap: () async {
-              final completed = await controller.completeTask(index);
-              if (completed) await HapticFeedback.mediumImpact();
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.only(top: PetSpacing.s4),
+            itemCount: controller.state.tasks.length,
+            separatorBuilder: (_, _) => const SizedBox(height: PetSpacing.s10),
+            itemBuilder: (context, index) {
+              final task = controller.state.tasks[index];
+              return _TaskCard(
+                title: task.title,
+                note: task.note,
+                kind: task.kind,
+                hasReminder: task.reminder?.enabled ?? false,
+                checked: task.completedToday,
+                editing: editing,
+                onEdit: () => onEdit(task),
+                onRemove: () => onRemove(task),
+                onTap: () async {
+                  final completed = await controller.completeTask(task.id);
+                  if (completed) await HapticFeedback.mediumImpact();
+                },
+              );
             },
           ),
-          if (index < 2) const SizedBox(height: PetSpacing.s12),
-        ],
+        ),
+        const SizedBox(height: PetSpacing.s8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onQuickAdd,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(
+              onQuickAdd == null
+                  ? 'Seven little things are plenty for now'
+                  : editing
+                  ? 'Add one little thing'
+                  : 'Jot it down',
+            ),
+          ),
+        ),
       ],
     ),
   );
@@ -463,83 +663,142 @@ class _TaskList extends StatelessWidget {
 class _TaskCard extends StatelessWidget {
   const _TaskCard({
     required this.title,
+    required this.note,
+    required this.kind,
+    required this.hasReminder,
     required this.checked,
+    required this.editing,
     required this.onTap,
+    required this.onEdit,
+    required this.onRemove,
   });
 
   final String title;
+  final String? note;
+  final TaskKind kind;
+  final bool hasReminder;
   final bool checked;
+  final bool editing;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    button: true,
-    enabled: !checked,
-    checked: checked,
-    child: AnimatedContainer(
-      duration: PetMotion.task,
-      height: PetSpacing.s78,
-      decoration: BoxDecoration(
-        color: checked ? PetColors.doneFill : PetColors.white,
-        borderRadius: PetRadii.cardBorder,
-        boxShadow: checked ? PetShadows.taskDone : PetShadows.task,
-      ),
-      child: Material(
-        color: PetColors.transparent,
-        borderRadius: PetRadii.cardBorder,
-        child: InkWell(
-          onTap: checked ? null : onTap,
+  Widget build(BuildContext context) {
+    // excludeSemantics strips the inner InkWell's tap action, so the card node
+    // must advertise the action itself or assistive tech can't activate it.
+    final VoidCallback? effectiveTap = editing
+        ? onEdit
+        : checked
+        ? null
+        : onTap;
+    return Semantics(
+      container: true,
+      button: true,
+      label: title,
+      excludeSemantics: !editing,
+      enabled: editing || !checked,
+      checked: checked,
+      onTap: effectiveTap,
+      child: AnimatedContainer(
+        duration: PetMotion.task,
+        constraints: const BoxConstraints(minHeight: PetSpacing.s78),
+        decoration: BoxDecoration(
+          color: checked ? PetColors.doneFill : PetColors.white,
           borderRadius: PetRadii.cardBorder,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: PetSpacing.s20,
-              vertical: PetSpacing.s17,
-            ),
-            child: Row(
-              children: <Widget>[
-                ExcludeSemantics(
-                  child: AnimatedContainer(
-                    duration: PetMotion.task,
-                    width: PetSpacing.s44,
-                    height: PetSpacing.s44,
-                    decoration: BoxDecoration(
-                      color: checked
-                          ? PetColors.primary
-                          : PetColors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: checked ? PetColors.primary : PetColors.stroke,
-                        width: PetSpacing.stroke,
+          boxShadow: checked ? PetShadows.taskDone : PetShadows.task,
+        ),
+        child: Material(
+          color: PetColors.transparent,
+          borderRadius: PetRadii.cardBorder,
+          child: InkWell(
+            onTap: editing
+                ? onEdit
+                : checked
+                ? null
+                : onTap,
+            borderRadius: PetRadii.cardBorder,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: PetSpacing.s20,
+                vertical: PetSpacing.s17,
+              ),
+              child: Row(
+                children: <Widget>[
+                  ExcludeSemantics(
+                    child: AnimatedContainer(
+                      duration: PetMotion.task,
+                      width: PetSpacing.s44,
+                      height: PetSpacing.s44,
+                      decoration: BoxDecoration(
+                        color: checked
+                            ? PetColors.primary
+                            : PetColors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: checked ? PetColors.primary : PetColors.stroke,
+                          width: PetSpacing.stroke,
+                        ),
                       ),
+                      child: checked
+                          ? const Icon(
+                              Icons.check_rounded,
+                              size: PetSpacing.s24,
+                              color: PetColors.white,
+                            )
+                          : null,
                     ),
-                    child: checked
-                        ? const Icon(
-                            Icons.check_rounded,
-                            size: PetSpacing.s24,
-                            color: PetColors.white,
-                          )
-                        : null,
                   ),
-                ),
-                const SizedBox(width: PetSpacing.s16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: checked
-                        ? PetTextStyles.task.copyWith(
-                            color: PetColors.accentText,
-                          )
-                        : PetTextStyles.task,
+                  const SizedBox(width: PetSpacing.s16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          title,
+                          style: checked
+                              ? PetTextStyles.task.copyWith(
+                                  color: PetColors.accentText,
+                                )
+                              : PetTextStyles.task,
+                        ),
+                        if (note != null) ...<Widget>[
+                          const SizedBox(height: PetSpacing.xs),
+                          Text(note!, style: PetTextStyles.small),
+                        ],
+                        if (kind == TaskKind.oneOff || hasReminder) ...<Widget>[
+                          const SizedBox(height: PetSpacing.xs),
+                          Text(
+                            [
+                              if (kind == TaskKind.oneOff) 'Just once',
+                              if (hasReminder) 'Gentle reminder',
+                            ].join(' · '),
+                            style: PetTextStyles.small,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  if (editing) ...<Widget>[
+                    IconButton(
+                      tooltip: 'Edit $title',
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                    IconButton(
+                      tooltip: 'Remove $title',
+                      onPressed: onRemove,
+                      icon: const Icon(Icons.remove_circle_outline_rounded),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _UnlockBanner extends StatelessWidget {

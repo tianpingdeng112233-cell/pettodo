@@ -155,7 +155,7 @@ void main() {
       // the freshly-set 'jumping'. Asserting it after an outer pump() is racy
       // under slow parallel IO — the timer can fire first and reset to 'idle'.
       await tester.runAsync(() async {
-        await controller.completeTask(0);
+        await controller.completeTask(controller.state.tasks.first.id);
         expect(controller.state.completedToday[0], isTrue);
         expect(controller.state.lifetimeCompletions, 1);
         expect(controller.state.treats, 1);

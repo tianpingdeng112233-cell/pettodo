@@ -63,6 +63,7 @@ class AppController extends ChangeNotifier {
   int particleNonce = 0;
   int treatDropNonce = 0;
   int lastTreatDrop = 0;
+  int _taskIdNonce = 0;
 
   PetGrowthStage get growthStage => growthStageFor(state.lifetimeCompletions);
 
@@ -131,7 +132,10 @@ class AppController extends ChangeNotifier {
     required int notificationHour,
     required int notificationMinute,
   }) async {
-    if (taskTitles.length != 3) throw ArgumentError('Exactly 3 tasks required');
+    if (taskTitles.length < minimumTaskCount ||
+        taskTitles.length > maximumTaskCount) {
+      throw ArgumentError('Choose between 1 and 7 little things.');
+    }
     var permission = state.notificationPermission;
     var enabled = false;
     if (enableNotifications &&
@@ -146,7 +150,18 @@ class AppController extends ChangeNotifier {
       onboardingComplete: true,
       selectedPetId: selectedPetId,
       petName: _normalized(petName, 'Choco'),
-      taskTitles: _normalizedTasks(taskTitles),
+      tasks: List<TodoTask>.generate(
+        taskTitles.length,
+        (index) => TodoTask(
+          id: 'daily-${index + 1}',
+          title: _normalized(
+            taskTitles[index],
+            defaultTaskTitles[index % defaultTaskTitles.length],
+          ),
+          kind: TaskKind.daily,
+        ),
+        growable: false,
+      ),
       notificationPermission: permission,
       notificationEnabled: enabled,
       notificationHour: notificationHour,
@@ -166,24 +181,43 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> completeTask(int index) async {
+  Future<bool> completeTask(String taskId) async {
     state = rollOverIfNeeded(state, DateTime.now());
-    if (index < 0 || index >= 3 || state.completedToday[index]) return false;
-    final wasAllDone = state.allDone;
-    final checks = List<bool>.of(state.completedToday)..[index] = true;
+    final task = state.taskById(taskId);
+    if (task == null || task.isComplete) return false;
+    final isDaily = task.kind == TaskKind.daily;
+    final wasAllDailyDone = state.allDailyDone;
+    final completedAt = DateTime.now();
+    var tasks = state.tasks
+        .map(
+          (item) => item.id != taskId
+              ? item
+              : isDaily
+              ? item.copyWith(completedToday: true)
+              : item.copyWith(completedAt: completedAt),
+        )
+        .toList(growable: false);
     final before = state.lifetimeCompletions;
     final after = before + 1;
     final newUnlocks = unlocksCrossed(before, after);
     final newStages = stagesCrossed(before, after);
     final unlocked = <String>{...state.unlockedDecorIds};
     unlocked.addAll(newUnlocks.map((item) => item.id));
-    final allDoneAfter = checks.every((value) => value);
+    final allDailyDoneAfter = tasks
+        .where((item) => item.kind == TaskKind.daily)
+        .every((item) => item.completedToday);
+    final hasDailyTasks = tasks.any((item) => item.kind == TaskKind.daily);
+    final completesDailySet =
+        isDaily && hasDailyTasks && allDailyDoneAfter && !wasAllDailyDone;
     final treatDrop = treatDropForCompletion(
-      completesDailySet: allDoneAfter && !wasAllDone,
+      completesDailySet: completesDailySet,
     );
+    if (!isDaily) {
+      tasks = tasks.where((item) => item.id != taskId).toList(growable: false);
+    }
     state = awardTreats(
       state.copyWith(
-        completedToday: checks,
+        tasks: tasks,
         lifetimeCompletions: after,
         unlockedDecorIds: unlocked.toList(growable: false),
       ),
@@ -192,11 +226,16 @@ class AppController extends ChangeNotifier {
     lastTreatDrop = treatDrop;
     treatDropNonce++;
     await _stateStore.save(state);
-    await _log(PetEventType.taskComplete, <String, Object?>{
-      'taskIndex': index,
-      'treatDrop': treatDrop,
-    });
-    if (!wasAllDone && state.allDone) {
+    await _log(
+      isDaily ? PetEventType.taskComplete : PetEventType.oneoffComplete,
+      <String, Object?>{
+        'taskId': task.id,
+        'title': task.title,
+        'kind': task.kind.name,
+        'treatDrop': treatDrop,
+      },
+    );
+    if (completesDailySet) {
       await _log(PetEventType.allDone);
       affectionateMessage =
           '${state.petName} nuzzles you happily — thank you for today';
@@ -227,7 +266,8 @@ class AppController extends ChangeNotifier {
       );
       previous.image.dispose();
     }
-    _playCompletionAnimation(newUnlocks);
+    await _refreshNotificationSchedule();
+    _playCompletionAnimation(newUnlocks, showTheater: completesDailySet);
     notifyListeners();
     return true;
   }
@@ -287,13 +327,139 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateTaskTitle(int index, String value) async {
-    if (index < 0 || index >= 3) return;
-    final tasks = List<String>.of(state.taskTitles);
-    tasks[index] = _normalized(value, tasks[index]);
-    state = state.copyWith(taskTitles: tasks);
+  Future<bool> addTask({
+    required String title,
+    TaskKind kind = TaskKind.oneOff,
+    String? note,
+  }) async {
+    final normalizedTitle = title.trim();
+    if (normalizedTitle.isEmpty || !state.canAddTask) return false;
+    final normalizedNote = note?.trim();
+    final task = TodoTask(
+      id: _newTaskId(),
+      title: normalizedTitle,
+      kind: kind,
+      note: normalizedNote == null || normalizedNote.isEmpty
+          ? null
+          : normalizedNote,
+    );
+    state = state.copyWith(tasks: <TodoTask>[...state.tasks, task]);
     await _stateStore.save(state);
+    await _log(PetEventType.taskAdd, <String, Object?>{
+      'taskId': task.id,
+      'title': task.title,
+      'kind': task.kind.name,
+    });
     notifyListeners();
+    return true;
+  }
+
+  Future<bool> removeTask(String taskId) async {
+    final task = state.taskById(taskId);
+    if (task == null || !state.canRemoveTask) return false;
+    if (task.kind == TaskKind.daily && state.dailyTasks.length == 1) {
+      return false;
+    }
+    state = state.copyWith(
+      tasks: state.tasks
+          .where((item) => item.id != taskId)
+          .toList(growable: false),
+    );
+    await _stateStore.save(state);
+    await _log(PetEventType.taskRemove, <String, Object?>{
+      'taskId': task.id,
+      'title': task.title,
+      'kind': task.kind.name,
+    });
+    await _refreshNotificationSchedule();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> editTask({
+    required String taskId,
+    required String title,
+    required TaskKind kind,
+    String? note,
+  }) async {
+    final current = state.taskById(taskId);
+    final normalizedTitle = title.trim();
+    if (current == null || normalizedTitle.isEmpty) return false;
+    if (current.kind == TaskKind.daily &&
+        kind == TaskKind.oneOff &&
+        state.dailyTasks.length == 1) {
+      return false;
+    }
+    final normalizedNote = note?.trim();
+    final changedKind = current.kind != kind;
+    final replacement = current.copyWith(
+      title: normalizedTitle,
+      kind: kind,
+      note: normalizedNote == null || normalizedNote.isEmpty
+          ? null
+          : normalizedNote,
+      completedToday: changedKind ? false : current.completedToday,
+      completedAt: changedKind ? null : current.completedAt,
+    );
+    state = state.copyWith(
+      tasks: state.tasks
+          .map((item) => item.id == taskId ? replacement : item)
+          .toList(growable: false),
+    );
+    await _stateStore.save(state);
+    await _log(PetEventType.taskEdit, <String, Object?>{
+      'taskId': replacement.id,
+      'title': replacement.title,
+      'kind': replacement.kind.name,
+      'hasNote': replacement.note != null,
+    });
+    await _refreshNotificationSchedule();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> setTaskReminder({
+    required String taskId,
+    required bool enabled,
+    required int hour,
+    required int minute,
+  }) async {
+    final task = state.taskById(taskId);
+    if (task == null) return false;
+    var permission = state.notificationPermission;
+    if (enabled && permission == NotificationPermissionState.denied) {
+      return false;
+    }
+    if (enabled && permission == NotificationPermissionState.notRequested) {
+      final granted = await _notifications.requestPermission();
+      permission = granted
+          ? NotificationPermissionState.granted
+          : NotificationPermissionState.denied;
+    }
+    final canEnable =
+        enabled && permission == NotificationPermissionState.granted;
+    final existing = task.reminder;
+    final reminder = TaskReminder(
+      hour: hour,
+      minute: minute,
+      enabled: canEnable,
+    );
+    state = state.copyWith(
+      notificationPermission: permission,
+      tasks: state.tasks
+          .map(
+            (item) => item.id == taskId
+                ? item.copyWith(
+                    reminder: enabled || existing != null ? reminder : null,
+                  )
+                : item,
+          )
+          .toList(growable: false),
+    );
+    await _stateStore.save(state);
+    await _refreshNotificationSchedule();
+    notifyListeners();
+    return canEnable || !enabled;
   }
 
   Future<void> updateNotificationTime(int hour, int minute) async {
@@ -307,7 +473,7 @@ class AppController extends ChangeNotifier {
     if (!enabled) {
       state = state.copyWith(notificationEnabled: false);
       await _stateStore.save(state);
-      await _notifications.cancelDaily();
+      await _refreshNotificationSchedule();
       notifyListeners();
       return;
     }
@@ -331,7 +497,10 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _playCompletionAnimation(List<DecorUnlock> newUnlocks) {
+  void _playCompletionAnimation(
+    List<DecorUnlock> newUnlocks, {
+    required bool showTheater,
+  }) {
     _animationTimer?.cancel();
     _theaterTimer?.cancel();
     if (newUnlocks.isNotEmpty) {
@@ -346,7 +515,7 @@ class AppController extends ChangeNotifier {
     petAnimationFrame = null;
     momentParticle = '+$lastTreatDrop ${selectedPet.treatEmoji}';
     particleNonce++;
-    if (state.allDone) {
+    if (showTheater) {
       _theaterTimer = Timer(const Duration(milliseconds: 900), () {
         theaterVisible = true;
         petAnimation = 'review';
@@ -453,14 +622,26 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _refreshNotificationSchedule() async {
-    if (!state.notificationEnabled ||
-        state.notificationPermission != NotificationPermissionState.granted) {
+    if (state.notificationPermission != NotificationPermissionState.granted) {
       return;
     }
-    await _notifications.scheduleDaily(
+    await _notifications.scheduleWindow(
       petName: state.petName,
-      hour: state.notificationHour,
-      minute: state.notificationMinute,
+      includeDailyInvitation: state.notificationEnabled,
+      invitationHour: state.notificationHour,
+      invitationMinute: state.notificationMinute,
+      taskReminders: state.tasks
+          .where((task) => task.reminder?.enabled ?? false)
+          .map(
+            (task) => TaskReminderSchedule(
+              taskId: task.id,
+              title: task.title,
+              hour: task.reminder!.hour,
+              minute: task.reminder!.minute,
+              skipToday: task.kind == TaskKind.daily && task.completedToday,
+            ),
+          )
+          .toList(growable: false),
     );
   }
 
@@ -484,11 +665,10 @@ class AppController extends ChangeNotifier {
     return trimmed.isEmpty ? fallback : trimmed;
   }
 
-  static List<String> _normalizedTasks(List<String> values) => List.generate(
-    3,
-    (index) => _normalized(values[index], defaultTaskTitles[index]),
-    growable: false,
-  );
+  String _newTaskId() {
+    _taskIdNonce++;
+    return 'task-${DateTime.now().microsecondsSinceEpoch}-$_taskIdNonce';
+  }
 
   @override
   void dispose() {

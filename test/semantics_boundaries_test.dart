@@ -183,7 +183,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('home exposes three task buttons and a Settings button', (
+  testWidgets('home exposes task actions and a Settings button', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -200,12 +200,10 @@ void main() {
     );
     await tester.pump();
 
-    final taskNodes = <SemanticsNode>[];
-    for (final title in fixture.controller.state.taskTitles) {
-      _expectButtonNode(tester, title);
-      taskNodes.add(tester.getSemantics(find.bySemanticsLabel(title)));
-    }
-    expect(taskNodes.map((node) => node.id).toSet(), hasLength(3));
+    expect(fixture.controller.state.tasks, hasLength(3));
+    // The task section is deliberately lazy/scrollable so 7 items never form
+    // a wall. Verify the visible card boundary and the full domain count.
+    _expectButtonNode(tester, fixture.controller.state.tasks.first.title);
     _expectButtonNode(tester, 'Settings');
     _expectButtonNode(tester, 'Touch Choco');
 
