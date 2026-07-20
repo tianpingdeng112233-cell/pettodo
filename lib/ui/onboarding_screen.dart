@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
-import '../domain/app_state.dart';
 import '../sprite/pet_sprite.dart';
-import 'app_theme.dart';
+import 'theme/app_theme.dart';
+import 'theme/pet_colors.dart';
+import 'theme/pet_effects.dart';
+import 'theme/pet_motion.dart';
+import 'theme/pet_radii.dart';
+import 'theme/pet_shadows.dart';
+import 'theme/pet_spacing.dart';
+import 'theme/pet_text_styles.dart';
+
+const List<String> _onboardingTasks = <String>[
+  'Drink 8 cups of water',
+  'Learn 20 new words',
+  'Walk the dog',
+];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.controller});
@@ -19,16 +32,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   late final TextEditingController _name;
   late final List<TextEditingController> _tasks;
   int _page = 0;
-  String _selectedPetId = 'choco';
   TimeOfDay _notificationTime = const TimeOfDay(hour: 20, minute: 0);
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _name = TextEditingController(text: 'Choco');
-    _tasks = defaultTaskTitles
-        .map((title) => TextEditingController(text: title))
+    _name = TextEditingController();
+    _tasks = _onboardingTasks
+        .map((_) => TextEditingController())
         .toList(growable: false);
   }
 
@@ -36,38 +48,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _pages.dispose();
     _name.dispose();
-    for (final controller in _tasks) {
-      controller.dispose();
+    for (final field in _tasks) {
+      field.dispose();
     }
     super.dispose();
   }
 
-  void _next() {
+  void _goTo(int page) {
     FocusScope.of(context).unfocus();
-    _pages.nextPage(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOut,
-    );
-  }
-
-  Future<void> _chooseTime() async {
-    final value = await showTimePicker(
-      context: context,
-      initialTime: _notificationTime,
-      helpText: '选一个想收到邀请的时间',
-      cancelText: '取消',
-      confirmText: '选好啦',
-    );
-    if (value != null) setState(() => _notificationTime = value);
+    _pages.animateToPage(page, duration: PetMotion.fade, curve: Curves.easeOut);
   }
 
   Future<void> _finish(bool enableNotifications) async {
     if (_saving) return;
     setState(() => _saving = true);
     await widget.controller.completeOnboarding(
-      selectedPetId: _selectedPetId,
+      selectedPetId: 'choco',
       petName: _name.text,
-      taskTitles: _tasks.map((item) => item.text).toList(growable: false),
+      taskTitles: List<String>.generate(
+        3,
+        (index) => _tasks[index].text.trim().isEmpty
+            ? _onboardingTasks[index]
+            : _tasks[index].text,
+        growable: false,
+      ),
       enableNotifications: enableNotifications,
       notificationHour: _notificationTime.hour,
       notificationMinute: _notificationTime.minute,
@@ -76,241 +80,605 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-            child: Row(
-              children: List.generate(
-                4,
-                (index) => Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 5,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      color: index <= _page
-                          ? AppTheme.honey
-                          : AppTheme.honey.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: PageView(
-              controller: _pages,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (value) => setState(() => _page = value),
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+    value: SystemUiOverlayStyle.dark.copyWith(
+      statusBarColor: PetColors.transparent,
+      systemNavigationBarColor: PetColors.screenBottom,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+    child: Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+        child: Stack(
+          children: <Widget>[
+            const _OnboardingHalo(),
+            Column(
               children: <Widget>[
-                _PetPage(
-                  controller: widget.controller,
-                  selectedPetId: _selectedPetId,
-                  onSelected: (value) => setState(() => _selectedPetId = value),
-                  onNext: _next,
+                const SizedBox(height: PetSpacing.s44),
+                _StepHeader(
+                  page: _page,
+                  onBack: _page == 0 ? null : () => _goTo(_page - 1),
                 ),
-                _FormPage(
-                  title: '它想听你叫它什么？',
-                  subtitle: '以后，这个名字会出现在每一份小小陪伴里。',
-                  buttonText: '就叫这个名字',
-                  onNext: _next,
-                  children: <Widget>[
-                    TextField(
-                      controller: _name,
-                      textInputAction: TextInputAction.done,
-                      maxLength: 20,
-                      decoration: const InputDecoration(labelText: '宠物名字'),
-                    ),
-                  ],
-                ),
-                _FormPage(
-                  title: '每天想一起做哪 3 件小事？',
-                  subtitle: '每天都是新的一天。没做完也不会留下任何压力。',
-                  buttonText: '和它一起开始',
-                  onNext: _next,
-                  children: List.generate(
-                    3,
-                    (index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: TextField(
-                        controller: _tasks[index],
-                        maxLength: 40,
-                        decoration: InputDecoration(
-                          labelText: '小事 ${index + 1}',
-                        ),
+                Expanded(
+                  child: PageView(
+                    controller: _pages,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (page) => setState(() => _page = page),
+                    children: <Widget>[
+                      _ChoosePetPage(
+                        controller: widget.controller,
+                        onNext: () => _goTo(1),
                       ),
-                    ),
+                      _NamePage(
+                        controller: widget.controller,
+                        field: _name,
+                        onNext: () => _goTo(2),
+                      ),
+                      _TasksPage(fields: _tasks, onNext: () => _goTo(3)),
+                      _NotificationPage(
+                        controller: widget.controller,
+                        petName: _displayName,
+                        time: _notificationTime,
+                        saving: _saving,
+                        onTime: (value) =>
+                            setState(() => _notificationTime = value),
+                        onEnable: () => _finish(true),
+                        onSkip: () => _finish(false),
+                      ),
+                    ],
                   ),
-                ),
-                _NotificationPage(
-                  petName: _name.text.trim().isEmpty
-                      ? 'Choco'
-                      : _name.text.trim(),
-                  time: _notificationTime,
-                  saving: _saving,
-                  onChooseTime: _chooseTime,
-                  onEnable: () => _finish(true),
-                  onSkip: () => _finish(false),
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  String get _displayName =>
+      _name.text.trim().isEmpty ? 'Choco' : _name.text.trim();
+}
+
+class _OnboardingHalo extends StatelessWidget {
+  const _OnboardingHalo();
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: PetSpacing.sunTop,
+    left: (MediaQuery.sizeOf(context).width - PetSpacing.sunSize) / 2,
+    child: const ExcludeSemantics(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[PetColors.sunHalo, PetColors.transparent],
+            stops: <double>[PetSpacing.zero, PetEffects.haloStop],
           ),
-        ],
+        ),
+        child: SizedBox.square(dimension: PetSpacing.sunSize),
       ),
     ),
   );
 }
 
-class _PetPage extends StatelessWidget {
-  const _PetPage({
-    required this.controller,
-    required this.selectedPetId,
-    required this.onSelected,
-    required this.onNext,
-  });
+class _StepHeader extends StatelessWidget {
+  const _StepHeader({required this.page, required this.onBack});
 
-  final AppController controller;
-  final String selectedPetId;
-  final ValueChanged<String> onSelected;
-  final VoidCallback onNext;
+  final int page;
+  final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(24),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) => SizedBox(
+    height: PetSpacing.s40,
+    child: Stack(
+      alignment: Alignment.center,
       children: <Widget>[
-        const SizedBox(height: 12),
-        Text('先认识一下你的伙伴', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 8),
-        const Text('v1 先由 Choco 陪你。以后这里会住进更多朋友。'),
-        const SizedBox(height: 18),
-        SizedBox(height: 200, child: PetSprite(atlas: controller.spriteAtlas)),
-        RadioGroup<String>(
-          groupValue: selectedPetId,
-          onChanged: (value) {
-            if (value != null) onSelected(value);
-          },
-          child: Column(
-            children: controller.pets
-                .map(
-                  (pet) => Card(
-                    child: RadioListTile<String>(
-                      value: pet.id,
-                      title: Text(pet.displayName),
-                      subtitle: const Text('温柔、好奇，喜欢陪在你身边'),
-                    ),
-                  ),
-                )
-                .toList(growable: false),
+        if (onBack != null)
+          Positioned(
+            left: PetSpacing.s20,
+            child: Semantics(
+              container: true,
+              child: IconButton(
+                tooltip: 'Back',
+                onPressed: onBack,
+                icon: const Icon(
+                  Icons.chevron_left_rounded,
+                  color: PetColors.bodySoft,
+                ),
+              ),
+            ),
+          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List<Widget>.generate(
+            4,
+            (index) => Container(
+              width: PetSpacing.s8,
+              height: PetSpacing.s8,
+              margin: const EdgeInsets.symmetric(horizontal: PetSpacing.s4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: index <= page ? PetColors.primary : PetColors.inactive,
+              ),
+            ),
           ),
         ),
-        const Card(
-          child: ListTile(
-            enabled: false,
-            leading: Icon(Icons.add_a_photo_outlined),
-            title: Text('上传自家宠物照片（即将上线）'),
-          ),
-        ),
-        const Spacer(),
-        FilledButton(onPressed: onNext, child: const Text('选好啦')),
       ],
     ),
   );
 }
 
-class _FormPage extends StatelessWidget {
-  const _FormPage({
-    required this.title,
-    required this.subtitle,
-    required this.children,
-    required this.buttonText,
-    required this.onNext,
-  });
+class _ChoosePetPage extends StatelessWidget {
+  const _ChoosePetPage({required this.controller, required this.onNext});
 
-  final String title;
-  final String subtitle;
-  final List<Widget> children;
-  final String buttonText;
+  final AppController controller;
   final VoidCallback onNext;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: const EdgeInsets.all(24),
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.sizeOf(context).height - 120,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      PetSpacing.s28,
+      PetSpacing.zero,
+      PetSpacing.s28,
+      PetSpacing.s26,
+    ),
+    child: Column(
+      children: <Widget>[
+        Expanded(
+          child: _ScrollableOnboardingContent(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _OnboardingSprite(controller: controller, state: 'idle'),
+                const SizedBox(height: PetSpacing.s13),
+                const Text("Hi, I'm Choco!", style: PetTextStyles.display26),
+                const SizedBox(height: PetSpacing.s8),
+                const Text(
+                  "Three little things a day —\nI'll be right here with you",
+                  style: PetTextStyles.body15Soft,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: PetSpacing.s18),
+                _PetChoice(controller: controller),
+                const SizedBox(height: PetSpacing.s10),
+                const _FuturePetChoice(),
+              ],
+            ),
+          ),
+        ),
+        _OnboardingButton(label: "That's the one", onTap: onNext),
+      ],
+    ),
+  );
+}
+
+class _PetChoice extends StatelessWidget {
+  const _PetChoice({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    enabled: true,
+    checked: true,
+    child: GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PetSpacing.s18,
+          vertical: PetSpacing.s13,
+        ),
+        decoration: BoxDecoration(
+          color: PetColors.white,
+          border: Border.all(
+            color: PetColors.primary,
+            width: PetSpacing.stroke,
+          ),
+          borderRadius: PetRadii.cardSmallBorder,
+          boxShadow: PetShadows.petChoice,
+        ),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: PetSpacing.s44,
+              height: PetSpacing.s48,
+              child: ExcludeSemantics(
+                child: PetSprite(atlas: controller.spriteAtlas),
+              ),
+            ),
+            const SizedBox(width: PetSpacing.s14),
+            const Expanded(
+              child: Text('Choco', style: PetTextStyles.body16Strong),
+            ),
+            const ExcludeSemantics(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: PetColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: SizedBox.square(
+                  dimension: PetSpacing.s26,
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: PetSpacing.s16,
+                    color: PetColors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const SizedBox(height: 34),
-          Text(title, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text(subtitle),
-          const SizedBox(height: 34),
-          ...children,
-          const SizedBox(height: 24),
-          FilledButton(onPressed: onNext, child: Text(buttonText)),
+    ),
+  );
+}
+
+class _FuturePetChoice extends StatelessWidget {
+  const _FuturePetChoice();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    enabled: false,
+    checked: false,
+    child: Opacity(
+      opacity: PetEffects.futureChoiceOpacity,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PetSpacing.s18,
+          vertical: PetSpacing.s13,
+        ),
+        decoration: BoxDecoration(
+          color: PetColors.futureCard,
+          border: Border.all(
+            color: PetColors.disabledBorder,
+            width: PetSpacing.xxs,
+          ),
+          borderRadius: PetRadii.cardSmallBorder,
+        ),
+        child: Row(
+          children: <Widget>[
+            const ExcludeSemantics(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: PetColors.disabledFill,
+                  borderRadius: PetRadii.spriteBorder,
+                ),
+                child: SizedBox(
+                  width: PetSpacing.s44,
+                  height: PetSpacing.s48,
+                  child: Icon(
+                    Icons.add_a_photo_outlined,
+                    color: PetColors.disabledText,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: PetSpacing.s14),
+            const Expanded(
+              child: Text(
+                "Upload your own pet's photo",
+                style: PetTextStyles.body15Soft,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: PetSpacing.s10,
+                vertical: PetSpacing.s4,
+              ),
+              decoration: const BoxDecoration(
+                color: PetColors.badgeFill,
+                borderRadius: PetRadii.pillBorder,
+              ),
+              child: const Text('Soon', style: PetTextStyles.soon),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _NamePage extends StatelessWidget {
+  const _NamePage({
+    required this.controller,
+    required this.field,
+    required this.onNext,
+  });
+
+  final AppController controller;
+  final TextEditingController field;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) => _OnboardingFrame(
+    button: _OnboardingButton(label: "That's my name!", onTap: onNext),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        _OnboardingSprite(controller: controller, state: 'idle'),
+        const SizedBox(height: PetSpacing.s14),
+        const Text('What will you call me?', style: PetTextStyles.display26),
+        const SizedBox(height: PetSpacing.s8),
+        const Text('Any name makes me happy', style: PetTextStyles.body15Soft),
+        const SizedBox(height: PetSpacing.s20),
+        TextField(
+          controller: field,
+          maxLength: 20,
+          textAlign: TextAlign.center,
+          style: PetTextStyles.body17,
+          decoration: const InputDecoration(hintText: 'Choco', counterText: ''),
+        ),
+      ],
+    ),
+  );
+}
+
+class _TasksPage extends StatelessWidget {
+  const _TasksPage({required this.fields, required this.onNext});
+
+  final List<TextEditingController> fields;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) => _OnboardingFrame(
+    button: _OnboardingButton(label: 'These three!', onTap: onNext),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        const Text(
+          'Which 3 little things will we do?',
+          style: PetTextStyles.display26,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: PetSpacing.s14),
+        const Text(
+          'Keep them tiny — change them anytime',
+          style: PetTextStyles.body15Soft,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: PetSpacing.s22),
+        for (var index = 0; index < 3; index++) ...<Widget>[
+          TextField(
+            controller: fields[index],
+            maxLength: 40,
+            style: PetTextStyles.body17,
+            decoration: InputDecoration(
+              hintText: _onboardingTasks[index],
+              counterText: '',
+            ),
+          ),
+          if (index < 2) const SizedBox(height: PetSpacing.s12),
         ],
-      ),
+      ],
     ),
   );
 }
 
 class _NotificationPage extends StatelessWidget {
   const _NotificationPage({
+    required this.controller,
     required this.petName,
     required this.time,
     required this.saving,
-    required this.onChooseTime,
+    required this.onTime,
     required this.onEnable,
     required this.onSkip,
   });
 
+  final AppController controller;
   final String petName;
   final TimeOfDay time;
   final bool saving;
-  final VoidCallback onChooseTime;
+  final ValueChanged<TimeOfDay> onTime;
   final VoidCallback onEnable;
   final VoidCallback onSkip;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(24),
-    child: Column(
+  Widget build(BuildContext context) => _OnboardingFrame(
+    button: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const Spacer(),
-        const Icon(
-          Icons.notifications_none_rounded,
-          size: 68,
-          color: AppTheme.honey,
+        _OnboardingButton(
+          label: saving
+              ? 'Getting our little home ready…'
+              : 'Sure! See you at ${_formatTime(time)}',
+          onTap: saving ? null : onEnable,
         ),
-        const SizedBox(height: 28),
-        Text('偶尔，让它轻轻叫你回来', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
-        Text('$petName 只会每天发来一次温柔邀请。不开也完全没关系。'),
-        const SizedBox(height: 28),
-        OutlinedButton.icon(
-          onPressed: saving ? null : onChooseTime,
-          icon: const Icon(Icons.schedule_rounded),
-          label: Text('每天 ${time.format(context)}'),
+        const SizedBox(height: PetSpacing.s12),
+        Semantics(
+          container: true,
+          child: TextButton(
+            onPressed: saving ? null : onSkip,
+            child: const Text(
+              "Not now, I'll come find you",
+              style: PetTextStyles.secondaryLink,
+            ),
+          ),
         ),
-        const Spacer(),
-        FilledButton(
-          onPressed: saving ? null : onEnable,
-          child: Text(saving ? '正在准备小窝…' : '好呀，提醒我'),
+      ],
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        _OnboardingSprite(controller: controller, state: 'idle'),
+        const SizedBox(height: PetSpacing.s14),
+        const Text(
+          'May I say hi in the evening?',
+          style: PetTextStyles.display24,
+          textAlign: TextAlign.center,
         ),
-        TextButton(
-          onPressed: saving ? null : onSkip,
-          child: const Text('暂时不用'),
+        const SizedBox(height: PetSpacing.s8),
+        const Text(
+          'Just because I miss you — never to rush',
+          style: PetTextStyles.body15Soft,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: PetSpacing.s18),
+        Wrap(
+          spacing: PetSpacing.s10,
+          children: <Widget>[
+            for (final hour in <int>[19, 20, 21])
+              _TimeChip(
+                time: TimeOfDay(hour: hour, minute: 0),
+                selected: time.hour == hour && time.minute == 0,
+                onTap: onTime,
+              ),
+          ],
+        ),
+        const SizedBox(height: PetSpacing.s12),
+        const Text(
+          "Turn it off anytime — I won't mind",
+          style: PetTextStyles.disabledSmall,
         ),
       ],
     ),
   );
+}
+
+class _OnboardingFrame extends StatelessWidget {
+  const _OnboardingFrame({required this.child, required this.button});
+
+  final Widget child;
+  final Widget button;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      PetSpacing.s28,
+      PetSpacing.zero,
+      PetSpacing.s28,
+      PetSpacing.s26,
+    ),
+    child: Column(
+      children: <Widget>[
+        Expanded(child: _ScrollableOnboardingContent(child: child)),
+        button,
+      ],
+    ),
+  );
+}
+
+class _ScrollableOnboardingContent extends StatelessWidget {
+  const _ScrollableOnboardingContent({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+        child: child,
+      ),
+    ),
+  );
+}
+
+class _OnboardingSprite extends StatelessWidget {
+  const _OnboardingSprite({required this.controller, required this.state});
+
+  final AppController controller;
+  final String state;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox(
+      width: PetSpacing.s150,
+      height: PetSpacing.s162,
+      child: PetSprite(atlas: controller.spriteAtlas, stateName: state),
+    ),
+  );
+}
+
+class _OnboardingButton extends StatelessWidget {
+  const _OnboardingButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+    opacity: onTap == null
+        ? PetEffects.disabledButtonOpacity
+        : PetEffects.fullOpacity,
+    child: Semantics(
+      container: true,
+      button: true,
+      enabled: onTap != null,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: PetColors.primary,
+          borderRadius: PetRadii.pillBorder,
+          boxShadow: PetShadows.primaryButton,
+        ),
+        child: Material(
+          color: PetColors.transparent,
+          borderRadius: PetRadii.pillBorder,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: PetRadii.pillBorder,
+            child: SizedBox(
+              height: PetSpacing.s54,
+              child: Center(child: Text(label, style: PetTextStyles.button)),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _TimeChip extends StatelessWidget {
+  const _TimeChip({
+    required this.time,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TimeOfDay time;
+  final bool selected;
+  final ValueChanged<TimeOfDay> onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    checked: selected,
+    child: InkWell(
+      borderRadius: PetRadii.pillBorder,
+      onTap: () => onTap(time),
+      child: Container(
+        height: PetSpacing.s40,
+        padding: const EdgeInsets.symmetric(
+          horizontal: PetSpacing.s16,
+          vertical: PetSpacing.s9,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? PetColors.primary : PetColors.white,
+          borderRadius: PetRadii.pillBorder,
+          border: Border.all(
+            color: selected ? PetColors.primary : PetColors.stroke,
+            width: PetSpacing.xxs,
+          ),
+        ),
+        child: Text(
+          _formatTime(time),
+          style: selected
+              ? PetTextStyles.chip.copyWith(color: PetColors.white)
+              : PetTextStyles.chip,
+        ),
+      ),
+    ),
+  );
+}
+
+String _formatTime(TimeOfDay time) {
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  return '$hour:$minute ${time.period == DayPeriod.am ? 'AM' : 'PM'}';
 }

@@ -1,6 +1,10 @@
 import 'local_day.dart';
 
-const List<String> defaultTaskTitles = <String>['喝水 8 杯', '背 20 个单词', '遛狗'];
+const List<String> defaultTaskTitles = <String>[
+  'Drink 8 cups of water',
+  'Learn 20 new words',
+  'Walk the dog',
+];
 
 enum NotificationPermissionState {
   notRequested,

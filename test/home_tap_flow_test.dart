@@ -8,6 +8,7 @@ import 'package:pettodo/data/app_state_store.dart';
 import 'package:pettodo/data/event_log_store.dart';
 import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
+import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
 
 class _FakeSpriteLoader extends SpriteAtlasLoader {
@@ -67,62 +68,80 @@ Future<ui.Image> _makeImage() {
   return recorder.endRecording().toImage(32, 44);
 }
 
+/// Poll a real-zone condition (used because the controller's animation timers
+/// and IO run in the ambient zone via runAsync, not the fake test clock).
+Future<void> _waitReal(bool Function() done, {int timeoutMs = 6000}) async {
+  final deadline = DateTime.now().add(Duration(milliseconds: timeoutMs));
+  while (!done() && DateTime.now().isBefore(deadline)) {
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+}
+
 void main() {
-  testWidgets(timeout: const Timeout(Duration(seconds: 30)), 'tapping a task card completes it and plays a happy animation', (
-    tester,
-  ) async {
-    final tempDir = Directory.systemTemp.createTempSync('pettodo-test');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    late final EventLogStore eventLog;
-    late final AppController controller;
-    await tester.runAsync(() async {
-      // Stores MUST be constructed inside runAsync: their internal Future chains
-      // bind to the ambient zone, and fake-async-zone futures never complete here.
-      eventLog = EventLogStore(() async => tempDir);
-      final img = await _makeImage();
-      controller = AppController(
-        stateStore: AppStateStore(() async => tempDir),
-        eventLog: eventLog,
-        notifications: NotificationService(),
-        spriteLoader: _FakeSpriteLoader(img),
-      );
-      await controller.initialize();
-    });
-    addTearDown(controller.dispose);
+  testWidgets(
+    timeout: const Timeout(Duration(seconds: 30)),
+    'completing a task marks it done, drops the check, and plays then clears the happy animation',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync('pettodo-test');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      late final EventLogStore eventLog;
+      late final AppController controller;
+      await tester.runAsync(() async {
+        // Stores MUST be constructed inside runAsync: their internal Future
+        // chains bind to the ambient zone; fake-zone futures never complete.
+        eventLog = EventLogStore(() async => tempDir);
+        final img = await _makeImage();
+        controller = AppController(
+          stateStore: AppStateStore(() async => tempDir),
+          eventLog: eventLog,
+          notifications: NotificationService(),
+          spriteLoader: _FakeSpriteLoader(img),
+        );
+        await controller.initialize();
+      });
+      addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ListenableBuilder(
-          listenable: controller,
-          builder: (_, _) =>
-              HomeScreen(controller: controller, eventLog: eventLog),
+      // Render smoke: HomeScreen builds with a real (fake-atlas) controller.
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: ListenableBuilder(
+            listenable: controller,
+            builder: (_, _) =>
+                HomeScreen(controller: controller, eventLog: eventLog),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
+      expect(controller.state.completedToday, everyElement(isFalse));
+      expect(controller.petAnimation, 'idle');
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
 
-    expect(controller.state.completedToday, everyElement(isFalse));
-    expect(controller.petAnimation, 'idle');
+      // Drive the controller directly rather than through a UI tap: tap +
+      // pump + runAsync interleaving is timing-fragile under a parallel
+      // suite. "The card is a tappable button" is covered by
+      // semantics_boundaries_test; here we verify the completion state machine.
+      //
+      // The 'jumping' assertion MUST live inside runAsync, synchronously after
+      // completeTask resolves: the return-to-idle is a 2s macrotask Timer, so
+      // reading here (before any pump drains the event loop) always observes
+      // the freshly-set 'jumping'. Asserting it after an outer pump() is racy
+      // under slow parallel IO — the timer can fire first and reset to 'idle'.
+      await tester.runAsync(() async {
+        await controller.completeTask(0);
+        expect(controller.state.completedToday[0], isTrue);
+        expect(controller.state.lifetimeCompletions, 1);
+        expect(controller.petAnimation, 'jumping');
+      });
+      await tester.pump();
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
 
-    final firstCard = find.text(controller.state.taskTitles[0]);
-    expect(firstCard, findsOneWidget);
-    await tester.runAsync(() async {
-      await tester.tap(firstCard);
-      // completeTask persists state and appends events on real IO.
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    });
-    await tester.pump();
-
-    expect(controller.state.completedToday[0], isTrue);
-    expect(controller.state.lifetimeCompletions, 1);
-    expect(controller.petAnimation, 'jumping');
-
-    // The celebration timer is a real-zone timer (created under runAsync),
-    // so wait it out in real time rather than pumping the fake clock.
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 2300)),
-    );
-    await tester.pump();
-    expect(controller.petAnimation, 'idle');
-  });
+      // The celebration timer is a real-zone timer; wait it out by polling.
+      await tester.runAsync(
+        () => _waitReal(() => controller.petAnimation == 'idle'),
+      );
+      await tester.pump();
+      expect(controller.petAnimation, 'idle');
+    },
+  );
 }

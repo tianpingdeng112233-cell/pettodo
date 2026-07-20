@@ -1,0 +1,39 @@
+import 'package:flutter/material.dart';
+
+abstract final class PetColors {
+  static const Color primary = Color(0xFFF2A65A);
+  static const Color accentText = Color(0xFFB96B2E);
+  static const Color display = Color(0xFF8A5A2E);
+  static const Color bodyStrong = Color(0xFF6B4A2B);
+  static const Color body = Color(0xFF8A6B4C);
+  static const Color bodySoft = Color(0xFFB08D63);
+  static const Color caption = Color(0xFFC4A075);
+  static const Color stroke = Color(0xFFF4C9A0);
+  static const Color doneFill = Color(0xFFFFE9D4);
+  static const Color screenTop = Color(0xFFFFF8EF);
+  static const Color screenBottom = Color(0xFFFFEFDC);
+  static const Color inputFill = Color(0xFFFFFBF5);
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color status = Color(0xFF7A5A3A);
+  static const Color systemIcon = Color(0xFFD2B08A);
+  static const Color inactive = Color(0xFFF0DCC2);
+  static const Color disabledBorder = Color(0xFFEBD6B8);
+  static const Color disabledText = Color(0xFFB99F7D);
+  static const Color disabledCaption = Color(0xFFC9A87C);
+  static const Color disabledFill = Color(0xFFFBF3E7);
+  static const Color badgeFill = Color(0xFFF7E9D3);
+  static const Color cardDivider = Color(0xFFF7EBD9);
+  static const Color theaterText = Color(0xFFFFF3E0);
+  static const Color theaterLabel = Color(0xFFFFE2B8);
+  static const Color decorHouse = Color(0xFFE8B57E);
+  static const Color ballHighlight = Color(0xFFFFD9A8);
+  static const Color futureCard = Color.fromRGBO(255, 255, 255, 0.55);
+  static const Color transparent = Color(0x00000000);
+  static const Color groundShadow = Color.fromRGBO(201, 150, 90, 0.16);
+  static const Color sunHalo = Color.fromRGBO(255, 214, 150, 0.60);
+  static const Color theaterCenter = Color.fromRGBO(70, 40, 10, 0.12);
+  static const Color theaterEdge = Color.fromRGBO(70, 40, 10, 0.70);
+  static const Color theaterSpriteFill = Color.fromRGBO(255, 243, 226, 0.94);
+  static const Color ghostFill = Color.fromRGBO(242, 166, 90, 0.16);
+  static const Color bottomIndicator = Color.fromRGBO(140, 100, 60, 0.22);
+}

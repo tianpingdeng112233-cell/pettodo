@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
 import '../data/export_service.dart';
 import '../domain/app_state.dart';
 import '../domain/unlocks.dart';
+import 'theme/app_theme.dart';
+import 'theme/pet_colors.dart';
+import 'theme/pet_effects.dart';
+import 'theme/pet_motion.dart';
+import 'theme/pet_radii.dart';
+import 'theme/pet_shadows.dart';
+import 'theme/pet_spacing.dart';
+import 'theme/pet_text_styles.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.controller,
@@ -16,215 +25,571 @@ class SettingsScreen extends StatelessWidget {
   final AppController controller;
   final EventLogStore eventLog;
 
-  Future<void> _editText(
-    BuildContext context, {
-    required String title,
-    required String initialValue,
-    required ValueChanged<String> onSave,
-  }) async {
-    final field = TextEditingController(text: initialValue);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: field,
-          autofocus: true,
-          maxLength: 40,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (value) => Navigator.pop(context, value),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, field.text),
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-    );
-    field.dispose();
-    if (result != null) onSave(result);
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late final TextEditingController _name;
+  late final List<TextEditingController> _tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.controller.state.petName);
+    _tasks = widget.controller.state.taskTitles
+        .map((value) => TextEditingController(text: value))
+        .toList(growable: false);
+    widget.controller.addListener(_refresh);
   }
 
-  Future<void> _pickTime(BuildContext context) async {
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_refresh);
+    _name.dispose();
+    for (final field in _tasks) {
+      field.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _pickTime() async {
+    final state = widget.controller.state;
     final result = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(
-        hour: controller.state.notificationHour,
-        minute: controller.state.notificationMinute,
+        hour: state.notificationHour,
+        minute: state.notificationMinute,
       ),
-      helpText: '每天什么时候收到邀请？',
-      cancelText: '取消',
-      confirmText: '保存',
+      helpText: 'When should the evening hello arrive?',
+      cancelText: 'Not now',
+      confirmText: 'Save time',
     );
     if (result != null) {
-      await controller.updateNotificationTime(result.hour, result.minute);
+      await widget.controller.updateNotificationTime(
+        result.hour,
+        result.minute,
+      );
     }
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: controller,
-    builder: (context, _) {
-      final next = nextUnlock(controller.state.lifetimeCompletions);
-      final progress = next == null
-          ? '已完成 ${controller.state.lifetimeCompletions} 次 · 小窝里的装饰都收集齐啦'
-          : '已完成 ${controller.state.lifetimeCompletions} 次 · '
-                '下一个解锁还差 ${next.threshold - controller.state.lifetimeCompletions} 次';
-      final denied =
-          controller.state.notificationPermission ==
-          NotificationPermissionState.denied;
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('设置'),
-          backgroundColor: Colors.transparent,
-        ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-          children: <Widget>[
-            _Section(
-              title: '伙伴',
-              children: <Widget>[
-                ListTile(
-                  title: const Text('宠物名字'),
-                  subtitle: Text(controller.state.petName),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => _editText(
-                    context,
-                    title: '给它换个名字',
-                    initialValue: controller.state.petName,
-                    onSave: controller.updatePetName,
+  Widget build(BuildContext context) {
+    final state = widget.controller.state;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: PetColors.transparent,
+        systemNavigationBarColor: PetColors.screenBottom,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const SizedBox(height: PetSpacing.s44),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  PetSpacing.s28,
+                  PetSpacing.s8,
+                  PetSpacing.s28,
+                  PetSpacing.s12,
+                ),
+                child: Semantics(
+                  container: true,
+                  header: true,
+                  child: GestureDetector(
+                    onHorizontalDragEnd: (details) {
+                      if ((details.primaryVelocity ?? PetSpacing.zero) >
+                          PetSpacing.zero) {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
+                    child: const Text(
+                      'Settings',
+                      style: PetTextStyles.display24,
+                    ),
                   ),
                 ),
-              ],
-            ),
-            _Section(
-              title: '每天的 3 件小事',
-              children: List.generate(
-                3,
-                (index) => ListTile(
-                  leading: CircleAvatar(child: Text('${index + 1}')),
-                  title: Text(controller.state.taskTitles[index]),
-                  trailing: const Icon(Icons.edit_outlined),
-                  onTap: () => _editText(
-                    context,
-                    title: '编辑小事 ${index + 1}',
-                    initialValue: controller.state.taskTitles[index],
-                    onSave: (value) => controller.updateTaskTitle(index, value),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    PetSpacing.s20,
+                    PetSpacing.zero,
+                    PetSpacing.s20,
+                    PetSpacing.s24,
+                  ),
+                  children: <Widget>[
+                    _SettingsPanel(
+                      children: <Widget>[
+                        const Text('Pet name', style: PetTextStyles.caption),
+                        const SizedBox(height: PetSpacing.s10),
+                        TextField(
+                          controller: _name,
+                          maxLength: 20,
+                          style: PetTextStyles.body16,
+                          decoration: const InputDecoration(
+                            hintText: 'Choco',
+                            counterText: '',
+                          ),
+                          onChanged: widget.controller.updatePetName,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: PetSpacing.s14),
+                    _SettingsPanel(
+                      children: <Widget>[
+                        const Text(
+                          'The daily three little things',
+                          style: PetTextStyles.caption,
+                        ),
+                        const SizedBox(height: PetSpacing.s10),
+                        for (var index = 0; index < 3; index++) ...<Widget>[
+                          TextField(
+                            controller: _tasks[index],
+                            maxLength: 40,
+                            style: PetTextStyles.body16,
+                            decoration: InputDecoration(
+                              hintText: defaultTaskTitles[index],
+                              counterText: '',
+                            ),
+                            onChanged: (value) =>
+                                widget.controller.updateTaskTitle(index, value),
+                          ),
+                          if (index < 2) const SizedBox(height: PetSpacing.s10),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: PetSpacing.s14),
+                    _NotificationPanel(
+                      controller: widget.controller,
+                      onPickTime: _pickTime,
+                    ),
+                    const SizedBox(height: PetSpacing.s14),
+                    _CollectionPanel(state: state),
+                    const SizedBox(height: PetSpacing.s14),
+                    _SettingsPanel(
+                      compact: true,
+                      children: <Widget>[
+                        Semantics(
+                          container: true,
+                          button: true,
+                          child: Builder(
+                            builder: (buttonContext) => InkWell(
+                              onTap: () async {
+                                final box =
+                                    buttonContext.findRenderObject()!
+                                        as RenderBox;
+                                await ExportService(
+                                  widget.eventLog,
+                                ).shareEvents(
+                                  sharePositionOrigin:
+                                      box.localToGlobal(Offset.zero) & box.size,
+                                );
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: PetSpacing.s14,
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Text(
+                                        'Export our story',
+                                        style: PetTextStyles.body15Strong,
+                                      ),
+                                    ),
+                                    ExcludeSemantics(
+                                      child: Text(
+                                        '›',
+                                        style: PetTextStyles.chevron,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Divider(
+                          height: PetSpacing.xxs,
+                          thickness: PetSpacing.xxs / 2,
+                          color: PetColors.cardDivider,
+                        ),
+                        Semantics(
+                          container: true,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: PetSpacing.s14,
+                            ),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: Text(
+                                    'Version',
+                                    style: PetTextStyles.body15Soft,
+                                  ),
+                                ),
+                                Text(
+                                  'PetTodo v1.0.0',
+                                  style: PetTextStyles.caption,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsPanel extends StatelessWidget {
+  const _SettingsPanel({required this.children, this.compact = false});
+
+  final List<Widget> children;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.symmetric(
+      horizontal: PetSpacing.s20,
+      vertical: compact ? PetSpacing.s6 : PetSpacing.s18,
+    ),
+    decoration: const BoxDecoration(
+      color: PetColors.white,
+      borderRadius: PetRadii.cardBorder,
+      boxShadow: PetShadows.panel,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    ),
+  );
+}
+
+class _NotificationPanel extends StatelessWidget {
+  const _NotificationPanel({
+    required this.controller,
+    required this.onPickTime,
+  });
+
+  final AppController controller;
+  final VoidCallback onPickTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = controller.state;
+    final time = TimeOfDay(
+      hour: state.notificationHour,
+      minute: state.notificationMinute,
+    );
+    final denied =
+        state.notificationPermission == NotificationPermissionState.denied;
+    final subtitle = state.notificationEnabled
+        ? '${state.petName} will say a soft hello at ${_formatTime(time)}'
+        : 'All quiet — ${state.petName} is home, waiting for you';
+    return _SettingsPanel(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Semantics(
+                container: true,
+                button: true,
+                child: InkWell(
+                  onTap: onPickTime,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        'Evening hello',
+                        style: PetTextStyles.body16Strong,
+                      ),
+                      const SizedBox(height: PetSpacing.xs),
+                      Text(subtitle, style: PetTextStyles.captionSoft),
+                    ],
                   ),
                 ),
               ),
             ),
-            _Section(
-              title: '温柔提醒',
-              children: <Widget>[
-                SwitchListTile(
-                  title: const Text('每天邀请一次'),
-                  value: controller.state.notificationEnabled,
-                  onChanged: denied ? null : controller.setNotificationEnabled,
-                ),
-                if (controller.state.notificationEnabled)
-                  ListTile(
-                    title: const Text('邀请时间'),
-                    trailing: Text(
-                      TimeOfDay(
-                        hour: controller.state.notificationHour,
-                        minute: controller.state.notificationMinute,
-                      ).format(context),
-                    ),
-                    onTap: () => _pickTime(context),
-                  ),
-              ],
-            ),
-            _Section(
-              title: '小窝收藏',
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(progress),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 18,
-                        children: decorUnlocks
-                            .map((item) {
-                              final unlocked = controller.state.unlockedDecorIds
-                                  .contains(item.id);
-                              return Semantics(
-                                label: unlocked
-                                    ? '已解锁${item.name}'
-                                    : '${item.threshold} 次后解锁',
-                                child: Opacity(
-                                  opacity: unlocked ? 1 : 0.28,
-                                  child: Text(
-                                    item.emoji,
-                                    style: const TextStyle(fontSize: 34),
-                                  ),
-                                ),
-                              );
-                            })
-                            .toList(growable: false),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            _Section(
-              title: '数据与版本',
-              children: <Widget>[
-                Builder(
-                  builder: (buttonContext) => ListTile(
-                    leading: const Icon(Icons.ios_share_rounded),
-                    title: const Text('导出数据'),
-                    subtitle: const Text('分享本地 JSONL 事件记录'),
-                    onTap: () async {
-                      final box =
-                          buttonContext.findRenderObject()! as RenderBox;
-                      final origin = box.localToGlobal(Offset.zero) & box.size;
-                      await ExportService(
-                        eventLog,
-                      ).shareEvents(sharePositionOrigin: origin);
-                    },
-                  ),
-                ),
-                const ListTile(
-                  title: Text('PetTodo'),
-                  trailing: Text('1.0.0 (1)'),
-                ),
-              ],
+            const SizedBox(width: PetSpacing.s14),
+            _PetToggle(
+              value: state.notificationEnabled,
+              enabled: !denied,
+              onChanged: controller.setNotificationEnabled,
             ),
           ],
         ),
-      );
-    },
+        const SizedBox(height: PetSpacing.s14),
+        Wrap(
+          spacing: PetSpacing.s10,
+          children: <Widget>[
+            for (final hour in <int>[19, 20, 21])
+              _SettingsTimeChip(
+                value: TimeOfDay(hour: hour, minute: 0),
+                selected:
+                    state.notificationHour == hour &&
+                    state.notificationMinute == 0,
+                onTap: (value) =>
+                    controller.updateNotificationTime(value.hour, value.minute),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PetToggle extends StatelessWidget {
+  const _PetToggle({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    toggled: value,
+    enabled: enabled,
+    label: 'Evening hello',
+    child: GestureDetector(
+      onTap: enabled ? () => onChanged(!value) : null,
+      child: Opacity(
+        opacity: enabled
+            ? PetEffects.fullOpacity
+            : PetEffects.disabledToggleOpacity,
+        child: AnimatedContainer(
+          duration: PetMotion.quick,
+          width: PetSpacing.s58,
+          height: PetSpacing.s38,
+          padding: const EdgeInsets.all(PetSpacing.xs),
+          decoration: BoxDecoration(
+            color: value ? PetColors.primary : PetColors.disabledBorder,
+            borderRadius: PetRadii.pillBorder,
+          ),
+          child: AnimatedAlign(
+            duration: PetMotion.quick,
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                color: PetColors.white,
+                shape: BoxShape.circle,
+                boxShadow: PetShadows.toggleKnob,
+              ),
+              child: SizedBox.square(dimension: PetSpacing.s26),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.children});
+class _SettingsTimeChip extends StatelessWidget {
+  const _SettingsTimeChip({
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
 
-  final String title;
-  final List<Widget> children;
+  final TimeOfDay value;
+  final bool selected;
+  final ValueChanged<TimeOfDay> onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
-          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    checked: selected,
+    child: InkWell(
+      borderRadius: PetRadii.pillBorder,
+      onTap: () => onTap(value),
+      child: Container(
+        height: PetSpacing.s40,
+        padding: const EdgeInsets.symmetric(
+          horizontal: PetSpacing.s16,
+          vertical: PetSpacing.s9,
         ),
-        Card(child: Column(children: children)),
+        decoration: BoxDecoration(
+          color: selected ? PetColors.primary : PetColors.white,
+          borderRadius: PetRadii.pillBorder,
+          border: Border.all(
+            color: selected ? PetColors.primary : PetColors.stroke,
+            width: PetSpacing.xxs,
+          ),
+        ),
+        child: Text(
+          _formatTime(value),
+          style: selected
+              ? PetTextStyles.chip.copyWith(color: PetColors.white)
+              : PetTextStyles.chip,
+        ),
+      ),
+    ),
+  );
+}
+
+class _CollectionPanel extends StatelessWidget {
+  const _CollectionPanel({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final next = nextUnlock(state.lifetimeCompletions);
+    return _SettingsPanel(
+      children: <Widget>[
+        Text(
+          "${state.petName}'s little collection",
+          style: PetTextStyles.body16Strong,
+        ),
+        const SizedBox(height: PetSpacing.xs),
+        Text(
+          '${state.lifetimeCompletions} little things done together',
+          style: PetTextStyles.captionSoft,
+        ),
+        const SizedBox(height: PetSpacing.s14),
+        for (final unlock in decorUnlocks) ...<Widget>[
+          _CollectionRow(
+            unlock: unlock,
+            unlocked: state.unlockedDecorIds.contains(unlock.id),
+            subtitle: state.unlockedDecorIds.contains(unlock.id)
+                ? 'Home already'
+                : unlock.id == next?.id
+                ? 'Coming after ${unlock.threshold - state.lifetimeCompletions} more together'
+                : 'Someday, no rush',
+          ),
+          if (unlock != decorUnlocks.last)
+            const SizedBox(height: PetSpacing.s14),
+        ],
+      ],
+    );
+  }
+}
+
+class _CollectionRow extends StatelessWidget {
+  const _CollectionRow({
+    required this.unlock,
+    required this.unlocked,
+    required this.subtitle,
+  });
+
+  final DecorUnlock unlock;
+  final bool unlocked;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    child: Row(
+      children: <Widget>[
+        SizedBox(
+          width: PetSpacing.s52,
+          height: PetSpacing.s44,
+          child: Center(
+            child: ExcludeSemantics(
+              child: _CollectionShape(id: unlock.id, enabled: unlocked),
+            ),
+          ),
+        ),
+        const SizedBox(width: PetSpacing.s14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(_decorName(unlock.id), style: PetTextStyles.body15Strong),
+              const SizedBox(height: PetSpacing.xxs),
+              Text(
+                subtitle,
+                style: PetTextStyles.captionSoft.copyWith(
+                  color: unlocked ? PetColors.accentText : PetColors.bodySoft,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     ),
   );
+}
+
+class _CollectionShape extends StatelessWidget {
+  const _CollectionShape({required this.id, required this.enabled});
+
+  final String id;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final opacity = enabled
+        ? PetEffects.fullOpacity
+        : PetEffects.upcomingDecorOpacity;
+    if (id == 'flower') {
+      return Opacity(
+        opacity: opacity,
+        child: const DecoratedBox(
+          decoration: BoxDecoration(
+            color: PetColors.stroke,
+            borderRadius: PetRadii.pillBorder,
+          ),
+          child: SizedBox(width: PetSpacing.s48, height: PetSpacing.s18),
+        ),
+      );
+    }
+    if (id == 'home') {
+      return Opacity(
+        opacity: opacity,
+        child: const Icon(
+          Icons.home_rounded,
+          color: PetColors.decorHouse,
+          size: PetSpacing.s36,
+        ),
+      );
+    }
+    return Opacity(
+      opacity: opacity,
+      child: const DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            center: PetEffects.ballHighlightCenter,
+            colors: <Color>[PetColors.ballHighlight, PetColors.primary],
+          ),
+        ),
+        child: SizedBox.square(dimension: PetSpacing.s34),
+      ),
+    );
+  }
+}
+
+String _decorName(String id) => switch (id) {
+  'flower' => 'Cozy Cushion',
+  'home' => 'Little House',
+  _ => 'Bouncy Ball',
+};
+
+String _formatTime(TimeOfDay time) {
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  return '$hour:$minute ${time.period == DayPeriod.am ? 'AM' : 'PM'}';
 }

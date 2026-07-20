@@ -38,6 +38,7 @@ class AppController extends ChangeNotifier {
   Timer? _animationTimer;
   Timer? _messageTimer;
   Timer? _bannerTimer;
+  Timer? _theaterTimer;
   Timer? _dayBoundaryTimer;
 
   late AppState state;
@@ -45,7 +46,8 @@ class AppController extends ChangeNotifier {
   late LoadedSpriteAtlas spriteAtlas;
   String petAnimation = 'idle';
   String? affectionateMessage;
-  String? unlockBanner;
+  DecorUnlock? activeUnlock;
+  bool theaterVisible = false;
   int celebrationNonce = 0;
 
   Future<void> initialize() async {
@@ -66,7 +68,11 @@ class AppController extends ChangeNotifier {
   Future<void> onResume() async {
     final rolled = rollOverIfNeeded(state, DateTime.now());
     if (!identical(rolled, state)) {
+      _cancelMomentTimers();
       state = rolled;
+      theaterVisible = false;
+      activeUnlock = null;
+      petAnimation = 'idle';
       await _stateStore.save(state);
       notifyListeners();
     }
@@ -136,7 +142,8 @@ class AppController extends ChangeNotifier {
     });
     if (!wasAllDone && state.allDone) {
       await _log(PetEventType.allDone);
-      affectionateMessage = '${state.petName} 满足地蹭了蹭你';
+      affectionateMessage =
+          '${state.petName} nuzzles you happily — thank you for today';
       celebrationNonce++;
       _messageTimer?.cancel();
       _messageTimer = Timer(const Duration(seconds: 5), () {
@@ -208,31 +215,34 @@ class AppController extends ChangeNotifier {
 
   void _playCompletionAnimation(List<DecorUnlock> newUnlocks) {
     _animationTimer?.cancel();
-    _bannerTimer?.cancel();
+    _theaterTimer?.cancel();
     if (newUnlocks.isNotEmpty) {
-      final unlock = newUnlocks.last;
-      unlockBanner = '解锁了「${unlock.name}」${unlock.emoji}';
-      petAnimation = 'waving';
-      _bannerTimer = Timer(const Duration(seconds: 4), () {
-        unlockBanner = null;
+      _bannerTimer?.cancel();
+      activeUnlock = newUnlocks.last;
+      _bannerTimer = Timer(const Duration(milliseconds: 2800), () {
+        activeUnlock = null;
         notifyListeners();
       });
-      _animationTimer = Timer(const Duration(milliseconds: 2200), () {
-        if (state.allDone) {
-          petAnimation = 'review';
-          notifyListeners();
-          _animationTimer = Timer(const Duration(seconds: 3), _returnToIdle);
-        } else {
-          _returnToIdle();
-        }
-      });
-      return;
     }
-    petAnimation = state.allDone ? 'review' : 'jumping';
-    _animationTimer = Timer(
-      Duration(milliseconds: state.allDone ? 3200 : 2000),
-      _returnToIdle,
-    );
+    petAnimation = 'jumping';
+    if (state.allDone) {
+      _theaterTimer = Timer(const Duration(milliseconds: 900), () {
+        theaterVisible = true;
+        petAnimation = 'review';
+        notifyListeners();
+      });
+    } else {
+      _animationTimer = Timer(
+        const Duration(milliseconds: 2000),
+        _returnToIdle,
+      );
+    }
+  }
+
+  void dismissTheater() {
+    theaterVisible = false;
+    affectionateMessage = null;
+    _returnToIdle();
   }
 
   void _returnToIdle() {
@@ -245,7 +255,11 @@ class AppController extends ChangeNotifier {
     final now = DateTime.now();
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
     _dayBoundaryTimer = Timer(tomorrow.difference(now), () async {
+      _cancelMomentTimers();
       state = rollOverIfNeeded(state, DateTime.now());
+      theaterVisible = false;
+      activeUnlock = null;
+      petAnimation = 'idle';
       await _stateStore.save(state);
       notifyListeners();
       _scheduleDayBoundary();
@@ -269,6 +283,13 @@ class AppController extends ChangeNotifier {
         PetEvent(type: type, timestamp: DateTime.now(), data: data),
       );
 
+  void _cancelMomentTimers() {
+    _animationTimer?.cancel();
+    _messageTimer?.cancel();
+    _bannerTimer?.cancel();
+    _theaterTimer?.cancel();
+  }
+
   static String _normalized(String value, String fallback) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? fallback : trimmed;
@@ -282,9 +303,7 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _animationTimer?.cancel();
-    _messageTimer?.cancel();
-    _bannerTimer?.cancel();
+    _cancelMomentTimers();
     _dayBoundaryTimer?.cancel();
     spriteAtlas.image.dispose();
     super.dispose();

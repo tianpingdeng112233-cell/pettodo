@@ -47,3 +47,16 @@ State is a versioned JSON object in application support storage. Writes use a fl
 - **Case-insensitive APFS + git**: `Assets/` and `assets/` are the SAME directory on macOS. A `git rm -r Assets` intended to drop "duplicate" old-case entries physically deleted the shared sprite files (restored in a follow-up commit from `~/Projects/choco-pet`). Never assume two case-variant paths are two directories; check `ls -di` inode first.
 - **flutter_test zone traps**: (1) real async IO awaited OUTSIDE `tester.runAsync` never completes (fake-async zone) — e.g. `Directory.systemTemp.createTemp` hangs the test silently; use sync variants or move inside runAsync. (2) Objects whose constructors capture `Future.value()` chains (our stores) MUST be constructed inside `runAsync`, or their `.then` chains bind to the fake zone and deadlock. (3) Timers created under runAsync are real-zone timers — `tester.pump(duration)` won't fire them; wait real time inside runAsync instead.
 - **JDK for gradle**: `flutter config --jdk-dir` overrides JAVA_HOME. Keep it pinned to `/opt/homebrew/opt/openjdk@21/...` — JDK 26 (bare `openjdk` formula) produces class file major 70 which Gradle 9.1 cannot parse.
+
+## Task 005 — approved 1a UI (2026-07-20)
+
+- The option-3b palette, type, radii, spacing, shadows, and motion values now live under `lib/ui/theme/`; Home, onboarding, and Settings consume those tokens instead of defining their own visual values.
+- Home implements the option-1a stage and every option-2b moment: warm completed cards, the single-task hop, the delayed 3/3 Little Theater with its sole thank-you exit, and the 450 ms / 2.8 s keepsake banner. Settings edits write through to the same controller state, and collection language has no bars or deadlines.
+- Notifications now rotate exactly the three canonical English title/body pairs from option 3a. The UI/default-task/export copy is English as well.
+- Baloo 2 could not be downloaded because the runner had no DNS access to the Google Fonts GitHub source. Per the runtime fallback instruction, display styles request Baloo 2 first and use the bundled platform rounded/system stack (`Arial Rounded MT Bold`, then `sans-serif`) without any runtime fetch. Add `Baloo2[wght].ttf` plus its OFL license and a matching `pubspec.yaml` font declaration when network access is restored.
+- Current validation: `flutter analyze --no-pub` is clean; XcodeBuildMCP built, installed, and launched `Runner` Debug on iPhone 17 Pro / iOS 26.5, and the onboarding screenshot was visually inspected without overflow. This managed sandbox rejects localhost sockets, so `flutter test` cannot start its test server and Gradle cannot start its file-lock contention service; Android compilation could not be re-run here. The in-app browser backend was also unavailable, so HTML comparison used the committed computed inline styles directly.
+
+## Task 005-R — semantics boundaries and overflow (2026-07-20)
+
+- Custom tap targets now own container semantics above their gesture handlers, with visible text supplying labels and decorative art excluded. Regression coverage verifies separate onboarding, task-card, and Settings button nodes.
+- Onboarding page bodies retain the approved layout at the design viewport while becoming vertically scrollable when available height is too small.

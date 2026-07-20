@@ -12,11 +12,19 @@ class NotificationService {
   static const int _scheduledDays = 32;
   static const String _payload = 'daily_invitation';
 
-  static const List<String> _invitationTemplates = <String>[
-    '{pet} 在窗边等你回来～',
-    '{pet} 给你留了一个暖暖的位置',
-    '{pet} 想和你一起待一会儿～',
-    '回来看看 {pet} 今天在做什么吧',
+  static const List<(String, String)> _invitationTemplates = <(String, String)>[
+    (
+      '{pet} is waiting by the window ~',
+      'The evening light is warm. Come home and do one little thing with me?',
+    ),
+    (
+      'A soft hello from {pet}',
+      'No rush at all — I just wanted to see you. Even one little thing counts.',
+    ),
+    (
+      '{pet} fluffed your cushion',
+      'I saved you the sunniest spot on the couch. Come tell me about your day?',
+    ),
   ];
 
   final FlutterLocalNotificationsPlugin _plugin;
@@ -100,14 +108,14 @@ class NotificationService {
           _invitationTemplates[index % _invitationTemplates.length];
       await _plugin.zonedSchedule(
         id: _firstNotificationId + index,
-        title: petName,
-        body: template.replaceAll('{pet}', petName),
+        title: template.$1.replaceAll('{pet}', petName),
+        body: template.$2.replaceAll('{pet}', petName),
         scheduledDate: scheduled,
         notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'daily_pet_invitation',
-            '每天的宠物邀请',
-            channelDescription: '来自宠物的温柔日常邀请',
+            'Daily pet invitation',
+            channelDescription: 'A gentle daily hello from your pet',
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
           ),

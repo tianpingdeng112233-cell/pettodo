@@ -13,9 +13,9 @@ class DecorUnlock {
 }
 
 const List<DecorUnlock> decorUnlocks = <DecorUnlock>[
-  DecorUnlock(id: 'soft_ball', threshold: 5, emoji: '🧶', name: '软软毛线球'),
-  DecorUnlock(id: 'flower', threshold: 15, emoji: '🌼', name: '小雏菊'),
-  DecorUnlock(id: 'home', threshold: 30, emoji: '🏡', name: '暖暖小屋'),
+  DecorUnlock(id: 'soft_ball', threshold: 5, emoji: '🧶', name: 'Bouncy Ball'),
+  DecorUnlock(id: 'flower', threshold: 15, emoji: '🌼', name: 'Cozy Cushion'),
+  DecorUnlock(id: 'home', threshold: 30, emoji: '🏡', name: 'Little House'),
 ];
 
 List<DecorUnlock> unlocksCrossed(int before, int after) => decorUnlocks
