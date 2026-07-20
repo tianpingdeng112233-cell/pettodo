@@ -10,8 +10,8 @@ Product context: `docs/DESIGN.md` (Chinese). Designer brief: `docs/DESIGN-BRIEF.
 
 ## Environment
 
-- Repo root: `~/Projects/apps/pettodo` (this repo). No Flutter project yet — run `flutter create --org com.davidshi --platforms ios,android .` at repo root (project name `pettodo`), then merge/keep the existing root `.gitignore` plus Flutter's.
-- Flutter stable (just installed via Homebrew; binary at `/opt/homebrew/bin/flutter`). Xcode 26.6 present. Android SDK may still be installing — see Acceptance for what's required vs best-effort.
+- Repo root: `~/Projects/apps/pettodo` (this repo). Flutter project ALREADY scaffolded at repo root (`flutter create --org com.davidshi --platforms ios,android .`, project name `pettodo`) and committed — start from the committed scaffold, do not re-create it.
+- Flutter 3.44.6 stable at `/opt/homebrew/bin/flutter` (`flutter doctor` fully green). Xcode 26.6. Android SDK at `/opt/homebrew/share/android-commandlinetools` (platforms 35/36, build-tools, emulator image installed); JDK for gradle: set `JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home` when invoking Android builds.
 - Dart 3.x, null-safe. Dependencies allowed: `path_provider`, `share_plus`, `flutter_local_notifications`, and (optional, only if it genuinely simplifies sprite work) `flame`. Nothing else — no state-management framework (use `ChangeNotifier`/`ValueNotifier`), no analytics, no networking of any kind.
 
 ## Pet sprite assets (already in repo)
@@ -55,7 +55,7 @@ The pet must NEVER be harmed, sad, or degraded by user inaction:
 
 - Unit tests (`flutter test`): day-rollover semantics (midnight crossing resets checks, cumulative count preserved), unlock threshold edges (4→5, 14→15, 29→30), event JSONL round-trip, sprite frame-rect math from `pet_request.json`.
 - REQUIRED to pass before you finish: `flutter analyze` clean; `flutter test` green; `flutter build ios --simulator --no-codesign` succeeds.
-- BEST-EFFORT (Android SDK may still be installing): `flutter build apk --debug`. If the Android toolchain is unavailable, note it in IMPLEMENTATION-NOTES and ensure nothing in the code is iOS-only (no platform-gated feature without an Android path).
+- REQUIRED (toolchain is fully installed): `flutter build apk --debug` succeeds (remember `JAVA_HOME` above). Nothing in the code may be iOS-only (no platform-gated feature without an Android path).
 
 ## Deliverable discipline
 
