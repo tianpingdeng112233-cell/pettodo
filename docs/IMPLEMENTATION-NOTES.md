@@ -37,4 +37,7 @@ State is a versioned JSON object in application support storage. Writes use a fl
 
 ## Build status
 
-Final analyze, test, iOS simulator, and Android debug APK results are recorded in the delivery summary after validation.
+- `flutter analyze`: clean, no issues.
+- `flutter test`: 9 tests passed, including day rollover, all unlock edges, file-backed JSONL ordering/round-trip, and bundled atlas frame math.
+- iOS: `Runner` Debug simulator build succeeded with signing disabled on iPhone 17 / iOS 26.5 through XcodeBuildMCP; the built app also installed and launched successfully.
+- Android: debug APK built successfully at `build/app/outputs/flutter-apk/app-debug.apk`. The runtime note's unversioned Homebrew JDK path now resolves to JDK 26, which is newer than Gradle 9.1 supports, so validation used the already-installed JDK 21 path (`/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`). The user's Flutter JDK setting was restored after the build.

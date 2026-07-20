@@ -1,0 +1,10 @@
+{
+  "pets": [
+    {
+      "id": "choco",
+      "display_name": "Choco",
+      "metadata": "assets/pets/choco/pet_request.json",
+      "spritesheet": "assets/pets/choco/spritesheet-extended.webp"
+    }
+  ]
+}
