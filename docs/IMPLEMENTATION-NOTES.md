@@ -41,3 +41,9 @@ State is a versioned JSON object in application support storage. Writes use a fl
 - `flutter test`: 9 tests passed, including day rollover, all unlock edges, file-backed JSONL ordering/round-trip, and bundled atlas frame math.
 - iOS: `Runner` Debug simulator build succeeded with signing disabled on iPhone 17 / iOS 26.5 through XcodeBuildMCP; the built app also installed and launched successfully.
 - Android: debug APK built successfully at `build/app/outputs/flutter-apk/app-debug.apk`. The runtime note's unversioned Homebrew JDK path now resolves to JDK 26, which is newer than Gradle 9.1 supports, so validation used the already-installed JDK 21 path (`/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`). The user's Flutter JDK setting was restored after the build.
+
+## Orchestrator gotchas (2026-07-20)
+
+- **Case-insensitive APFS + git**: `Assets/` and `assets/` are the SAME directory on macOS. A `git rm -r Assets` intended to drop "duplicate" old-case entries physically deleted the shared sprite files (restored in a follow-up commit from `~/Projects/choco-pet`). Never assume two case-variant paths are two directories; check `ls -di` inode first.
+- **flutter_test zone traps**: (1) real async IO awaited OUTSIDE `tester.runAsync` never completes (fake-async zone) — e.g. `Directory.systemTemp.createTemp` hangs the test silently; use sync variants or move inside runAsync. (2) Objects whose constructors capture `Future.value()` chains (our stores) MUST be constructed inside `runAsync`, or their `.then` chains bind to the fake zone and deadlock. (3) Timers created under runAsync are real-zone timers — `tester.pump(duration)` won't fire them; wait real time inside runAsync instead.
+- **JDK for gradle**: `flutter config --jdk-dir` overrides JAVA_HOME. Keep it pinned to `/opt/homebrew/opt/openjdk@21/...` — JDK 26 (bare `openjdk` formula) produces class file major 70 which Gradle 9.1 cannot parse.
