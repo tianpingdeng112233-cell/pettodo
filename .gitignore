@@ -2,3 +2,8 @@
 xcuserdata/
 build/
 DerivedData/
+
+# Flutter build artifacts
+.dart_tool/
+.flutter-plugins-dependencies
+.flutter-plugins
