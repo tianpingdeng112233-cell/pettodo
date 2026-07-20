@@ -1,0 +1,40 @@
+# PetTodo v1 Implementation Notes
+
+## Architecture
+
+- `lib/domain/` is pure Dart. It owns the exactly-three-task invariant, local-day rollover, cumulative unlock thresholds, persisted state shape, and JSONL event encoding. It has no Flutter imports.
+- `lib/data/` owns the atomic single-JSON state file, append-and-flush JSONL event file, local notification scheduling, and share-sheet export.
+- `lib/sprite/` owns pet discovery, atlas metadata parsing, decoded image lifetime, frame math, and rendering.
+- `lib/application/` is the presentation-independent `ChangeNotifier` coordinator. It is intentionally outside `lib/ui/`, so a designer reskin does not move persistence, task, notification, animation sequencing, or event behavior.
+- `lib/ui/` contains all screens, placeholder theme, task cards, banner, decoration placement, and particles. A visual reskin should stay in this folder unless it introduces a new product behavior.
+
+## Sprite renderer decision
+
+The app uses a small custom `CustomPainter` plus Flutter `Ticker`, not Flame. At roughly 8 fps the painter selects a source rectangle from the decoded WebP and calls `canvas.drawImageRect` with `FilterQuality.none`. This keeps pixel edges crisp, avoids a game-engine dependency for one animated actor, and leaves animation state under the application coordinator. The tradeoff is that batching, scene graphs, and richer game effects would need to be built if the product later becomes substantially more game-like.
+
+Frame counts, row indexes, cell size, and image dimensions are parsed at runtime from `pet_request.json`; only safe product state names (`idle`, `jumping`, `waving`, `review`) are selected by v1 behavior. The `failed` row is never selected.
+
+## Adding pet #2
+
+Add the new pet folder beneath `assets/pets/`, declare its metadata and atlas files under Flutter assets, and append one descriptor to `assets/pets/manifest.json`. No Dart code change is needed. The manifest supplies pet id, display name, metadata path, and spritesheet path; the metadata supplies the atlas grid and sequences.
+
+## Notifications
+
+Permission is requested only from an explicit opt-in action. A system denial is persisted; the toggle then stays off and cannot trigger another request. Skipping onboarding leaves permission unrequested, so a later explicit Settings toggle remains a valid first opt-in.
+
+The service schedules 32 one-shot invitations in advance, rotating four warm copy variants. Each future fire time is first constructed as a device-local `DateTime` (so known DST transitions are reflected) and then converted to the UTC `TZDateTime` required by `flutter_local_notifications`. Launch/resume and setting changes refill the window. Android uses inexact-while-idle alarms, avoiding exact-alarm permission and its additional prompt/store-policy burden. Boot receivers restore scheduled entries after restart.
+
+`timezone` is promoted from `flutter_local_notifications`' existing transitive dependency to a direct dependency because its public scheduling API requires `TZDateTime`; no additional package download is introduced.
+
+## Persistence and export
+
+State is a versioned JSON object in application support storage. Writes use a flushed temporary file followed by rename. Events are appended and flushed as newline-delimited JSON in application documents storage. Export shares that `.jsonl` file directly with MIME type `application/x-ndjson`; no network or analytics service is involved.
+
+## Review flags
+
+- The v1 app version is displayed from the committed `pubspec.yaml` value (`1.0.0+1`) without adding a package-info dependency. Keep the Settings string in sync when changing that version.
+- UI is deliberately a warm, accessible placeholder. Product logic and sprite behavior do not depend on its layout.
+
+## Build status
+
+Final analyze, test, iOS simulator, and Android debug APK results are recorded in the delivery summary after validation.
