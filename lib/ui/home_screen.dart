@@ -72,43 +72,11 @@ class _HomeContentState extends State<_HomeContent> {
   EventLogStore get eventLog => widget.eventLog;
 
   Future<void> _quickAdd() async {
-    final field = TextEditingController();
     final title = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Jot it down'),
-        content: TextField(
-          controller: field,
-          autofocus: true,
-          maxLength: 60,
-          textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(
-            hintText: 'A thought before it slips away',
-          ),
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              Navigator.of(dialogContext).pop(value.trim());
-            }
-          },
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Not now'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (field.text.trim().isNotEmpty) {
-                Navigator.of(dialogContext).pop(field.text.trim());
-              }
-            },
-            child: const Text('Keep it'),
-          ),
-        ],
-      ),
+      builder: (_) => const _QuickAddDialog(),
     );
-    field.dispose();
-    if (title != null) {
+    if (title != null && title.isNotEmpty) {
       await controller.addTask(title: title);
     }
   }
@@ -799,6 +767,54 @@ class _TaskCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Owns its own text controller: disposing one right after `showDialog`
+/// resolves tears it down while the route is still animating out and the
+/// TextField still depends on it.
+class _QuickAddDialog extends StatefulWidget {
+  const _QuickAddDialog();
+
+  @override
+  State<_QuickAddDialog> createState() => _QuickAddDialogState();
+}
+
+class _QuickAddDialogState extends State<_QuickAddDialog> {
+  final TextEditingController _field = TextEditingController();
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  void _keep() {
+    final value = _field.text.trim();
+    if (value.isEmpty) return;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Jot it down'),
+    content: TextField(
+      controller: _field,
+      autofocus: true,
+      maxLength: 60,
+      textInputAction: TextInputAction.done,
+      decoration: const InputDecoration(
+        hintText: 'A thought before it slips away',
+      ),
+      onSubmitted: (_) => _keep(),
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Not now'),
+      ),
+      FilledButton(onPressed: _keep, child: const Text('Keep it')),
+    ],
+  );
 }
 
 class _UnlockBanner extends StatelessWidget {

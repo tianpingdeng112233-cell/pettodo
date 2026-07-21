@@ -8,6 +8,7 @@ import 'package:pettodo/application/app_controller.dart';
 import 'package:pettodo/data/app_state_store.dart';
 import 'package:pettodo/data/event_log_store.dart';
 import 'package:pettodo/data/notification_service.dart';
+import 'package:pettodo/domain/app_state.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
@@ -137,11 +138,14 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
   return (controller: controller, eventLog: eventLog);
 }
 
-void _expectButtonNode(WidgetTester tester, String label) {
+/// [label] accepts a Pattern because some labels carry a schedule-dependent
+/// suffix (the pet reads 'Touch Choco zzz' during the nap window), which made
+/// exact-string assertions pass or fail depending on the clock.
+void _expectButtonNode(WidgetTester tester, Pattern label) {
   final finder = find.bySemanticsLabel(label);
   expect(finder, findsOneWidget);
   final node = tester.getSemantics(finder);
-  expect(node.label, label);
+  if (label is String) expect(node.label, label);
   expect(node.flagsCollection.isButton, isTrue);
   expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
 }
@@ -205,7 +209,7 @@ void main() {
     // a wall. Verify the visible card boundary and the full domain count.
     _expectButtonNode(tester, fixture.controller.state.tasks.first.title);
     _expectButtonNode(tester, 'Settings');
-    _expectButtonNode(tester, 'Touch Choco');
+    _expectButtonNode(tester, RegExp(r'^Touch Choco'));
 
     await tester.tap(find.text('Collection'));
     await tester.pumpAndSettle();
@@ -217,5 +221,49 @@ void main() {
     expect(fixture.controller.state.unlockedDecorIds, isEmpty);
     expect(find.text('A little mystery'), findsAtLeastNWidgets(1));
     semantics.dispose();
+  });
+
+  // Fleeting-thought capture is the core ADHD flow: it must survive the
+  // dialog's exit animation. Disposing the field controller as soon as
+  // showDialog resolved crashed the app here ('_dependents.isEmpty').
+  testWidgets('quick capture saves a one-off task without crashing', (
+    tester,
+  ) async {
+    final fixture = await _createController(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: HomeScreen(
+          controller: fixture.controller,
+          eventLog: fixture.eventLog,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // pumpAndSettle never returns on Home: the sprite frames and the sun-halo
+    // twinkle are endless animations. Pump fixed durations instead.
+    await tester.tap(find.text('Jot it down'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.enterText(find.byType(TextField), 'Call the vet');
+    await tester.pump();
+    await tester.tap(find.text('Keep it'));
+    await tester.pump();
+    // The crash window: the route is animating out while the TextField still
+    // depends on the controller that used to be disposed right here.
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(tester.takeException(), isNull);
+    expect(
+      fixture.controller.state.tasks.map((task) => task.title),
+      contains('Call the vet'),
+    );
+    expect(
+      fixture.controller.state.tasks
+          .firstWhere((task) => task.title == 'Call the vet')
+          .kind,
+      TaskKind.oneOff,
+    );
   });
 }
