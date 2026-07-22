@@ -621,28 +621,37 @@ class AppController extends ChangeNotifier {
     });
   }
 
+  /// Reminders are a nice-to-have layered on top of the real work. A platform
+  /// failure here (missing resource, vendor ROM quirk, revoked permission)
+  /// must never break completing a task or opening the app, so failures are
+  /// swallowed deliberately — the pet and the list always keep working.
   Future<void> _refreshNotificationSchedule() async {
     if (state.notificationPermission != NotificationPermissionState.granted) {
       return;
     }
-    await _notifications.scheduleWindow(
-      petName: state.petName,
-      includeDailyInvitation: state.notificationEnabled,
-      invitationHour: state.notificationHour,
-      invitationMinute: state.notificationMinute,
-      taskReminders: state.tasks
-          .where((task) => task.reminder?.enabled ?? false)
-          .map(
-            (task) => TaskReminderSchedule(
-              taskId: task.id,
-              title: task.title,
-              hour: task.reminder!.hour,
-              minute: task.reminder!.minute,
-              skipToday: task.kind == TaskKind.daily && task.completedToday,
-            ),
-          )
-          .toList(growable: false),
-    );
+    try {
+      await _notifications.scheduleWindow(
+        petName: state.petName,
+        includeDailyInvitation: state.notificationEnabled,
+        invitationHour: state.notificationHour,
+        invitationMinute: state.notificationMinute,
+        taskReminders: state.tasks
+            .where((task) => task.reminder?.enabled ?? false)
+            .map(
+              (task) => TaskReminderSchedule(
+                taskId: task.id,
+                title: task.title,
+                hour: task.reminder!.hour,
+                minute: task.reminder!.minute,
+                skipToday: task.kind == TaskKind.daily && task.completedToday,
+              ),
+            )
+            .toList(growable: false),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Reminder scheduling failed (continuing): $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   Future<void> _log(PetEventType type, [Map<String, Object?>? data]) =>

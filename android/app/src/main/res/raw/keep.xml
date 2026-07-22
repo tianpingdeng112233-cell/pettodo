@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ic_notification is referenced only by name from Dart
+  (AndroidInitializationSettings('ic_notification')), so release resource
+  shrinking cannot see the reference and strips it. Stripping it made
+  flutter_local_notifications throw invalid_icon during startup, which — before
+  main() learned to tolerate it — meant runApp() never ran and the app opened
+  to a black screen on every Android device.
+-->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />
