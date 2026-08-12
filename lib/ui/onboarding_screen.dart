@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
 import '../sprite/pet_sprite.dart';
+import 'hatch_request_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
@@ -242,7 +243,7 @@ class _ChoosePetPage extends StatelessWidget {
                 const SizedBox(height: PetSpacing.s18),
                 _PetChoice(controller: controller),
                 const SizedBox(height: PetSpacing.s10),
-                const _FuturePetChoice(),
+                _FuturePetChoice(controller: controller),
               ],
             ),
           ),
@@ -317,70 +318,87 @@ class _PetChoice extends StatelessWidget {
 }
 
 class _FuturePetChoice extends StatelessWidget {
-  const _FuturePetChoice();
+  const _FuturePetChoice({required this.controller});
+
+  final AppController controller;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    button: true,
-    enabled: false,
-    checked: false,
-    child: Opacity(
-      opacity: PetEffects.futureChoiceOpacity,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: PetSpacing.s18,
-          vertical: PetSpacing.s13,
-        ),
-        decoration: BoxDecoration(
-          color: PetColors.futureCard,
-          border: Border.all(
-            color: PetColors.disabledBorder,
-            width: PetSpacing.xxs,
+  Widget build(BuildContext context) {
+    void openHatchRequest() => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HatchRequestScreen(controller: controller),
+      ),
+    );
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      button: true,
+      enabled: true,
+      checked: false,
+      label: "Hatch your own pet from photos",
+      onTap: openHatchRequest,
+      child: GestureDetector(
+        onTap: openHatchRequest,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: PetSpacing.s18,
+            vertical: PetSpacing.s13,
           ),
-          borderRadius: PetRadii.cardSmallBorder,
-        ),
-        child: Row(
-          children: <Widget>[
-            const ExcludeSemantics(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: PetColors.disabledFill,
-                  borderRadius: PetRadii.spriteBorder,
-                ),
-                child: SizedBox(
-                  width: PetSpacing.s44,
-                  height: PetSpacing.s48,
-                  child: Icon(
-                    Icons.add_a_photo_outlined,
-                    color: PetColors.disabledText,
+          decoration: BoxDecoration(
+            color: PetColors.futureCard,
+            border: Border.all(
+              color: PetColors.disabledBorder,
+              width: PetSpacing.xxs,
+            ),
+            borderRadius: PetRadii.cardSmallBorder,
+          ),
+          child: Row(
+            children: <Widget>[
+              const ExcludeSemantics(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: PetColors.disabledFill,
+                    borderRadius: PetRadii.spriteBorder,
+                  ),
+                  child: SizedBox(
+                    width: PetSpacing.s44,
+                    height: PetSpacing.s48,
+                    child: Icon(
+                      Icons.add_a_photo_outlined,
+                      color: PetColors.primary,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: PetSpacing.s14),
-            const Expanded(
-              child: Text(
-                "Upload your own pet's photo",
-                style: PetTextStyles.body15Soft,
+              const SizedBox(width: PetSpacing.s14),
+              const Expanded(
+                child: Text(
+                  "Hatch your own pet from photos",
+                  style: PetTextStyles.body15Strong,
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: PetSpacing.s10,
-                vertical: PetSpacing.s4,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: PetSpacing.s10,
+                  vertical: PetSpacing.s4,
+                ),
+                decoration: const BoxDecoration(
+                  color: PetColors.badgeFill,
+                  borderRadius: PetRadii.pillBorder,
+                ),
+                child: Text(
+                  controller.pendingHatchRequest == null
+                      ? '1–5 photos'
+                      : 'Waiting warmly',
+                  style: PetTextStyles.soon,
+                ),
               ),
-              decoration: const BoxDecoration(
-                color: PetColors.badgeFill,
-                borderRadius: PetRadii.pillBorder,
-              ),
-              child: const Text('Soon', style: PetTextStyles.soon),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _NamePage extends StatelessWidget {

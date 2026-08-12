@@ -8,6 +8,7 @@ import '../domain/app_state.dart';
 import '../domain/unlocks.dart';
 import 'collection_screen.dart';
 import 'history_screen.dart';
+import 'hatch_request_screen.dart';
 import 'task_editor_sheet.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
@@ -263,6 +264,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: PetSpacing.s14),
                     _CollectionPanel(controller: widget.controller),
                     const SizedBox(height: PetSpacing.s14),
+                    _HatchPanel(controller: widget.controller),
+                    const SizedBox(height: PetSpacing.s14),
                     _SettingsPanel(
                       compact: true,
                       children: <Widget>[
@@ -389,9 +392,12 @@ class _SettingsPanel extends StatelessWidget {
       borderRadius: PetRadii.cardBorder,
       boxShadow: PetShadows.panel,
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
+    child: Material(
+      type: MaterialType.transparency,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     ),
   );
 }
@@ -617,6 +623,57 @@ class _CollectionPanel extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HatchPanel extends StatelessWidget {
+  const _HatchPanel({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    void openHatchRequest() => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HatchRequestScreen(controller: controller),
+      ),
+    );
+    return _SettingsPanel(
+      children: <Widget>[
+        const Text('Your own pet', style: PetTextStyles.caption),
+        const SizedBox(height: PetSpacing.s8),
+        Semantics(
+          container: true,
+          excludeSemantics: true,
+          button: true,
+          label: 'Hatch your own pet',
+          onTap: openHatchRequest,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Text(
+              '🥚',
+              style: TextStyle(fontSize: PetSpacing.s30),
+            ),
+            title: const Text(
+              'Hatch your own pet',
+              style: PetTextStyles.body16Strong,
+            ),
+            subtitle: Text(
+              controller.pendingHatchRequest == null
+                  ? 'Start with 1–5 photos'
+                  : 'Your pet is on its way — no rush.',
+              style: PetTextStyles.captionSoft,
+            ),
+            onTap: openHatchRequest,
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => importPetPackFromPicker(context, controller),
+          icon: const Icon(Icons.inventory_2_outlined),
+          label: const Text('Import pet pack'),
         ),
       ],
     );

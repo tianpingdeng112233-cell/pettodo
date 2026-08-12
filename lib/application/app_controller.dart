@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
 import '../data/app_state_store.dart';
 import '../data/event_log_store.dart';
+import '../data/hatch_request_store.dart';
 import '../data/notification_service.dart';
+import '../data/pet_pack_service.dart';
 import '../domain/app_state.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
@@ -21,11 +24,15 @@ class AppController extends ChangeNotifier {
     required EventLogStore eventLog,
     required NotificationService notifications,
     SpriteAtlasLoader? spriteLoader,
+    HatchRequestStore? hatchRequestStore,
+    PetPackService? petPackService,
   }) => AppController._(
     stateStore,
     eventLog,
     notifications,
     spriteLoader ?? SpriteAtlasLoader(),
+    hatchRequestStore ?? HatchRequestStore.onDevice(),
+    petPackService ?? PetPackService.onDevice(),
   );
 
   AppController._(
@@ -33,12 +40,18 @@ class AppController extends ChangeNotifier {
     this._eventLog,
     this._notifications,
     this._spriteLoader,
+    this._hatchRequestStore,
+    this._petPackService,
   );
 
   final AppStateStore _stateStore;
   final EventLogStore _eventLog;
   final NotificationService _notifications;
   final SpriteAtlasLoader _spriteLoader;
+  final HatchRequestStore _hatchRequestStore;
+  final PetPackService _petPackService;
+  final Map<String, LoadedSpriteAtlas> _spriteCache =
+      <String, LoadedSpriteAtlas>{};
   Timer? _animationTimer;
   Timer? _messageTimer;
   Timer? _bannerTimer;
@@ -63,6 +76,8 @@ class AppController extends ChangeNotifier {
   int particleNonce = 0;
   int treatDropNonce = 0;
   int lastTreatDrop = 0;
+  HatchRequest? pendingHatchRequest;
+  String? hatchCeremonyPetName;
   int _taskIdNonce = 0;
 
   PetGrowthStage get growthStage => growthStageFor(state.lifetimeCompletions);
@@ -89,7 +104,19 @@ class AppController extends ChangeNotifier {
   Future<void> initialize() async {
     final now = DateTime.now();
     state = rollOverIfNeeded(await _stateStore.load(now), now);
-    pets = await _spriteLoader.loadManifest();
+    final bundledPets = await _spriteLoader.loadManifest();
+    List<PetAssetDescriptor> installedPets;
+    try {
+      installedPets = await _petPackService.loadInstalledPets();
+      pendingHatchRequest = await _hatchRequestStore.load();
+    } on Object {
+      installedPets = const <PetAssetDescriptor>[];
+      pendingHatchRequest = null;
+    }
+    pets = mergePetRegistry(bundledPets, installedPets);
+    if (!pets.any((pet) => pet.id == state.selectedPetId)) {
+      state = state.copyWith(selectedPetId: pets.first.id);
+    }
     decorations = await _spriteLoader.loadDecorManifest();
     currentSchedule = petScheduleAt(now);
     petAnimation = currentSchedule.animation;
@@ -98,11 +125,100 @@ class AppController extends ChangeNotifier {
       selectedPet,
       growthStage: growthStage.name,
     );
+    _spriteCache[selectedPet.id] = spriteAtlas;
     await _stateStore.save(state);
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
     _scheduleDayBoundary();
     _scheduleScheduleBoundary();
+  }
+
+  Future<HatchRequest> createHatchRequest({
+    required List<File> photos,
+    required String petName,
+  }) async {
+    pendingHatchRequest = await _hatchRequestStore.create(
+      photos: photos,
+      petName: petName,
+    );
+    notifyListeners();
+    return pendingHatchRequest!;
+  }
+
+  Future<File> exportHatchRequest() => _hatchRequestStore.export();
+
+  Future<void> cancelHatchRequest() async {
+    await _hatchRequestStore.cancel();
+    pendingHatchRequest = null;
+    notifyListeners();
+  }
+
+  Future<PetAssetDescriptor> importPetPack(File file) async {
+    final installed = await _petPackService.install(file);
+    final descriptor = installed.descriptor;
+    final existingIndex = pets.indexWhere((pet) => pet.id == descriptor.id);
+    if (existingIndex < 0) {
+      pets = <PetAssetDescriptor>[...pets, descriptor];
+    } else {
+      pets = <PetAssetDescriptor>[
+        ...pets.take(existingIndex),
+        descriptor,
+        ...pets.skip(existingIndex + 1),
+      ];
+    }
+    final loaded = await _spriteLoader.loadPet(
+      descriptor,
+      growthStage: growthStage.name,
+    );
+    // Swap before disposing: the old atlas may be the one on screen right now.
+    final cached = _spriteCache.remove(descriptor.id);
+    _spriteCache[descriptor.id] = loaded;
+    spriteAtlas = loaded;
+    cached?.image.dispose();
+    state = state.copyWith(
+      selectedPetId: descriptor.id,
+      petName: descriptor.displayName,
+    );
+    await _stateStore.save(state);
+    if (await _hatchRequestStore.clearIfMatchingPack(
+      requestId: installed.requestId,
+      displayName: descriptor.displayName,
+    )) {
+      pendingHatchRequest = null;
+    }
+    _cancelMomentTimers();
+    hatchCeremonyPetName = descriptor.displayName;
+    theaterVisible = true;
+    petAnimation = 'review';
+    petAnimationFrame = null;
+    celebrationNonce++;
+    await _refreshNotificationSchedule();
+    notifyListeners();
+    return descriptor;
+  }
+
+  Future<LoadedSpriteAtlas> petAtlas(PetAssetDescriptor descriptor) async {
+    final cached = _spriteCache[descriptor.id];
+    if (cached != null) return cached;
+    final loaded = await _spriteLoader.loadPet(
+      descriptor,
+      growthStage: growthStage.name,
+    );
+    _spriteCache[descriptor.id] = loaded;
+    return loaded;
+  }
+
+  Future<void> selectPet(String id) async {
+    final descriptor = pets.firstWhere((pet) => pet.id == id);
+    spriteAtlas = await petAtlas(descriptor);
+    state = state.copyWith(
+      selectedPetId: descriptor.id,
+      petName: descriptor.displayName,
+    );
+    await _stateStore.save(state);
+    await _refreshNotificationSchedule();
+    _applySchedule(DateTime.now());
+    notifyListeners();
   }
 
   Future<void> onResume() async {
@@ -149,7 +265,10 @@ class AppController extends ChangeNotifier {
     state = state.copyWith(
       onboardingComplete: true,
       selectedPetId: selectedPetId,
-      petName: _normalized(petName, 'Choco'),
+      petName: _normalized(
+        petName,
+        pets.firstWhere((pet) => pet.id == selectedPetId).displayName,
+      ),
       tasks: List<TodoTask>.generate(
         taskTitles.length,
         (index) => TodoTask(
@@ -169,12 +288,7 @@ class AppController extends ChangeNotifier {
     );
     if (spriteAtlas.descriptor.id != selectedPetId) {
       final descriptor = pets.firstWhere((pet) => pet.id == selectedPetId);
-      final previous = spriteAtlas;
-      spriteAtlas = await _spriteLoader.loadPet(
-        descriptor,
-        growthStage: growthStage.name,
-      );
-      previous.image.dispose();
+      spriteAtlas = await petAtlas(descriptor);
     }
     await _stateStore.save(state);
     await _refreshNotificationSchedule();
@@ -259,12 +373,13 @@ class AppController extends ChangeNotifier {
       });
     }
     if (newStages.isNotEmpty && selectedPet.stageAssets.isNotEmpty) {
-      final previous = spriteAtlas;
+      final previous = _spriteCache.remove(selectedPet.id);
       spriteAtlas = await _spriteLoader.loadPet(
         selectedPet,
         growthStage: growthStage.name,
       );
-      previous.image.dispose();
+      _spriteCache[selectedPet.id] = spriteAtlas;
+      previous?.image.dispose();
     }
     await _refreshNotificationSchedule();
     _playCompletionAnimation(newUnlocks, showTheater: completesDailySet);
@@ -532,6 +647,7 @@ class AppController extends ChangeNotifier {
 
   void dismissTheater() {
     theaterVisible = false;
+    hatchCeremonyPetName = null;
     affectionateMessage = null;
     _returnToSchedule();
   }
@@ -684,7 +800,9 @@ class AppController extends ChangeNotifier {
     _cancelMomentTimers();
     _dayBoundaryTimer?.cancel();
     _scheduleTimer?.cancel();
-    spriteAtlas.image.dispose();
+    for (final atlas in _spriteCache.values.toSet()) {
+      atlas.image.dispose();
+    }
     super.dispose();
   }
 }

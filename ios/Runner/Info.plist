@@ -26,6 +26,30 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.davidshi.pettodo.pettodopet</string>
+			<key>UTTypeDescription</key>
+			<string>PetTodo Pet Pack</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>com.pkware.zip-archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>pettodopet</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Choose a photo to hatch your own PetTodo companion.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose pet photos to hatch your own PetTodo companion.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

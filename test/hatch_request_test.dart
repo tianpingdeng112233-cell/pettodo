@@ -1,0 +1,68 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:archive/archive.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pettodo/data/hatch_request_store.dart';
+
+void main() {
+  late Directory temporary;
+  late HatchRequestStore store;
+
+  setUp(() {
+    temporary = Directory.systemTemp.createTempSync('pettodo-request-test');
+    store = HatchRequestStore(() async => temporary);
+  });
+
+  tearDown(() => temporary.deleteSync(recursive: true));
+
+  test('request lifecycle creates, exports, and cancels', () async {
+    final photo = File('${temporary.path}/source.jpg')
+      ..writeAsBytesSync(<int>[1, 2, 3, 4]);
+    final created = await store.create(
+      photos: <File>[photo],
+      petName: 'Pip',
+      now: DateTime.utc(2026, 8, 12, 10),
+    );
+
+    expect((await store.load())?.requestId, created.requestId);
+    expect(
+      () => store.create(photos: <File>[photo], petName: 'Another'),
+      throwsA(isA<StateError>()),
+    );
+    final exported = await store.export();
+    final archive = ZipDecoder().decodeBytes(exported.readAsBytesSync());
+    expect(archive.files.map((entry) => entry.name).toSet(), <String>{
+      'request.json',
+      'photo-1.jpg',
+    });
+    final requestEntry = archive.files.singleWhere(
+      (entry) => entry.name == 'request.json',
+    );
+    final requestJson =
+        jsonDecode(utf8.decode(requestEntry.content as List<int>))
+            as Map<String, Object?>;
+    expect(requestJson['petName'], 'Pip');
+
+    await store.cancel();
+    expect(await store.load(), isNull);
+  });
+
+  test(
+    'matching imported pack clears the request and another does not',
+    () async {
+      final photo = File('${temporary.path}/source.jpg')
+        ..writeAsBytesSync(<int>[1]);
+      final created = await store.create(
+        photos: <File>[photo],
+        petName: '',
+        now: DateTime.utc(2026, 8, 12, 11),
+      );
+
+      expect(await store.clearIfMatching('somewhere-else'), isFalse);
+      expect(await store.load(), isNotNull);
+      expect(await store.clearIfMatching(created.requestId), isTrue);
+      expect(await store.load(), isNull);
+    },
+  );
+}

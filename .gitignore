@@ -7,3 +7,4 @@ DerivedData/
 .dart_tool/
 .flutter-plugins-dependencies
 .flutter-plugins
+artifacts/

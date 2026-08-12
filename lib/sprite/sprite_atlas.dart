@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
@@ -129,6 +130,8 @@ class SpriteAtlasDefinition {
   }
 }
 
+enum PetAssetSource { bundled, fileSystem }
+
 class PetAssetDescriptor {
   const PetAssetDescriptor({
     required this.id,
@@ -138,6 +141,7 @@ class PetAssetDescriptor {
     this.treatName = 'Treat',
     this.treatEmoji = '🦴',
     this.stageAssets = const <String, PetStageAssetDescriptor>{},
+    this.source = PetAssetSource.bundled,
   });
 
   final String id;
@@ -147,6 +151,21 @@ class PetAssetDescriptor {
   final String treatName;
   final String treatEmoji;
   final Map<String, PetStageAssetDescriptor> stageAssets;
+  final PetAssetSource source;
+
+  PetAssetDescriptor copyWith({
+    String? metadataAsset,
+    String? spritesheetAsset,
+  }) => PetAssetDescriptor(
+    id: id,
+    displayName: displayName,
+    metadataAsset: metadataAsset ?? this.metadataAsset,
+    spritesheetAsset: spritesheetAsset ?? this.spritesheetAsset,
+    treatName: treatName,
+    treatEmoji: treatEmoji,
+    stageAssets: stageAssets,
+    source: source,
+  );
 
   PetStageAssetDescriptor assetsForStage(String? stage) =>
       stageAssets[stage] ??
@@ -248,7 +267,7 @@ class SpriteAtlasLoader {
   }
 
   Future<SpriteAtlasDefinition> loadDefinition(String assetPath) async {
-    final raw = jsonDecode(await _bundle.loadString(assetPath));
+    final raw = jsonDecode(await _readString(assetPath));
     return SpriteAtlasDefinition.fromJson(raw as Map<String, Object?>);
   }
 
@@ -258,10 +277,8 @@ class SpriteAtlasLoader {
   }) async {
     final assets = descriptor.assetsForStage(growthStage);
     final definition = await loadDefinition(assets.metadataAsset);
-    final bytes = await _bundle.load(assets.spritesheetAsset);
-    final codec = await ui.instantiateImageCodec(
-      bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-    );
+    final bytes = await _readBytes(assets.spritesheetAsset);
+    final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
     codec.dispose();
     if (frame.image.width != definition.imageWidth ||
@@ -276,5 +293,15 @@ class SpriteAtlasLoader {
       definition: definition,
       image: frame.image,
     );
+  }
+
+  Future<String> _readString(String path) => path.startsWith('/')
+      ? File(path).readAsString()
+      : _bundle.loadString(path);
+
+  Future<Uint8List> _readBytes(String path) async {
+    if (path.startsWith('/')) return File(path).readAsBytes();
+    final data = await _bundle.load(path);
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 }

@@ -7,6 +7,7 @@ import '../domain/app_state.dart';
 import '../sprite/pet_sprite.dart';
 import 'collection_screen.dart';
 import 'history_screen.dart';
+import 'hatch_request_screen.dart';
 import 'settings_screen.dart';
 import 'task_editor_sheet.dart';
 import 'theme/app_theme.dart';
@@ -322,6 +323,37 @@ class _PetStage extends StatelessWidget {
                 ),
               ),
             ),
+            if (controller.pendingHatchRequest != null)
+              Semantics(
+                container: true,
+                excludeSemantics: true,
+                button: true,
+                label: 'Your pet is on its way — no rush. Open hatch request',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => HatchRequestScreen(controller: controller),
+                  ),
+                ),
+                child: InkWell(
+                  borderRadius: PetRadii.pillBorder,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          HatchRequestScreen(controller: controller),
+                    ),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: PetSpacing.s12,
+                      vertical: PetSpacing.s4,
+                    ),
+                    child: Text(
+                      '🥚  Your pet is on its way — no rush.  Import ›',
+                      style: PetTextStyles.small,
+                    ),
+                  ),
+                ),
+              ),
             ExcludeSemantics(child: _Decorations(controller: controller)),
           ],
         ),
@@ -917,8 +949,10 @@ class _LittleTheater extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Text(
-                  '· LITTLE THEATER ·',
+                Text(
+                  controller.hatchCeremonyPetName == null
+                      ? '· LITTLE THEATER ·'
+                      : '· A NEW FRIEND HATCHED ·',
                   style: PetTextStyles.theaterLabel,
                 ),
                 const SizedBox(height: PetSpacing.s16),
@@ -936,14 +970,18 @@ class _LittleTheater extends StatelessWidget {
                 SizedBox(
                   width: PetSpacing.s280,
                   child: Text(
-                    '${controller.state.petName} nuzzles you happily — thank you for today',
+                    controller.hatchCeremonyPetName == null
+                        ? '${controller.state.petName} nuzzles you happily — thank you for today'
+                        : 'Welcome, ${controller.hatchCeremonyPetName}. Your little companion is here with you.',
                     style: PetTextStyles.theaterLine,
                     textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: PetSpacing.s20),
                 _PrimaryButton(
-                  label: 'Thank you, ${controller.state.petName}',
+                  label: controller.hatchCeremonyPetName == null
+                      ? 'Thank you, ${controller.state.petName}'
+                      : 'Welcome home, ${controller.state.petName}',
                   onTap: controller.dismissTheater,
                   compact: true,
                 ),

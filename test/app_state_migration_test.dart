@@ -68,4 +68,51 @@ void main() {
     expect(result.tasks.last.reminder?.hour, 18);
     expect(result.tasks.last.reminder?.minute, 15);
   });
+
+  test('v3 keeps choco and all progress without a task-008 schema bump', () {
+    final result = AppState.fromJson(<String, Object?>{
+      'schemaVersion': 3,
+      'onboardingComplete': true,
+      'selectedPetId': 'choco',
+      'petName': 'Cocoa',
+      'tasks': <Object?>[
+        <String, Object?>{
+          'id': 'daily-water',
+          'title': 'Water',
+          'kind': 'daily',
+          'completedToday': true,
+        },
+        <String, Object?>{
+          'id': 'call-vet',
+          'title': 'Call the vet',
+          'kind': 'oneOff',
+          'note': 'Ask about Pip',
+          'completedToday': false,
+        },
+      ],
+      'activeDay': '2026-08-12',
+      'lifetimeCompletions': 57,
+      'unlockedDecorIds': <String>['soft_ball', 'flower', 'home'],
+      'treats': 12,
+      'fedToday': '2026-08-12',
+      'notificationPermission': 'granted',
+      'notificationEnabled': true,
+      'notificationHour': 19,
+      'notificationMinute': 45,
+    }, DateTime(2026, 8, 12));
+
+    expect(result.selectedPetId, 'choco');
+    expect(result.petName, 'Cocoa');
+    expect(result.tasks.map((task) => task.id), <String>[
+      'daily-water',
+      'call-vet',
+    ]);
+    expect(result.tasks.first.completedToday, isTrue);
+    expect(result.tasks.last.note, 'Ask about Pip');
+    expect(result.lifetimeCompletions, 57);
+    expect(result.treats, 12);
+    expect(result.fedToday, '2026-08-12');
+    expect(result.notificationEnabled, isTrue);
+    expect(result.toJson()['schemaVersion'], 3);
+  });
 }

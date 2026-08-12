@@ -7,12 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/application/app_controller.dart';
 import 'package:pettodo/data/app_state_store.dart';
 import 'package:pettodo/data/event_log_store.dart';
+import 'package:pettodo/data/hatch_request_store.dart';
 import 'package:pettodo/data/notification_service.dart';
+import 'package:pettodo/data/pet_pack_service.dart';
 import 'package:pettodo/domain/app_state.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
+import 'package:pettodo/ui/hatch_request_screen.dart';
 import 'package:pettodo/ui/onboarding_screen.dart';
+import 'package:pettodo/ui/settings_screen.dart';
 
 class _FakeSpriteLoader extends SpriteAtlasLoader {
   _FakeSpriteLoader(this._image);
@@ -117,8 +121,9 @@ Future<ui.Image> _makeImage() {
 }
 
 Future<({AppController controller, EventLogStore eventLog})> _createController(
-  WidgetTester tester,
-) async {
+  WidgetTester tester, {
+  bool pendingRequest = false,
+}) async {
   final tempDir = Directory.systemTemp.createTempSync('pettodo-semantics');
   addTearDown(() => tempDir.deleteSync(recursive: true));
 
@@ -126,11 +131,19 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
   late final AppController controller;
   await tester.runAsync(() async {
     eventLog = EventLogStore(() async => tempDir);
+    final hatchRequestStore = HatchRequestStore(() async => tempDir);
+    if (pendingRequest) {
+      final photo = File('${tempDir.path}/source.jpg')
+        ..writeAsBytesSync(<int>[1, 2, 3]);
+      await hatchRequestStore.create(photos: <File>[photo], petName: 'Pip');
+    }
     controller = AppController(
       stateStore: AppStateStore(() async => tempDir),
       eventLog: eventLog,
       notifications: NotificationService(),
       spriteLoader: _FakeSpriteLoader(await _makeImage()),
+      hatchRequestStore: hatchRequestStore,
+      petPackService: PetPackService(() async => tempDir),
     );
     await controller.initialize();
   });
@@ -170,6 +183,7 @@ void main() {
     await tester.pump();
 
     _expectButtonNode(tester, "That's the one");
+    _expectButtonNode(tester, 'Hatch your own pet from photos');
     expect(tester.takeException(), isNull);
 
     for (final transition in <(String, String)>[
@@ -184,6 +198,80 @@ void main() {
       _expectButtonNode(tester, transition.$2);
       expect(tester.takeException(), isNull);
     }
+    semantics.dispose();
+  });
+
+  testWidgets('hatch request UI exposes separate photo and lifecycle actions', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final newFixture = await _createController(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: HatchRequestScreen(controller: newFixture.controller),
+      ),
+    );
+    await tester.pump();
+    _expectButtonNode(tester, 'Photo library');
+    _expectButtonNode(tester, 'Camera');
+    expect(find.text('Start hatching'), findsOneWidget);
+
+    final pendingFixture = await _createController(
+      tester,
+      pendingRequest: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: HatchRequestScreen(controller: pendingFixture.controller),
+      ),
+    );
+    await tester.pump();
+    _expectButtonNode(tester, 'Send to the hatchery');
+    _expectButtonNode(tester, 'Import pet pack');
+    _expectButtonNode(tester, 'Cancel this request');
+    semantics.dispose();
+  });
+
+  testWidgets('pending egg and Settings hatch actions have button boundaries', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final fixture = await _createController(tester, pendingRequest: true);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: HomeScreen(
+          controller: fixture.controller,
+          eventLog: fixture.eventLog,
+        ),
+      ),
+    );
+    await tester.pump();
+    _expectButtonNode(
+      tester,
+      'Your pet is on its way — no rush. Open hatch request',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: SettingsScreen(
+          controller: fixture.controller,
+          eventLog: fixture.eventLog,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Hatch your own pet'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    _expectButtonNode(tester, 'Hatch your own pet');
+    _expectButtonNode(tester, 'Import pet pack');
     semantics.dispose();
   });
 
@@ -212,7 +300,8 @@ void main() {
     _expectButtonNode(tester, RegExp(r'^Touch Choco'));
 
     await tester.tap(find.text('Collection'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text("Choco's collection"), findsOneWidget);
     // GridView.builder lazily renders only the visible cells, so assert the
     // domain truth (6 decorations, none unlocked at lifetime 0) rather than a
