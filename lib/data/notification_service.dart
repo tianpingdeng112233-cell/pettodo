@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -42,6 +44,40 @@ class ScheduledPetNotification {
 
 const int notificationWindowSize = 32;
 
+/// Minutes of random spread applied either side of the chosen invitation time.
+const int invitationJitterMinutes = 10;
+
+/// Jitter may never push an invitation outside these local hours.
+const int invitationEarliestHour = 6;
+const int invitationLatestHour = 23;
+
+/// Days between invitations, as a function of how many days into the silence a
+/// given day falls. The pet does not chase: after a few quiet days it settles
+/// into its own rhythm rather than knocking daily.
+///
+/// Opening the app is the reset, and it needs no bookkeeping: the whole window
+/// is rebuilt on every open, so day N of the freshly-built window is by
+/// definition N days after the last time the user was here.
+int invitationCadenceForAbsence(int daysAbsent) {
+  if (daysAbsent >= 14) return 7;
+  if (daysAbsent >= 7) return 4;
+  if (daysAbsent >= 3) return 2;
+  return 1;
+}
+
+/// After a week of silence, per-task reminders stop entirely until the user
+/// comes back. A reminder about a task list nobody has seen in a week is pure
+/// debt.
+const int taskReminderAbsenceCutoff = 7;
+
+/// How far ahead invitations are scheduled — deliberately decoupled from the
+/// slot count. Once back-off thins the cadence to weekly, a 32-day calendar
+/// would run out of invitations entirely and the pet would fall silent for good
+/// after a month away. Reaching further ahead keeps a slow heartbeat going
+/// without ever raising the per-day frequency. It does not fill all 32 slots,
+/// and is not meant to: the budget is a ceiling, not a quota.
+const int invitationHorizonDays = 120;
+
 List<ScheduledPetNotification> buildNotificationWindow({
   required String petName,
   required DateTime now,
@@ -50,23 +86,44 @@ List<ScheduledPetNotification> buildNotificationWindow({
   required int invitationMinute,
   required List<TaskReminderSchedule> taskReminders,
   int limit = notificationWindowSize,
+  math.Random? random,
 }) {
   if (limit <= 0) return const <ScheduledPetNotification>[];
+  final rng = random ?? math.Random();
   final candidates = <ScheduledPetNotification>[];
 
   if (includeDailyInvitation) {
-    for (var dayOffset = 0; dayOffset <= limit; dayOffset++) {
+    var previousTemplate = -1;
+    for (var dayOffset = 0; dayOffset <= invitationHorizonDays; dayOffset++) {
+      // Silence accrues across the window, so the cadence thins out on its own
+      // the longer the user stays away — and snaps back to daily the moment
+      // they return, because returning rebuilds this window from day 0.
+      if (dayOffset % invitationCadenceForAbsence(dayOffset) != 0) continue;
+
       final day = DateTime(now.year, now.month, now.day + dayOffset);
-      final at = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        invitationHour,
-        invitationMinute,
+      final jitter =
+          rng.nextInt(invitationJitterMinutes * 2 + 1) - invitationJitterMinutes;
+      final at = _clampToInvitationHours(
+        DateTime(
+          day.year,
+          day.month,
+          day.day,
+          invitationHour,
+          invitationMinute + jitter,
+        ),
+        day,
       );
       if (!at.isAfter(now)) continue;
-      final template =
-          _invitationTemplates[dayOffset % _invitationTemplates.length];
+
+      // Random, never twice in a row: a fixed rotation is a pattern the brain
+      // learns to filter out, which is how these become invisible.
+      var pick = rng.nextInt(_invitationTemplates.length);
+      if (pick == previousTemplate) {
+        pick = (pick + 1 + rng.nextInt(_invitationTemplates.length - 1)) %
+            _invitationTemplates.length;
+      }
+      previousTemplate = pick;
+      final template = _invitationTemplates[pick];
       candidates.add(
         ScheduledPetNotification(
           id: 0,
@@ -82,6 +139,7 @@ List<ScheduledPetNotification> buildNotificationWindow({
   for (final reminder in taskReminders) {
     for (var dayOffset = 0; dayOffset <= limit; dayOffset++) {
       if (dayOffset == 0 && reminder.skipToday) continue;
+      if (dayOffset >= taskReminderAbsenceCutoff) continue;
       final day = DateTime(now.year, now.month, now.day + dayOffset);
       final at = DateTime(
         day.year,
@@ -225,17 +283,68 @@ class NotificationService {
   }
 }
 
+DateTime _clampToInvitationHours(DateTime at, DateTime day) {
+  final earliest = DateTime(
+    day.year,
+    day.month,
+    day.day,
+    invitationEarliestHour,
+  );
+  final latest = DateTime(day.year, day.month, day.day, invitationLatestHour);
+  if (at.isBefore(earliest)) return earliest;
+  if (at.isAfter(latest)) return latest;
+  return at;
+}
+
+/// The pet reports its own day. It never waits, never misses the user, never
+/// asks them to come — opening the app is joining a good day already in
+/// progress, not repaying a debt (red line 4, docs/PRODUCT-PRINCIPLES.md).
+///
+/// Copy rules these were written to: no "waiting for you / miss you / come back
+/// / don't forget", and equally no pep talk ("you've got this"). One concrete
+/// image each. See the forbidden-substring test in
+/// test/notification_window_test.dart, which fails the build if this drifts.
 const List<(String, String)> _invitationTemplates = <(String, String)>[
   (
-    '{pet} is waiting by the window ~',
-    'The evening light is warm. Come home and do one little thing with me?',
+    '{pet} found a sunbeam',
+    'It kept moving across the floor. {pet} followed it the whole afternoon.',
   ),
   (
-    'A soft hello from {pet}',
-    'No rush at all — I just wanted to see you. Even one little thing counts.',
+    'A bird visited the window',
+    '{pet} watched it hop around the sill. Neither of them blinked much.',
   ),
   (
-    '{pet} fluffed your cushion',
-    'I saved you the sunniest spot on the couch. Come tell me about your day?',
+    'Big stretch report',
+    'Front paws way out, tail up high. {pet} rates it a perfect ten.',
   ),
+  (
+    '{pet} guarded the couch today',
+    'Nothing got past. The cushions are all accounted for.',
+  ),
+  (
+    'Evening light is in',
+    '{pet} is curled up in the warmest corner of the room.',
+  ),
+  (
+    '{pet} did one little thing today',
+    'Sniffed the whole hallway, twice. Very thorough work.',
+  ),
+  (
+    'Nap update from {pet}',
+    'Three naps, all excellent. The afternoon one was the best.',
+  ),
+  (
+    '{pet} heard something outside',
+    'Investigated bravely. It was leaves. Case closed.',
+  ),
+  (
+    'The house is cozy tonight',
+    '{pet} made a nest out of the soft blanket. Engineering at its finest.',
+  ),
+  ('{pet} practiced looking cute', 'No practice was needed, honestly.'),
+  (
+    'Small adventure today',
+    '{pet} discovered a new smell by the door and thought about it a lot.',
+  ),
+  ('{pet} is watching the sky', 'Clouds today. Slow ones. Good watching.'),
 ];
