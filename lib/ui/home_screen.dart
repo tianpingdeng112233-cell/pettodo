@@ -896,7 +896,7 @@ class _EveningHelloBubble extends StatelessWidget {
             ),
             const SizedBox(height: PetSpacing.s4),
             const Text(
-              'Just because I miss you — never to rush',
+              "Just a little news from my day — never a nudge",
               style: PetTextStyles.caption,
               textAlign: TextAlign.center,
             ),

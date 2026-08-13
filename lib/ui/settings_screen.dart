@@ -462,7 +462,8 @@ class _NotificationPanel extends StatelessWidget {
         state.notificationPermission == NotificationPermissionState.denied;
     final subtitle = state.notificationEnabled
         ? '${state.petName} will say a soft hello at ${_formatTime(time)}'
-        : 'All quiet — ${state.petName} is home, waiting for you';
+        // Red line 4: off means quiet, not a pet left waiting.
+        : 'All quiet — ${state.petName} is happily minding its own day';
     return _SettingsPanel(
       children: <Widget>[
         Row(
