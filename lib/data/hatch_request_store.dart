@@ -144,12 +144,28 @@ class HatchRequestStore {
     final encoded = ZipEncoder().encode(archive);
     if (encoded == null) throw const FileSystemException('Could not make zip.');
     await output.writeAsBytes(encoded, flush: true);
+    await _deleteExports(keep: output.path);
     return output;
   }
 
   Future<void> cancel() async {
     final directory = await requestDirectory;
     if (await directory.exists()) await directory.delete(recursive: true);
+    await _deleteExports();
+  }
+
+  /// Exported request zips live beside the request folder and would otherwise
+  /// pile up in documents forever — one per request the user ever sent.
+  Future<void> _deleteExports({String? keep}) async {
+    final documents = await _documentsProvider();
+    if (!await documents.exists()) return;
+    final pattern = RegExp(r'^request-\d+\.zip$');
+    await for (final entity in documents.list()) {
+      if (entity is! File || entity.path == keep) continue;
+      if (pattern.hasMatch(entity.uri.pathSegments.last)) {
+        await entity.delete();
+      }
+    }
   }
 
   Future<bool> clearIfMatching(String? requestId) async {

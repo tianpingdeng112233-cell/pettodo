@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
 import '../sprite/pet_sprite.dart';
+import '../sprite/sprite_atlas.dart';
 import 'hatch_request_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
@@ -43,10 +44,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _tasks = _onboardingTasks
         .map((_) => TextEditingController())
         .toList(growable: false);
+    widget.controller.addListener(_refresh);
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_refresh);
     _pages.dispose();
     _name.dispose();
     for (final field in _tasks) {
@@ -55,16 +58,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
   void _goTo(int page) {
     FocusScope.of(context).unfocus();
     _pages.animateToPage(page, duration: PetMotion.fade, curve: Curves.easeOut);
+  }
+
+  /// Opens the hatchery. A pack imported in there selects the new pet, so on
+  /// return we offer its hatched name — without ever overwriting a name the
+  /// user already typed.
+  Future<void> _openHatchRequest() async {
+    final before = widget.controller.state.selectedPetId;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HatchRequestScreen(controller: widget.controller),
+      ),
+    );
+    if (!mounted) return;
+    final after = widget.controller.state.selectedPetId;
+    if (after != before && _name.text.trim().isEmpty) {
+      _name.text = widget.controller.state.petName;
+    }
+    setState(() {});
   }
 
   Future<void> _finish(bool enableNotifications) async {
     if (_saving) return;
     setState(() => _saving = true);
     await widget.controller.completeOnboarding(
-      selectedPetId: 'choco',
+      selectedPetId: widget.controller.state.selectedPetId,
       petName: _name.text,
       taskTitles: List<String>.generate(
         3,
@@ -108,11 +133,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: <Widget>[
                       _ChoosePetPage(
                         controller: widget.controller,
+                        onHatch: _openHatchRequest,
                         onNext: () => _goTo(1),
                       ),
                       _NamePage(
                         controller: widget.controller,
                         field: _name,
+                        hint: _selectedPetName,
                         onNext: () => _goTo(2),
                       ),
                       _TasksPage(fields: _tasks, onNext: () => _goTo(3)),
@@ -137,8 +164,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
   );
 
+  String get _selectedPetName => widget.controller.selectedPet.displayName;
+
   String get _displayName =>
-      _name.text.trim().isEmpty ? 'Choco' : _name.text.trim();
+      _name.text.trim().isEmpty ? _selectedPetName : _name.text.trim();
 }
 
 class _OnboardingHalo extends StatelessWidget {
@@ -211,9 +240,14 @@ class _StepHeader extends StatelessWidget {
 }
 
 class _ChoosePetPage extends StatelessWidget {
-  const _ChoosePetPage({required this.controller, required this.onNext});
+  const _ChoosePetPage({
+    required this.controller,
+    required this.onHatch,
+    required this.onNext,
+  });
 
   final AppController controller;
+  final VoidCallback onHatch;
   final VoidCallback onNext;
 
   @override
@@ -233,7 +267,11 @@ class _ChoosePetPage extends StatelessWidget {
               children: <Widget>[
                 _OnboardingSprite(controller: controller, state: 'idle'),
                 const SizedBox(height: PetSpacing.s13),
-                const Text("Hi, I'm Choco!", style: PetTextStyles.display26),
+                Text(
+                  "Hi, I'm ${controller.selectedPet.displayName}!",
+                  style: PetTextStyles.display26,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: PetSpacing.s8),
                 const Text(
                   "Start with three little things —\nI'll be right here with you",
@@ -241,9 +279,15 @@ class _ChoosePetPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: PetSpacing.s18),
-                _PetChoice(controller: controller),
-                const SizedBox(height: PetSpacing.s10),
-                _FuturePetChoice(controller: controller),
+                for (final pet in controller.pets) ...<Widget>[
+                  _PetChoice(
+                    controller: controller,
+                    pet: pet,
+                    selected: pet.id == controller.state.selectedPetId,
+                  ),
+                  const SizedBox(height: PetSpacing.s10),
+                ],
+                _FuturePetChoice(controller: controller, onTap: onHatch),
               ],
             ),
           ),
@@ -255,18 +299,27 @@ class _ChoosePetPage extends StatelessWidget {
 }
 
 class _PetChoice extends StatelessWidget {
-  const _PetChoice({required this.controller});
+  const _PetChoice({
+    required this.controller,
+    required this.pet,
+    required this.selected,
+  });
 
   final AppController controller;
+  final PetAssetDescriptor pet;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
+    excludeSemantics: true,
     button: true,
     enabled: true,
-    checked: true,
+    checked: selected,
+    label: pet.displayName,
+    onTap: () => controller.selectPet(pet.id),
     child: GestureDetector(
-      onTap: () {},
+      onTap: () => controller.selectPet(pet.id),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: PetSpacing.s18,
@@ -275,27 +328,38 @@ class _PetChoice extends StatelessWidget {
         decoration: BoxDecoration(
           color: PetColors.white,
           border: Border.all(
-            color: PetColors.primary,
-            width: PetSpacing.stroke,
+            color: selected ? PetColors.primary : PetColors.stroke,
+            width: selected ? PetSpacing.stroke : PetSpacing.xxs,
           ),
           borderRadius: PetRadii.cardSmallBorder,
-          boxShadow: PetShadows.petChoice,
+          boxShadow: selected ? PetShadows.petChoice : null,
         ),
         child: Row(
           children: <Widget>[
             SizedBox(
               width: PetSpacing.s44,
               height: PetSpacing.s48,
-              child: ExcludeSemantics(
-                child: PetSprite(atlas: controller.spriteAtlas),
+              child: FutureBuilder<LoadedSpriteAtlas>(
+                future: controller.petAtlas(pet),
+                builder: (context, snapshot) => snapshot.hasData
+                    ? PetSprite(atlas: snapshot.data!)
+                    : const Icon(
+                        Icons.pets_rounded,
+                        color: PetColors.inactive,
+                      ),
               ),
             ),
             const SizedBox(width: PetSpacing.s14),
-            const Expanded(
-              child: Text('Choco', style: PetTextStyles.body16Strong),
+            Expanded(
+              child: Text(
+                pet.displayName,
+                style: PetTextStyles.body16Strong,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const ExcludeSemantics(
-              child: DecoratedBox(
+            if (selected)
+              const DecoratedBox(
                 decoration: BoxDecoration(
                   color: PetColors.primary,
                   shape: BoxShape.circle,
@@ -309,7 +373,6 @@ class _PetChoice extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -318,17 +381,13 @@ class _PetChoice extends StatelessWidget {
 }
 
 class _FuturePetChoice extends StatelessWidget {
-  const _FuturePetChoice({required this.controller});
+  const _FuturePetChoice({required this.controller, required this.onTap});
 
   final AppController controller;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    void openHatchRequest() => Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => HatchRequestScreen(controller: controller),
-      ),
-    );
     return Semantics(
       container: true,
       excludeSemantics: true,
@@ -336,9 +395,9 @@ class _FuturePetChoice extends StatelessWidget {
       enabled: true,
       checked: false,
       label: "Hatch your own pet from photos",
-      onTap: openHatchRequest,
+      onTap: onTap,
       child: GestureDetector(
-        onTap: openHatchRequest,
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: PetSpacing.s18,
@@ -405,11 +464,13 @@ class _NamePage extends StatelessWidget {
   const _NamePage({
     required this.controller,
     required this.field,
+    required this.hint,
     required this.onNext,
   });
 
   final AppController controller;
   final TextEditingController field;
+  final String hint;
   final VoidCallback onNext;
 
   @override
@@ -429,7 +490,7 @@ class _NamePage extends StatelessWidget {
           maxLength: 20,
           textAlign: TextAlign.center,
           style: PetTextStyles.body17,
-          decoration: const InputDecoration(hintText: 'Choco', counterText: ''),
+          decoration: InputDecoration(hintText: hint, counterText: ''),
         ),
       ],
     ),

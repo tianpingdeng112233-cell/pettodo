@@ -46,6 +46,41 @@ void main() {
 
     await store.cancel();
     expect(await store.load(), isNull);
+    // Cancelling takes the exported zip with it — otherwise every request the
+    // user ever sent stays in documents forever.
+    expect(exported.existsSync(), isFalse);
+  });
+
+  test('exporting a second request leaves no stale zip behind', () async {
+    final photo = File('${temporary.path}/source.jpg')
+      ..writeAsBytesSync(<int>[1, 2, 3, 4]);
+
+    await store.create(
+      photos: <File>[photo],
+      petName: 'Pip',
+      now: DateTime.utc(2026, 8, 12, 10),
+    );
+    final first = await store.export();
+    await store.cancel();
+
+    await store.create(
+      photos: <File>[photo],
+      petName: 'Nib',
+      now: DateTime.utc(2026, 8, 12, 12),
+    );
+    final second = await store.export();
+
+    expect(first.path, isNot(second.path));
+    expect(first.existsSync(), isFalse);
+    expect(second.existsSync(), isTrue);
+    expect(
+      temporary
+          .listSync()
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.zip'))
+          .length,
+      1,
+    );
   });
 
   test(

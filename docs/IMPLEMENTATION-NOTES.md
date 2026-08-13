@@ -87,3 +87,41 @@ State is a versioned JSON object in application support storage. Writes use a fl
 - **Gotcha (caught in acceptance walkthrough): a custom file extension is unpickable in the iOS document picker unless the app declares it.** `file_picker`'s `UTType(filenameExtension:)` produces a dynamic UTI, and Files greys the file out. Fix: `UTExportedTypeDeclarations` in Info.plist declaring `com.davidshi.pettodo.pettodopet` conforming to `com.pkware.zip-archive`. Verified selectable + importable after the declaration. Android SAF import has NOT been UI-verified yet — verify before relying on `.pettodopet` there.
 - **Gotcha: dispose ordering on same-id pack re-import.** The originally submitted code disposed the cached atlas before `await`-loading the replacement; if that pet is currently selected the UI can paint a disposed `ui.Image` during the async gap. Always load the new atlas first, swap `spriteAtlas`/cache, then dispose the old one (`unlockStages` already did this correctly). Verified by re-importing the selected pet's pack through the real picker.
 - Known limits (wave 1): onboarding's pet list is still the hardcoded single Choco card, so a pet imported mid-onboarding only appears in Collection (and the deferred ceremony fires on first Home entry with `state.petName` possibly differing from the hatched name); exported request zips accumulate in `<documents>` (no cleanup on cancel); the invalid-pack snackbar path is covered by tests but was not visually confirmed in the walkthrough.
+
+## Task 008 follow-ups — onboarding choice, export cleanup (2026-08-13)
+
+Three of the wave-1 known limits above are now closed.
+
+- **Onboarding lists the live registry.** `_ChoosePetPage` renders every entry of
+  `controller.pets` (bundled + installed) as a selectable card instead of one
+  hardcoded Choco, and `_finish` passes `state.selectedPetId` instead of the
+  literal `'choco'`. The greeting, the name step's placeholder, and the hero
+  sprite all follow the selection. Returning from the hatchery pre-fills the name
+  field with the hatched name **only when the user has not typed one** — never
+  overwrite their input. Single-pet onboarding is visually unchanged.
+- **Exported request zips are cleaned up.** `export()` deletes every other
+  `request-<digits>.zip` in documents and `cancel()` (which import also reaches
+  via `clearIfMatchingPack`) deletes them all. Previously one zip per request the
+  user ever sent stayed in documents forever — a real 139 KB leftover from the
+  08-12 walkthrough was still on the simulator when this was found.
+- **Invalid-pack snackbar visually confirmed**: importing a hatch-request zip as
+  a pack shows the calm "This pack doesn't fit — ask for a fresh one." with no
+  pet reaction. Zero-punishment line holds.
+
+Walkthrough evidence (iPhone 17 Pro, clean install): onboarding → hatchery →
+photo → export (ZIP 139 KB) → import `choco2.pettodopet` through the real picker
+→ both cards listed with Choco Two selected → switch back and forth → finish →
+Home shows Choco Two with the hatch ceremony. Documents held zero zips
+afterwards. The `.pettodopet` file was selectable in the picker, so the 08-12
+`UTExportedTypeDeclarations` fix still holds.
+
+- **Gotcha: XcodeBuildMCP UI actions go to its own session default simulator.**
+  Its `key_sequence` / `tap` / `type_text` take no simulator argument — a key
+  sequence meant for PetTodo landed on a different booted simulator running
+  another app. Call `session_set_defaults({simulatorId})` before any UI action,
+  and re-check when more than one simulator is booted.
+- **Gotcha: test fixtures must give each pet its own `ui.Image`.** The controller
+  disposes every cached atlas image on teardown, deduplicating by atlas, not by
+  image — a fake loader that hands the same image to two pets double-disposes it
+  and fails in teardown. Real packs each decode their own file, so per-pet images
+  are also the truthful fixture.
