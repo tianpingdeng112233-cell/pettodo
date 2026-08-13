@@ -342,7 +342,8 @@ class _PetChoice extends StatelessWidget {
               child: FutureBuilder<LoadedSpriteAtlas>(
                 future: controller.petAtlas(pet),
                 builder: (context, snapshot) => snapshot.hasData
-                    ? PetSprite(atlas: snapshot.data!)
+                    // Still frame: a list of looping pets is visual noise.
+                    ? PetSprite(atlas: snapshot.data!, fixedFrame: 0)
                     : const Icon(
                         Icons.pets_rounded,
                         color: PetColors.inactive,
@@ -669,7 +670,11 @@ class _OnboardingSprite extends StatelessWidget {
     child: SizedBox(
       width: PetSpacing.s150,
       height: PetSpacing.s162,
-      child: PetSprite(atlas: controller.spriteAtlas, stateName: state),
+      child: PetSprite(
+        atlas: controller.spriteAtlas,
+        stateName: state,
+        fixedFrame: 0,
+      ),
     ),
   );
 }

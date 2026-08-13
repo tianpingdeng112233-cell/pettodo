@@ -28,12 +28,20 @@ class PetScheduleEntry {
 }
 
 /// Shared domain schedule. The iOS widget can consume this table directly.
+///
+/// Resting hours hold a single frame rather than looping. The v2 contract calls
+/// idle a "low-distraction" loop and reserves a reduced-motion first frame for
+/// exactly this; on top of that, neighbouring frames of a generated row differ
+/// by 37–46% of their pixels, so looping them reads as the pet twitching rather
+/// than breathing. The pet moves when something happens — a task completed, a
+/// treat, a touch — and is still the rest of the time.
 const List<PetScheduleEntry> petDailySchedule = <PetScheduleEntry>[
   PetScheduleEntry(
     id: 'morning_stretch',
     startHour: 5,
     endHour: 11,
     animation: 'waving',
+    fixedFrame: 0,
     statusTemplate: '{petName} is stretching into a gentle morning',
   ),
   PetScheduleEntry(
@@ -41,6 +49,7 @@ const List<PetScheduleEntry> petDailySchedule = <PetScheduleEntry>[
     startHour: 11,
     endHour: 14,
     animation: 'waiting',
+    fixedFrame: 0,
     statusTemplate: '{petName} is having a cozy little nap',
     effect: PetScheduleEffect.zzz,
   ),
@@ -49,6 +58,7 @@ const List<PetScheduleEntry> petDailySchedule = <PetScheduleEntry>[
     startHour: 14,
     endHour: 18,
     animation: 'idle',
+    fixedFrame: 0,
     statusTemplate: '{petName} is enjoying a quiet afternoon',
   ),
   PetScheduleEntry(

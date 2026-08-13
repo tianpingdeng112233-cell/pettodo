@@ -119,7 +119,12 @@ class CollectionScreen extends StatelessWidget {
                                         future: controller.petAtlas(pet),
                                         builder: (context, snapshot) =>
                                             snapshot.hasData
-                                            ? PetSprite(atlas: snapshot.data!)
+                                            // Still frame: a shelf of looping
+                                            // pets is visual noise.
+                                            ? PetSprite(
+                                                atlas: snapshot.data!,
+                                                fixedFrame: 0,
+                                              )
                                             : const Icon(
                                                 Icons.pets_rounded,
                                                 color: PetColors.inactive,

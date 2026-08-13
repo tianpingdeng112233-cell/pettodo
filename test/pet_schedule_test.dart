@@ -12,6 +12,20 @@ void main() {
     }
   });
 
+  // Resting hours must hold a single frame. Looping a generated row reads as
+  // twitching (neighbouring frames differ by 37-46% of their pixels), and the
+  // v2 contract calls idle "low-distraction" for the same reason. The pet moves
+  // on events — completions, treats, touches — not continuously.
+  test('every resting hour holds a still frame instead of looping', () {
+    for (final entry in petDailySchedule) {
+      expect(
+        entry.fixedFrame,
+        isNotNull,
+        reason: '${entry.id} would loop its row all day',
+      );
+    }
+  });
+
   test('schedule exposes the four companion moments', () {
     expect(petScheduleAt(DateTime(2026, 7, 20, 8)).animation, 'waving');
     expect(
