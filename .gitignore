@@ -7,4 +7,8 @@ DerivedData/
 .dart_tool/
 .flutter-plugins-dependencies
 .flutter-plugins
-artifacts/
+# Generation pipeline scratch (large, reproducible) is ignored; report
+# evidence that the write-up cites is kept.
+artifacts/*
+!artifacts/screenshots/
+!artifacts/report/

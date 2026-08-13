@@ -24,3 +24,74 @@ verify it.
 1. The pet is NEVER hurt, sad, or degraded by user inactivity. Zero punishment.
 2. All completion feedback is warmth-only; missing everything produces silence, not guilt.
 3. Notifications are invitations from the pet, never nags; denied permission is never re-asked.
+
+## Research-hardened rules (2026-08-13)
+
+Derived from two first-hand Reddit research reports collected on 2026-08-13:
+the **App** report (why ADHD users abandon productivity tools, r/ADHD,
+r/adhdwomen, r/ADHD_Programmers) and the **Ppl** report (symptoms and daily life,
+r/ADHD, r/adhdwomen). Citations below read `App-X` / `Ppl-X` against those files;
+both are linked from `PLAN-2026-08-13-post-research.md`. These rules exist to stop
+settled questions from being reopened by future feature discussions.
+
+### Absence semantics — PROPOSED, NOT YET DECIDED
+
+> **Status: awaiting David's decision.** This is a proposal, not a red line, and
+> must not be cited as settled. It was drafted on 2026-08-13 and implemented on
+> the `w1/notification-detox` branch, which is deliberately unmerged until the
+> call is made.
+
+**The proposal:** the pet's wellbeing is never a function of user presence. The
+pet lives its own good day — sunning itself, napping, watching the window, on
+its own schedule. Opening the app is *joining* that day, never *compensating*
+for a missed one; the pet never waits, misses the user, or summons them back.
+Notification copy would therefore report the pet's own day and never request
+presence, excluding "waiting for you", "misses you", "come back", "don't
+forget", and any other formulation whose subject is the user's absence.
+
+**For it (App-D1):** zero punishment stops the *app* inflicting negative
+feedback but does not stop users projecting guilt onto an anthropomorphic
+character, and that projected guilt is the direct abandonment trigger ("I'd
+rather not open the app than see a sad bird"). Decoupling removes the debt at
+source — nothing is owed to a pet that was fine anyway.
+
+**Against it (Lit-, Rev-):** the strongest single piece of user evidence in the
+review corpus is a five-star account of a widget pet speaking up on a day the
+user had given up ("my bird telling me we can fix this"), which is the opposite
+of a pet that never reaches out. Withdrawal of contact is also ambiguous by
+construction, and rejection sensitivity is defined as readily perceiving
+intentional rejection in ambiguous behaviour, so silence may itself be read as
+abandonment.
+
+**A middle option exists** and has not been costed: the pet speaks, but only
+about itself — presence without a request.
+
+### Reward rules — PROPOSED, NOT YET DECIDED
+
+| Rule | ADHD problem it answers |
+|---|---|
+| **No daily pet-tasking.** The app never asks the user to assign, plan or queue tasks *for* the pet on a per-day basis. | App-D6: daily pet-tasking is itself a maintenance burden — the exact executive-function tax that kills tool use; the cited user spent their last two months going through the motions purely to collect daily rewards, then quit |
+| **No completion-for-reward strong coupling.** No mechanic where finishing tasks unlocks pet content (adventures, quests, gated fun). | App-D2: rewards tied to claimed completions produce self-deception — users log tasks they never did to feed the pet, know they are doing it, and accumulate shame; data credibility and the user's self-image collapse together |
+
+The existing treat economy stays as-is and is explicitly **weak-coupled**: treats
+drop on completion, there are no combos, no progress bars, no deadlines, and
+spending them is optional. Weak coupling is permitted; strong coupling is not.
+
+> **Status: awaiting David's decision**, and the literature argues the second
+> rule is over-cautious. The undermining effect is confined to expected,
+> tangible, task-contingent rewards, while positive feedback *enhances*
+> free-choice persistence ([Deci et al. 1999](https://doi.org/10.1037/0033-2909.125.6.627)),
+> and the ADHD reinforcement literature finds contingent immediate
+> reinforcement helps this population somewhat *more* than controls
+> ([Luman et al. 2005](https://doi.org/10.1016/j.cpr.2004.11.001)). The
+> proposal is also internally inconsistent: treats and decoration unlocks are
+> themselves expected task-contingent rewards, so an argument that bans
+> unlocks indicts the shipped reward loop too.
+
+### Copy and feature rules
+
+| Rule | ADHD problem it answers |
+|---|---|
+| **Tone double-bind.** Copy avoids BOTH the indulgence side ("it's okay", "no pressure", "you poor thing" framings that read as a free pass) AND the drill-sergeant/hustle side ("you've got this", "just do it", "let's crush today"). House voice: the pet shares its own concrete little day; it neither judges nor absolves. | Ppl-E4: the community is split down the middle — anything sounding like a permission slip for failure is rejected by half of it, anything sounding like self-discipline pep talk is read as humiliation by the other half. The middle road is not a style preference, it is a hard constraint |
+| **Anti-organizing.** No feature may require the user to categorize, file, archive, or tidy. Nothing may be hidden away for the sake of neatness. | Ppl-H6 and App-C2: sorting is the symptom's opposite, not its cure. Triage is the reason people stop writing things down at all (App-C1), and setup-stage organizing decisions are where users quit before ever using the tool. Combined with "out of sight is out of existence" (Ppl-A3), any "tuck it away, it's tidier" design is a negative for this population |
+| **Terminology.** Never present "RSD" as established medical fact in documentation or user-facing copy. Use "rejection sensitivity" / "emotional dysregulation". | Ppl-C5: r/ADHD's own moderation states RSD is not recognised by any medical authority, is absent from DSM and ICD, and lacks peer-reviewed support. Using it as fact costs credibility with exactly the audience being served |

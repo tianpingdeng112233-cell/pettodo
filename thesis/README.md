@@ -31,7 +31,7 @@ report outline — that is what this structure replaces.
 ## Two things worth acting on early
 
 1. **User testing needs planning, not just writing up.** Section 5 requires it,
-   and current evidence is n≈2 (David plus the Codex friend). Recruitment, and
+   and current evidence is n≈2 (myself plus one friend). Recruitment, and
    whether the school requires ethics approval for it, both have lead time.
 2. **The written material already exists in scattered form** — `docs/`, eight
    task cards, commit history, walkthrough screenshots. Sections 3 and 4 are
