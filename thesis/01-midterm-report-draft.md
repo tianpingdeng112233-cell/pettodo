@@ -205,8 +205,7 @@ daily prompt I currently implement.
 
 ### 2.1 Engineering method
 
-**Platform.** I chose Flutter over two native codebases (`9582f63`; scaffolded
-in `150bd7e`). The justification is scope: evaluation needs real users on
+**Platform.** I chose Flutter over two native codebases. The justification is scope: evaluation needs real users on
 whatever handset they own, and a solo project cannot maintain two native
 implementations to that standard. The cost is accepted deliberately — surfaces
 Flutter does not reach (iOS widgets, Android overlays) must be written
@@ -219,7 +218,7 @@ rule, local-day rollover, positive-history aggregation, unlock thresholds;
 owns atlas parsing and rendering; `lib/application/` is a
 presentation-independent coordinator deliberately outside `lib/ui/`. A visual
 reskin therefore cannot move persistence or behaviour — demonstrated when the
-approved design was applied in `391cd12` without touching domain logic — and
+approved design was applied without touching domain logic — and
 the invariants are unit-testable without a widget harness.
 
 **Rendering.** A small `CustomPainter` driven by a `Ticker`, rather than the
@@ -286,40 +285,38 @@ weaker claim that self-rated difficulty predicts real functional impairment
 
 ## 3. Implementation
 
-Twenty-three commits to date; `main` is `f05cde8` (2026-08-13).
-
-**Core loop** (`3059659`): tasks, sprite engine, unlocks, local notifications
+**Core loop.** Tasks, sprite engine, unlocks, local notifications
 and the JSONL event log, on both platforms.
 
-**Design and accessibility** (`391cd12`): the approved visual design plus a
+**Design and accessibility.** The approved visual design plus a
 semantics rework — custom tap targets own container semantics above their
 gesture handlers, decorative art is excluded from the accessibility tree,
 onboarding scrolls on short viewports.
 
-**Raising system** (`3bd21de`): state schema v2 with in-place migration, growth
+**Raising system.** State schema v2 with in-place migration, growth
 stages derived rather than persisted, a treat economy, a full-day pet schedule,
 long-press interaction, and a collection gallery with no progress bars.
 
-**To-do baseline** (`be9a9ba`): schema v3. Tasks become ID-addressed objects of
+**To-do baseline.** Schema v3. Tasks become ID-addressed objects of
 kind `daily` or `oneOff`, capped at one to seven; quick capture requires only a
 title; one-off tasks never carry age or overdue data. Positive history derives
 only from completion events and renders only weeks containing completions — no
 streak, gap, zero or missed-day state exists anywhere in the product.
 
-**Stability** (`0ba7a95`, a quick-capture crash on dialog dismissal; `6c886af`,
-an Android release build that black-screened because release resource shrinking
+**Stability.** A quick-capture crash on dialog dismissal, and an Android
+release build that black-screened because release resource shrinking
 stripped the notification icon — the fix keeps notification failures from ever
-blocking startup).
+blocking startup.
 
-**Own-pet hatch loop** (`235acec`): the differentiating feature. The user
+**Own-pet hatch loop.** The differentiating feature. The user
 photographs their animal; the app assembles a request package; a sprite pack
 (`.pettodopet`) produced by the image-generation pipeline is imported and
 installed atomically into application documents, and a runtime registry merges
-bundled pets with installed packs. `6d20854` made onboarding list the live
+bundled pets with installed packs. A later change made onboarding list the live
 registry instead of a hardcoded single pet, and cleaned up exported request
 archives that previously accumulated indefinitely.
 
-**Animation quality** (`48cd61f` analysis, `f05cde8` fix). The idle animation
+**Animation quality.** The idle animation
 read as choppy, something I noticed in my own daily use of the shipped build —
 I am inside the target population, which the evaluation treats as a stated
 limitation rather than a secret. Measurement located the cause: the six idle
@@ -329,7 +326,7 @@ rather than one dog breathing. The fix holds a still frame while the pet rests,
 on the reasoning that the sprite contract itself describes idle as a
 "low-distraction" loop, and that a resting companion should be restful.
 
-**In progress, unmerged.** A branch (`833e4d8`) rewrites the notification
+**In progress, not yet part of the application.** A reworking of the notification
 layer — new copy in the pet's voice reporting its own day, randomised selection,
 timing jitter, and back-off after unopened days. I am holding it unmerged
 because the literature contradicts two of its three mechanisms (§6).
@@ -341,7 +338,7 @@ because the literature contradicts two of its three mechanisms (§6).
 ### 4.1 The working application
 
 All screenshots below are from one continuous session on an iPhone 17 Pro
-running the `main` build at `f05cde8`, using a pet the user hatched from their
+running the current build, using a pet the user hatched from their
 own photographs. They are ordered as a user would meet them.
 
 **Figure 1 — Home with a mixed task list.**
@@ -479,9 +476,8 @@ category leader in §1.3.2.
 
 ### 5.1 Software testing
 
-`flutter test` passes 47 tests across 16 files on `main` at `f05cde8` — a
-figure I verified by running the suite, not by quoting it; the unmerged
-notification branch adds five more, including a lint that fails the build if
+`flutter test` passes 47 tests across 16 files — a figure I verified by
+running the suite, not by quoting it; the notification rework adds five more, including a lint that fails the build if
 invitation copy ever regains a forbidden phrasing. Coverage concentrates on the
 invariants the product promises its users: schema v1→v2→v3 migration; day
 rollover, including that rolling over multiple missed days leaves no historical
