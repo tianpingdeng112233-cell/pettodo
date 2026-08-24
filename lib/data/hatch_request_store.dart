@@ -29,7 +29,7 @@ class HatchRequest {
         photos.any(
           (photo) => !RegExp(r'^photo-[1-5]\.[a-z0-9]{1,5}$').hasMatch(photo),
         )) {
-      throw const FormatException('Invalid hatch request.');
+      throw const FormatException('Invalid adoption request.');
     }
     return HatchRequest(
       requestId: requestId,
@@ -90,7 +90,7 @@ class HatchRequestStore {
       throw ArgumentError('Choose between 1 and 5 photos.');
     }
     if (await load() != null) {
-      throw StateError('Only one hatch request can wait at a time.');
+      throw StateError('Only one adoption request can wait at a time.');
     }
     final createdAt = now ?? DateTime.now();
     final requestId =
@@ -133,7 +133,7 @@ class HatchRequestStore {
 
   Future<File> export() async {
     final request = await load();
-    if (request == null) throw StateError('There is no hatch request to send.');
+    if (request == null) throw StateError('There is no adoption request to send.');
     final directory = await requestDirectory;
     final output = File('${directory.parent.path}/${request.requestId}.zip');
     final archive = Archive();

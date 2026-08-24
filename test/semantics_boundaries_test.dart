@@ -183,7 +183,7 @@ void main() {
     await tester.pump();
 
     _expectButtonNode(tester, "That's the one");
-    _expectButtonNode(tester, 'Hatch your own pet from photos');
+    _expectButtonNode(tester, 'Adopt your own pet from photos');
     expect(tester.takeException(), isNull);
 
     for (final transition in <(String, String)>[
@@ -215,7 +215,7 @@ void main() {
     await tester.pump();
     _expectButtonNode(tester, 'Photo library');
     _expectButtonNode(tester, 'Camera');
-    expect(find.text('Start hatching'), findsOneWidget);
+    expect(find.text('Start the adoption'), findsOneWidget);
 
     final pendingFixture = await _createController(
       tester,
@@ -228,7 +228,7 @@ void main() {
       ),
     );
     await tester.pump();
-    _expectButtonNode(tester, 'Send to the hatchery');
+    _expectButtonNode(tester, 'Send to the adoption center');
     _expectButtonNode(tester, 'Import pet pack');
     _expectButtonNode(tester, 'Cancel this request');
     semantics.dispose();
@@ -251,7 +251,7 @@ void main() {
     await tester.pump();
     _expectButtonNode(
       tester,
-      'Your pet is on its way — no rush. Open hatch request',
+      'Your pet is on its way — no rush. Open adoption request',
     );
 
     await tester.pumpWidget(
@@ -265,12 +265,12 @@ void main() {
     );
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.text('Hatch your own pet'),
+      find.text('Adopt your own pet'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pump();
-    _expectButtonNode(tester, 'Hatch your own pet');
+    _expectButtonNode(tester, 'Adopt your own pet');
     _expectButtonNode(tester, 'Import pet pack');
     semantics.dispose();
   });

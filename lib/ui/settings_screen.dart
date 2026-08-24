@@ -649,7 +649,7 @@ class _HatchPanel extends StatelessWidget {
           container: true,
           excludeSemantics: true,
           button: true,
-          label: 'Hatch your own pet',
+          label: 'Adopt your own pet',
           onTap: openHatchRequest,
           child: ListTile(
             contentPadding: EdgeInsets.zero,
@@ -658,7 +658,7 @@ class _HatchPanel extends StatelessWidget {
               style: TextStyle(fontSize: PetSpacing.s30),
             ),
             title: const Text(
-              'Hatch your own pet',
+              'Adopt your own pet',
               style: PetTextStyles.body16Strong,
             ),
             subtitle: Text(

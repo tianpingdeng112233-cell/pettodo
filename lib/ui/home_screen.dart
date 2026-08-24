@@ -328,7 +328,7 @@ class _PetStage extends StatelessWidget {
                 container: true,
                 excludeSemantics: true,
                 button: true,
-                label: 'Your pet is on its way — no rush. Open hatch request',
+                label: 'Your pet is on its way — no rush. Open adoption request',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => HatchRequestScreen(controller: controller),
@@ -952,7 +952,7 @@ class _LittleTheater extends StatelessWidget {
                 Text(
                   controller.hatchCeremonyPetName == null
                       ? '· LITTLE THEATER ·'
-                      : '· A NEW FRIEND HATCHED ·',
+                      : '· A NEW FRIEND ADOPTED ·',
                   style: PetTextStyles.theaterLabel,
                 ),
                 const SizedBox(height: PetSpacing.s16),

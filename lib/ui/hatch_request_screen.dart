@@ -58,8 +58,8 @@ Future<void> shareHatchRequest(
   await SharePlus.instance.share(
     ShareParams(
       files: <XFile>[XFile(file.path, mimeType: 'application/zip')],
-      title: 'Send to the hatchery',
-      subject: 'PetTodo hatch request',
+      title: 'Send to the adoption center',
+      subject: 'PetTodo adoption request',
       sharePositionOrigin: origin,
     ),
   );
@@ -149,7 +149,7 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
                 const SizedBox(width: PetSpacing.s8),
                 const Expanded(
                   child: Text(
-                    'Hatch your own pet',
+                    'Adopt your own pet',
                     style: PetTextStyles.display24,
                   ),
                 ),
@@ -273,7 +273,7 @@ class _NewRequest extends StatelessWidget {
       const SizedBox(height: PetSpacing.s18),
       FilledButton(
         onPressed: photos.isNotEmpty && !saving ? onSave : null,
-        child: Text(saving ? 'Saving gently…' : 'Start hatching'),
+        child: Text(saving ? 'Saving gently…' : 'Start the adoption'),
       ),
     ],
   );
@@ -315,7 +315,7 @@ class _PendingRequest extends StatelessWidget {
             );
           },
           icon: const Icon(Icons.ios_share_rounded),
-          label: const Text('Send to the hatchery'),
+          label: const Text('Send to the adoption center'),
         ),
       ),
       const SizedBox(height: PetSpacing.s10),

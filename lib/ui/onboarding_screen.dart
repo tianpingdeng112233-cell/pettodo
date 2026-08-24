@@ -395,7 +395,7 @@ class _FuturePetChoice extends StatelessWidget {
       button: true,
       enabled: true,
       checked: false,
-      label: "Hatch your own pet from photos",
+      label: "Adopt your own pet from photos",
       onTap: onTap,
       child: GestureDetector(
         onTap: onTap,
@@ -433,7 +433,7 @@ class _FuturePetChoice extends StatelessWidget {
               const SizedBox(width: PetSpacing.s14),
               const Expanded(
                 child: Text(
-                  "Hatch your own pet from photos",
+                  "Adopt your own pet from photos",
                   style: PetTextStyles.body15Strong,
                 ),
               ),
