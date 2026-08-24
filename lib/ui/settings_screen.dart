@@ -352,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'PetTodo v1.0.0',
+                                  'Pawside v1.0.0',
                                   style: PetTextStyles.caption,
                                 ),
                               ],

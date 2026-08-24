@@ -46,7 +46,7 @@ class _PetTodoAppState extends State<PetTodoApp> with WidgetsBindingObserver {
     animation: widget.controller,
     builder: (context, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'PetTodo',
+      title: 'Pawside',
       theme: AppTheme.light,
       home: widget.controller.state.onboardingComplete
           ? HomeScreen(controller: widget.controller, eventLog: widget.eventLog)

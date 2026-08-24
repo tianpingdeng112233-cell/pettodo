@@ -14,8 +14,8 @@ class ExportService {
     await SharePlus.instance.share(
       ShareParams(
         files: <XFile>[XFile(file.path, mimeType: 'application/x-ndjson')],
-        subject: 'PetTodo story export',
-        title: 'Export PetTodo story',
+        subject: 'Pawside story export',
+        title: 'Export Pawside story',
         sharePositionOrigin: sharePositionOrigin,
       ),
     );

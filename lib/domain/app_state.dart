@@ -153,10 +153,10 @@ class AppState {
        unlockedDecorIds = List<String>.unmodifiable(unlockedDecorIds) {
     if (this.tasks.length < minimumTaskCount ||
         this.tasks.length > maximumTaskCount) {
-      throw ArgumentError('PetTodo supports between 1 and 7 active tasks.');
+      throw ArgumentError('Pawside supports between 1 and 7 active tasks.');
     }
     if (!this.tasks.any((task) => task.kind == TaskKind.daily)) {
-      throw ArgumentError('PetTodo keeps at least one gentle daily task.');
+      throw ArgumentError('Pawside keeps at least one gentle daily task.');
     }
     if (this.tasks.map((task) => task.id).toSet().length != this.tasks.length) {
       throw ArgumentError('Task ids must be unique.');

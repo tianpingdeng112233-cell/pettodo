@@ -61,7 +61,7 @@ Future<void> shareHatchRequest(
     ShareParams(
       files: <XFile>[XFile(file.path, mimeType: 'application/zip')],
       title: 'Send to the adoption center',
-      subject: 'PetTodo adoption request',
+      subject: 'Pawside adoption request',
       sharePositionOrigin: origin,
     ),
   );
