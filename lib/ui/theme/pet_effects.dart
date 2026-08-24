@@ -6,7 +6,6 @@ abstract final class PetEffects {
   static const double disabledButtonOpacity = 0.55;
   static const double disabledToggleOpacity = 0.45;
   static const double upcomingDecorOpacity = 0.35;
-  static const double haloStop = 0.7;
   static const Alignment theaterGradientCenter = Alignment(0, -0.2);
   static const Alignment ballHighlightCenter = Alignment(-0.36, -0.4);
   static const double twinklePhaseStep = 0.13;

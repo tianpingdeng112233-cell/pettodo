@@ -5,14 +5,15 @@ import '../application/app_controller.dart';
 import '../sprite/pet_sprite.dart';
 import '../sprite/sprite_atlas.dart';
 import 'hatch_request_screen.dart';
-import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
-import 'theme/pet_effects.dart';
 import 'theme/pet_motion.dart';
-import 'theme/pet_radii.dart';
+import 'theme/pixel_background.dart';
 import 'theme/pet_shadows.dart';
 import 'theme/pet_spacing.dart';
 import 'theme/pet_text_styles.dart';
+import 'theme/stair_border.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 const List<String> _onboardingTasks = <String>[
   'Drink 8 cups of water',
@@ -113,11 +114,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
     child: Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+      body: PixelBackground(
+        showHalo: true,
         child: Stack(
           children: <Widget>[
-            const _OnboardingHalo(),
             Column(
               children: <Widget>[
                 const SizedBox(height: PetSpacing.s44),
@@ -170,28 +170,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _name.text.trim().isEmpty ? _selectedPetName : _name.text.trim();
 }
 
-class _OnboardingHalo extends StatelessWidget {
-  const _OnboardingHalo();
-
-  @override
-  Widget build(BuildContext context) => Positioned(
-    top: PetSpacing.sunTop,
-    left: (MediaQuery.sizeOf(context).width - PetSpacing.sunSize) / 2,
-    child: const ExcludeSemantics(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: <Color>[PetColors.sunHalo, PetColors.transparent],
-            stops: <double>[PetSpacing.zero, PetEffects.haloStop],
-          ),
-        ),
-        child: SizedBox.square(dimension: PetSpacing.sunSize),
-      ),
-    ),
-  );
-}
-
 class _StepHeader extends StatelessWidget {
   const _StepHeader({required this.page, required this.onBack});
 
@@ -212,10 +190,7 @@ class _StepHeader extends StatelessWidget {
               child: IconButton(
                 tooltip: 'Back',
                 onPressed: onBack,
-                icon: const Icon(
-                  Icons.chevron_left_rounded,
-                  color: PetColors.bodySoft,
-                ),
+                icon: const PxIcon(PxIconData.back, color: PetColors.bodySoft),
               ),
             ),
           ),
@@ -228,7 +203,6 @@ class _StepHeader extends StatelessWidget {
               height: PetSpacing.s8,
               margin: const EdgeInsets.symmetric(horizontal: PetSpacing.s4),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
                 color: index <= page ? PetColors.primary : PetColors.inactive,
               ),
             ),
@@ -320,20 +294,13 @@ class _PetChoice extends StatelessWidget {
     onTap: () => controller.selectPet(pet.id),
     child: GestureDetector(
       onTap: () => controller.selectPet(pet.id),
-      child: Container(
+      child: PxCard(
         padding: const EdgeInsets.symmetric(
           horizontal: PetSpacing.s18,
           vertical: PetSpacing.s13,
         ),
-        decoration: BoxDecoration(
-          color: PetColors.white,
-          border: Border.all(
-            color: selected ? PetColors.primary : PetColors.stroke,
-            width: selected ? PetSpacing.stroke : PetSpacing.xxs,
-          ),
-          borderRadius: PetRadii.cardSmallBorder,
-          boxShadow: selected ? PetShadows.petChoice : null,
-        ),
+        selected: selected,
+        shadows: selected ? PetShadows.petChoice : const <BoxShadow>[],
         child: Row(
           children: <Widget>[
             SizedBox(
@@ -344,10 +311,7 @@ class _PetChoice extends StatelessWidget {
                 builder: (context, snapshot) => snapshot.hasData
                     // Still frame: a list of looping pets is visual noise.
                     ? PetSprite(atlas: snapshot.data!, fixedFrame: 0)
-                    : const Icon(
-                        Icons.pets_rounded,
-                        color: PetColors.inactive,
-                      ),
+                    : const PxIcon(PxIconData.paw, color: PetColors.inactive),
               ),
             ),
             const SizedBox(width: PetSpacing.s14),
@@ -359,21 +323,7 @@ class _PetChoice extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (selected)
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  color: PetColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: SizedBox.square(
-                  dimension: PetSpacing.s26,
-                  child: Icon(
-                    Icons.check_rounded,
-                    size: PetSpacing.s16,
-                    color: PetColors.white,
-                  ),
-                ),
-              ),
+            if (selected) const PxCheckbox(checked: true),
           ],
         ),
       ),
@@ -404,28 +354,26 @@ class _FuturePetChoice extends StatelessWidget {
             horizontal: PetSpacing.s18,
             vertical: PetSpacing.s13,
           ),
-          decoration: BoxDecoration(
+          decoration: const ShapeDecoration(
             color: PetColors.futureCard,
-            border: Border.all(
-              color: PetColors.disabledBorder,
-              width: PetSpacing.xxs,
+            shape: StairBorder.large(
+              side: BorderSide(
+                color: PetColors.disabledBorder,
+                width: PetSpacing.xxs,
+              ),
             ),
-            borderRadius: PetRadii.cardSmallBorder,
           ),
           child: Row(
             children: <Widget>[
               const ExcludeSemantics(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: PetColors.disabledFill,
-                    borderRadius: PetRadii.spriteBorder,
-                  ),
-                  child: SizedBox(
-                    width: PetSpacing.s44,
-                    height: PetSpacing.s48,
-                    child: Icon(
-                      Icons.add_a_photo_outlined,
-                      color: PetColors.primary,
+                child: SizedBox(
+                  width: PetSpacing.s44,
+                  height: PetSpacing.s48,
+                  child: Center(
+                    child: PxIcon(
+                      PxIconData.paw,
+                      size: 34,
+                      color: PetColors.inactive,
                     ),
                   ),
                 ),
@@ -442,9 +390,9 @@ class _FuturePetChoice extends StatelessWidget {
                   horizontal: PetSpacing.s10,
                   vertical: PetSpacing.s4,
                 ),
-                decoration: const BoxDecoration(
+                decoration: const ShapeDecoration(
                   color: PetColors.badgeFill,
-                  borderRadius: PetRadii.pillBorder,
+                  shape: StairBorder.small(),
                 ),
                 child: Text(
                   controller.pendingHatchRequest == null
@@ -686,34 +634,9 @@ class _OnboardingButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Opacity(
-    opacity: onTap == null
-        ? PetEffects.disabledButtonOpacity
-        : PetEffects.fullOpacity,
-    child: Semantics(
-      container: true,
-      button: true,
-      enabled: onTap != null,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: PetColors.primary,
-          borderRadius: PetRadii.pillBorder,
-          boxShadow: PetShadows.primaryButton,
-        ),
-        child: Material(
-          color: PetColors.transparent,
-          borderRadius: PetRadii.pillBorder,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: PetRadii.pillBorder,
-            child: SizedBox(
-              height: PetSpacing.s54,
-              child: Center(child: Text(label, style: PetTextStyles.button)),
-            ),
-          ),
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => PxButton(
+    label: Text(label, style: PetTextStyles.button),
+    onPressed: onTap,
   );
 }
 
@@ -733,30 +656,10 @@ class _TimeChip extends StatelessWidget {
     container: true,
     button: true,
     checked: selected,
-    child: InkWell(
-      borderRadius: PetRadii.pillBorder,
+    child: PxChip(
+      selected: selected,
       onTap: () => onTap(time),
-      child: Container(
-        height: PetSpacing.s40,
-        padding: const EdgeInsets.symmetric(
-          horizontal: PetSpacing.s16,
-          vertical: PetSpacing.s9,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? PetColors.primary : PetColors.white,
-          borderRadius: PetRadii.pillBorder,
-          border: Border.all(
-            color: selected ? PetColors.primary : PetColors.stroke,
-            width: PetSpacing.xxs,
-          ),
-        ),
-        child: Text(
-          _formatTime(time),
-          style: selected
-              ? PetTextStyles.chip.copyWith(color: PetColors.white)
-              : PetTextStyles.chip,
-        ),
-      ),
+      child: Text(_formatTime(time)),
     ),
   );
 }

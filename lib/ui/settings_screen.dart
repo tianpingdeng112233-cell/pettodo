@@ -10,14 +10,13 @@ import 'collection_screen.dart';
 import 'history_screen.dart';
 import 'hatch_request_screen.dart';
 import 'task_editor_sheet.dart';
-import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
-import 'theme/pet_effects.dart';
-import 'theme/pet_motion.dart';
-import 'theme/pet_radii.dart';
-import 'theme/pet_shadows.dart';
+import 'theme/pixel_background.dart';
 import 'theme/pet_spacing.dart';
 import 'theme/pet_text_styles.dart';
+import 'theme/stair_border.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -150,8 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        body: DecoratedBox(
-          decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+        body: PixelBackground(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -193,7 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: <Widget>[
                         const Text('Pet name', style: PetTextStyles.caption),
                         const SizedBox(height: PetSpacing.s10),
-                        TextField(
+                        PxInput(
                           controller: _name,
                           maxLength: 20,
                           style: PetTextStyles.body16,
@@ -236,9 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             trailing: IconButton(
                               tooltip: 'Remove ${task.title}',
                               onPressed: () => _removeTask(task),
-                              icon: const Icon(
-                                Icons.remove_circle_outline_rounded,
-                              ),
+                              icon: const PxIcon(PxIconData.minus),
                             ),
                           ),
                         ],
@@ -247,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: widget.controller.state.canAddTask
                               ? _addTask
                               : null,
-                          icon: const Icon(Icons.add_rounded),
+                          icon: const PxIcon(PxIconData.plus, size: 18),
                           label: Text(
                             widget.controller.state.canAddTask
                                 ? 'Add one little thing'
@@ -271,7 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: <Widget>[
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.favorite_outline_rounded),
+                          leading: const PxIcon(PxIconData.heart),
                           title: const Text(
                             'Things we did together',
                             style: PetTextStyles.body15Strong,
@@ -324,9 +320,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ),
                                     ExcludeSemantics(
-                                      child: Text(
-                                        '›',
-                                        style: PetTextStyles.chevron,
+                                      child: PxIcon(
+                                        PxIconData.chevronRight,
+                                        size: 16,
+                                        color: PetColors.systemIcon,
                                       ),
                                     ),
                                   ],
@@ -382,15 +379,10 @@ class _SettingsPanel extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => PxCard(
     padding: EdgeInsets.symmetric(
       horizontal: PetSpacing.s20,
       vertical: compact ? PetSpacing.s6 : PetSpacing.s18,
-    ),
-    decoration: const BoxDecoration(
-      color: PetColors.white,
-      borderRadius: PetRadii.cardBorder,
-      boxShadow: PetShadows.panel,
     ),
     child: Material(
       type: MaterialType.transparency,
@@ -487,42 +479,11 @@ class _PetToggle extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    button: true,
-    toggled: value,
+  Widget build(BuildContext context) => PxToggle(
+    value: value,
     enabled: enabled,
+    onChanged: onChanged,
     label: 'Evening hello',
-    child: GestureDetector(
-      onTap: enabled ? () => onChanged(!value) : null,
-      child: Opacity(
-        opacity: enabled
-            ? PetEffects.fullOpacity
-            : PetEffects.disabledToggleOpacity,
-        child: AnimatedContainer(
-          duration: PetMotion.quick,
-          width: PetSpacing.s58,
-          height: PetSpacing.s38,
-          padding: const EdgeInsets.all(PetSpacing.xs),
-          decoration: BoxDecoration(
-            color: value ? PetColors.primary : PetColors.disabledBorder,
-            borderRadius: PetRadii.pillBorder,
-          ),
-          child: AnimatedAlign(
-            duration: PetMotion.quick,
-            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                color: PetColors.white,
-                shape: BoxShape.circle,
-                boxShadow: PetShadows.toggleKnob,
-              ),
-              child: SizedBox.square(dimension: PetSpacing.s26),
-            ),
-          ),
-        ),
-      ),
-    ),
   );
 }
 
@@ -542,30 +503,10 @@ class _SettingsTimeChip extends StatelessWidget {
     container: true,
     button: true,
     checked: selected,
-    child: InkWell(
-      borderRadius: PetRadii.pillBorder,
+    child: PxChip(
+      selected: selected,
       onTap: () => onTap(value),
-      child: Container(
-        height: PetSpacing.s40,
-        padding: const EdgeInsets.symmetric(
-          horizontal: PetSpacing.s16,
-          vertical: PetSpacing.s9,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? PetColors.primary : PetColors.white,
-          borderRadius: PetRadii.pillBorder,
-          border: Border.all(
-            color: selected ? PetColors.primary : PetColors.stroke,
-            width: PetSpacing.xxs,
-          ),
-        ),
-        child: Text(
-          _formatTime(value),
-          style: selected
-              ? PetTextStyles.chip.copyWith(color: PetColors.white)
-              : PetTextStyles.chip,
-        ),
-      ),
+      child: Text(_formatTime(value)),
     ),
   );
 }
@@ -585,7 +526,7 @@ class _CollectionPanel extends StatelessWidget {
           container: true,
           button: true,
           child: InkWell(
-            borderRadius: PetRadii.cardSmallBorder,
+            customBorder: const StairBorder.small(),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => CollectionScreen(controller: controller),
@@ -595,10 +536,7 @@ class _CollectionPanel extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: PetSpacing.s8),
               child: Row(
                 children: <Widget>[
-                  const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: PetColors.primary,
-                  ),
+                  const PxIcon(PxIconData.sparkle, color: PetColors.primary),
                   const SizedBox(width: PetSpacing.s14),
                   Expanded(
                     child: Column(
@@ -618,7 +556,11 @@ class _CollectionPanel extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Text('›', style: PetTextStyles.chevron),
+                  const PxIcon(
+                    PxIconData.chevronRight,
+                    size: 16,
+                    color: PetColors.systemIcon,
+                  ),
                 ],
               ),
             ),
@@ -653,9 +595,10 @@ class _HatchPanel extends StatelessWidget {
           onTap: openHatchRequest,
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Text(
-              '🐾',
-              style: TextStyle(fontSize: PetSpacing.s30),
+            leading: const PxIcon(
+              PxIconData.paw,
+              size: PetSpacing.s34,
+              color: PetColors.inactive,
             ),
             title: const Text(
               'Adopt your own pet',
@@ -672,7 +615,7 @@ class _HatchPanel extends StatelessWidget {
         ),
         OutlinedButton.icon(
           onPressed: () => importPetPackFromPicker(context, controller),
-          icon: const Icon(Icons.inventory_2_outlined),
+          icon: const PxIcon(PxIconData.package, size: 18),
           label: const Text('Import pet pack'),
         ),
       ],

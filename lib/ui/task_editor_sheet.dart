@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../domain/app_state.dart';
+import 'theme/pet_spacing.dart';
+import 'theme/pet_text_styles.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 class TaskEditDraft {
   const TaskEditDraft({
@@ -123,7 +127,7 @@ class _TaskEditorState extends State<_TaskEditor> {
             widget.task == null
                 ? 'Add one little thing'
                 : 'Keep it easy to see',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: PetTextStyles.display24,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -153,38 +157,65 @@ class _TaskEditorState extends State<_TaskEditor> {
               const ButtonSegment<TaskKind>(
                 value: TaskKind.daily,
                 label: Text('Every day'),
-                icon: Icon(Icons.wb_sunny_outlined),
+                icon: PxIcon(PxIconData.sun, size: 18),
               ),
               ButtonSegment<TaskKind>(
                 value: TaskKind.oneOff,
                 enabled: widget.allowOneOff,
                 label: const Text('Just once'),
-                icon: const Icon(Icons.bolt_rounded),
+                icon: const PxIcon(PxIconData.bolt, size: 18),
               ),
             ],
             selected: <TaskKind>{_kind},
             onSelectionChanged: (value) => setState(() => _kind = value.first),
           ),
           const SizedBox(height: 12),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('One gentle reminder'),
-            subtitle: Text(
-              widget.notificationDenied
-                  ? 'Notifications are staying quiet on this device.'
-                  : _reminderEnabled
-                  ? 'One invitation at ${_reminderTime.format(context)}, never repeated.'
-                  : 'Optional — your pet will not nag.',
+          // Mirrors SwitchListTile's semantics tree: one merged node whose
+          // toggled state comes from the live PxToggle inside.
+          MergeSemantics(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.notificationDenied
+                  ? null
+                  : () => setState(() => _reminderEnabled = !_reminderEnabled),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Text(
+                          'One gentle reminder',
+                          style: PetTextStyles.body16Strong,
+                        ),
+                        const SizedBox(height: PetSpacing.xs),
+                        Text(
+                          widget.notificationDenied
+                              ? 'Notifications are staying quiet on this device.'
+                              : _reminderEnabled
+                              ? 'One invitation at ${_reminderTime.format(context)}, never repeated.'
+                              : 'Optional — your pet will not nag.',
+                          style: PetTextStyles.captionSoft,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: PetSpacing.s14),
+                  PxToggle(
+                    value: _reminderEnabled && !widget.notificationDenied,
+                    enabled: !widget.notificationDenied,
+                    onChanged: (value) =>
+                        setState(() => _reminderEnabled = value),
+                  ),
+                ],
+              ),
             ),
-            value: _reminderEnabled && !widget.notificationDenied,
-            onChanged: widget.notificationDenied
-                ? null
-                : (value) => setState(() => _reminderEnabled = value),
           ),
           if (_reminderEnabled && !widget.notificationDenied)
             TextButton.icon(
               onPressed: _pickReminderTime,
-              icon: const Icon(Icons.schedule_rounded),
+              icon: const PxIcon(PxIconData.clock, size: 18),
               label: Text('At ${_reminderTime.format(context)}'),
             ),
           const SizedBox(height: 16),

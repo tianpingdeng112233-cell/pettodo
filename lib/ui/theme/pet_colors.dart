@@ -9,6 +9,7 @@ abstract final class PetColors {
   static const Color bodySoft = Color(0xFFB08D63);
   static const Color caption = Color(0xFFC4A075);
   static const Color stroke = Color(0xFFF4C9A0);
+  static const Color checkboxBorder = Color(0xFFF2C393);
   static const Color doneFill = Color(0xFFFFE9D4);
   static const Color screenTop = Color(0xFFFFF8EF);
   static const Color screenBottom = Color(0xFFFFEFDC);

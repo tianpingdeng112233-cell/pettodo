@@ -4,13 +4,15 @@ import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import '../sprite/sprite_atlas.dart';
 import '../sprite/pet_sprite.dart';
-import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
-import 'theme/pet_radii.dart';
+import 'theme/pixel_background.dart';
 import 'theme/pet_shadows.dart';
 import 'theme/pet_spacing.dart';
 import 'theme/pet_text_styles.dart';
+import 'theme/stair_border.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 class CollectionScreen extends StatelessWidget {
   const CollectionScreen({super.key, required this.controller});
@@ -27,8 +29,7 @@ class CollectionScreen extends StatelessWidget {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        body: DecoratedBox(
-          decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+        body: PixelBackground(
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -47,8 +48,8 @@ class CollectionScreen extends StatelessWidget {
                         label: 'Back',
                         child: IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
-                            Icons.arrow_back_rounded,
+                          icon: const PxIcon(
+                            PxIconData.back,
                             color: PetColors.bodyStrong,
                           ),
                         ),
@@ -94,51 +95,45 @@ class CollectionScreen extends StatelessWidget {
                           label:
                               '${pet.displayName}${selected ? ', selected' : ''}',
                           child: InkWell(
-                            borderRadius: PetRadii.cardSmallBorder,
+                            customBorder: const StairBorder.large(),
                             onTap: () => controller.selectPet(pet.id),
-                            child: Container(
+                            child: SizedBox(
                               width: PetSpacing.s134,
-                              padding: const EdgeInsets.all(PetSpacing.s8),
-                              decoration: BoxDecoration(
-                                color: PetColors.white,
-                                borderRadius: PetRadii.cardSmallBorder,
-                                border: Border.all(
-                                  color: selected
-                                      ? PetColors.primary
-                                      : PetColors.stroke,
-                                  width: selected
-                                      ? PetSpacing.stroke
-                                      : PetSpacing.xxs,
-                                ),
-                              ),
-                              child: Column(
-                                children: <Widget>[
-                                  Expanded(
-                                    child: ExcludeSemantics(
-                                      child: FutureBuilder<LoadedSpriteAtlas>(
-                                        future: controller.petAtlas(pet),
-                                        builder: (context, snapshot) =>
-                                            snapshot.hasData
-                                            // Still frame: a shelf of looping
-                                            // pets is visual noise.
-                                            ? PetSprite(
-                                                atlas: snapshot.data!,
-                                                fixedFrame: 0,
-                                              )
-                                            : const Icon(
-                                                Icons.pets_rounded,
-                                                color: PetColors.inactive,
-                                              ),
+                              child: PxCard(
+                                padding: const EdgeInsets.all(PetSpacing.s8),
+                                selected: selected,
+                                shadows: selected
+                                    ? PetShadows.petChoice
+                                    : PetShadows.panel,
+                                child: Column(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: ExcludeSemantics(
+                                        child: FutureBuilder<LoadedSpriteAtlas>(
+                                          future: controller.petAtlas(pet),
+                                          builder: (context, snapshot) =>
+                                              snapshot.hasData
+                                              // Still frame: a shelf of looping
+                                              // pets is visual noise.
+                                              ? PetSprite(
+                                                  atlas: snapshot.data!,
+                                                  fixedFrame: 0,
+                                                )
+                                              : const PxIcon(
+                                                  PxIconData.paw,
+                                                  color: PetColors.inactive,
+                                                ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Text(
-                                    pet.displayName,
-                                    style: PetTextStyles.body15Strong,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                                    Text(
+                                      pet.displayName,
+                                      style: PetTextStyles.body15Strong,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -172,12 +167,12 @@ class CollectionScreen extends StatelessWidget {
                               ? decor.displayName
                               : 'A keepsake still tucked away',
                           child: DecoratedBox(
-                            decoration: BoxDecoration(
+                            decoration: ShapeDecoration(
                               color: unlocked
                                   ? PetColors.white
                                   : PetColors.futureCard,
-                              borderRadius: PetRadii.cardBorder,
-                              boxShadow: PetShadows.panel,
+                              shape: const StairBorder.large(),
+                              shadows: PetShadows.panel,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -234,6 +229,6 @@ class DecorItemView extends StatelessWidget {
         : PetEffects.upcomingDecorOpacity,
     child: unlocked
         ? Text(decor.emoji, style: TextStyle(fontSize: size))
-        : Icon(Icons.pets_rounded, size: size, color: PetColors.inactive),
+        : PxIcon(PxIconData.paw, size: size, color: PetColors.inactive),
   );
 }

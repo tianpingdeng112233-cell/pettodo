@@ -67,6 +67,14 @@ flutter:
     - assets/pets/choco/pet_request.json
     - assets/pets/choco/spritesheet-extended.webp
 
+  fonts:
+    - family: Baloo 2
+      fonts:
+        - asset: assets/fonts/Baloo2-VariableFont_wght.ttf
+    - family: Pixelify Sans
+      fonts:
+        - asset: assets/fonts/PixelifySans-VariableFont_wght.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
