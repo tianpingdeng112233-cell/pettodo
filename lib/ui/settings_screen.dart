@@ -654,7 +654,7 @@ class _HatchPanel extends StatelessWidget {
           child: ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Text(
-              '🥚',
+              '🐾',
               style: TextStyle(fontSize: PetSpacing.s30),
             ),
             title: const Text(

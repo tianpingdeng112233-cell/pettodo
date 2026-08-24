@@ -348,7 +348,7 @@ class _PetStage extends StatelessWidget {
                       vertical: PetSpacing.s4,
                     ),
                     child: Text(
-                      '🥚  Your pet is on its way — no rush.  Import ›',
+                      '🐾  Your pet is on its way — no rush.  Import ›',
                       style: PetTextStyles.small,
                     ),
                   ),

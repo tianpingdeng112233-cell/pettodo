@@ -199,7 +199,7 @@ class _NewRequest extends StatelessWidget {
     children: <Widget>[
       const Center(
         child: ExcludeSemantics(
-          child: Text('🥚', style: TextStyle(fontSize: PetSpacing.s78)),
+          child: Text('🐾', style: TextStyle(fontSize: PetSpacing.s78)),
         ),
       ),
       const Text(
@@ -289,7 +289,7 @@ class _PendingRequest extends StatelessWidget {
     children: <Widget>[
       const Center(
         child: ExcludeSemantics(
-          child: Text('🥚', style: TextStyle(fontSize: PetSpacing.s78)),
+          child: Text('🐾', style: TextStyle(fontSize: PetSpacing.s78)),
         ),
       ),
       const Text(
