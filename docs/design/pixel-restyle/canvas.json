@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Home · Cozy Pixel", "x": 0, "y": 80, "w": 393, "h": 852 },
+    { "file": "Settings.dc.html", "title": "Settings · Cozy Pixel", "x": 453, "y": 80, "w": 393, "h": 852 },
+    { "file": "Collection.dc.html", "title": "Collection · Cozy Pixel", "x": 906, "y": 80, "w": 393, "h": 852 },
+    { "file": "Onboarding.dc.html", "title": "Onboarding · Cozy Pixel", "x": 1359, "y": 80, "w": 393, "h": 852 },
+    { "file": "HomeRetro.dc.html", "title": "Home · Full Retro", "x": 0, "y": 1060, "w": 393, "h": 852 }
+  ],
+  "annotations": [
+    { "id": "direction-a", "x": 0, "y": -80, "w": 420, "text": "方向 A · Cozy Pixel(推荐)\n保留现有暖阳客厅的配色、渐变与留白,只把语言换成像素:Pixelify Sans 标题 + Baloo 2 正文、阶梯切角卡片、硬阴影、方形勾选框、像素图标。ADHD 可读性不受损,成人向。" },
+    { "id": "direction-b", "x": 453, "y": 980, "w": 420, "text": "方向 B · Full Retro(对比用)\n完整复古游戏 UI:Silkscreen 标题 + VT323 正文、粗深棕描边、bevel 按钮、实体硬阴影。个性更强,但正文可读性和「成人向可爱」都更冒险,全大写标题也更吵。" },
+    { "id": "scope-note", "x": 906, "y": 980, "w": 420, "text": "结构一比一照抄现有 app(未改任何导航/层级/文案);颜色与字号全部取自 lib/ui/theme/ 的 token 精确值。选定方向后:出完整 token 映射表 + 组件规格,再开实装卡。" }
+  ],
+  "launch": { "view": "canvas" }
+}
