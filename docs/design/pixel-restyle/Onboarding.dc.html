@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&amp;family=Baloo+2:wght@400..800&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF8EF; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen {
+      width: 393px; height: 852px; position: relative; overflow: hidden;
+      background:
+        conic-gradient(rgba(185,107,46,0.035) 25%, transparent 0 50%, rgba(185,107,46,0.035) 0 75%, transparent 0) 0 0 / 8px 8px,
+        linear-gradient(#FFF8EF, #FFEFDC);
+      font-family: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif;
+      color: #6B4A2B;
+    }
+    .disp { font-family: 'Pixelify Sans', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .pc { clip-path: polygon(0 12px,4px 12px,4px 4px,12px 4px,12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px)); }
+    .ps { clip-path: polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px)); }
+    .shadow { filter: drop-shadow(0 4px 0 rgba(190,140,80,0.14)); }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: absolute; top: -150px; left: -14px; width: 420px; height: 420px; background: radial-gradient(closest-side, rgba(255,214,150,0.55) 0 25%, rgba(255,214,150,0.38) 25% 45%, rgba(255,214,150,0.22) 45% 65%, rgba(255,214,150,0.10) 65% 85%, transparent 85%);"></div>
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 80px 28px 26px 28px; box-sizing: border-box;">
+
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <img src="./chocopx.png" alt="Choco Pixel" class="px" style="width: 160px; height: 173px; display: block;">
+      <div class="disp" style="font-size: 26px; font-weight: 600; color: #8A5A2E; margin-top: 13px; text-align: center;">Hi, I'm Choco Pixel!</div>
+      <div style="font-size: 15px; color: #B08D63; margin-top: 8px; text-align: center; white-space: pre-line;">Start with three little things —
+I'll be right here with you</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.30));">
+        <div class="pc" style="background: #F2A65A; padding: 3px;">
+          <div class="pc" style="background: #FFFBF5; padding: 13px 18px; display: flex; align-items: center; gap: 14px;">
+            <img src="./chocopx.png" alt="Choco Pixel" class="px" style="width: 44px; height: 48px; display: block;">
+            <div style="font-size: 17px; font-weight: 600; color: #B96B2E;">Choco Pixel</div>
+            <div style="margin-left: auto; width: 24px; height: 24px; background: #F2A65A; display: flex; align-items: center; justify-content: center;">
+              <svg width="14" height="11" viewBox="0 0 14 11" shape-rendering="crispEdges">
+                <rect x="0" y="5" width="3" height="3" fill="#FFFFFF"></rect><rect x="3" y="8" width="3" height="3" fill="#FFFFFF"></rect><rect x="6" y="5" width="3" height="3" fill="#FFFFFF"></rect><rect x="9" y="2" width="3" height="3" fill="#FFFFFF"></rect><rect x="11" y="0" width="3" height="3" fill="#FFFFFF"></rect>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="shadow">
+        <div class="pc" style="background: #F4C9A0; padding: 2px;">
+          <div class="pc" style="background: #FFFFFF; padding: 13px 18px; display: flex; align-items: center; gap: 14px;">
+            <img src="./choco.png" alt="Choco" class="px" style="width: 44px; height: 48px; display: block;">
+            <div style="font-size: 17px; font-weight: 600; color: #6B4A2B;">Choco</div>
+          </div>
+        </div>
+      </div>
+      <div class="pc" style="background: rgba(255,255,255,0.55); padding: 13px 18px; display: flex; align-items: center; gap: 14px;">
+        <svg width="28" height="34" viewBox="0 0 17 21" shape-rendering="crispEdges">
+          <rect x="5" y="0" width="7" height="3" fill="#F5EFE4"></rect><rect x="3" y="3" width="11" height="3" fill="#F5EFE4"></rect><rect x="2" y="6" width="13" height="9" fill="#F5EFE4"></rect><rect x="3" y="15" width="11" height="3" fill="#EFE5D2"></rect><rect x="5" y="18" width="7" height="3" fill="#EFE5D2"></rect><rect x="5" y="3" width="3" height="3" fill="#FFFFFF"></rect>
+        </svg>
+        <div>
+          <div style="font-size: 16px; font-weight: 600; color: #B99F7D;">Hatch your own pet</div>
+          <div style="font-size: 13px; color: #C9A87C; margin-top: 2px;">1&ndash;5 photos</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: auto;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.35));">
+        <div class="pc" style="background: #F2A65A; padding: 16px 0; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 17px; font-weight: 600; color: #FFFFFF;">That's the one</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

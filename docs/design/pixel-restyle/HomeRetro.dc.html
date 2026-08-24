@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=VT323&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF6E6; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen {
+      width: 393px; height: 852px; position: relative; overflow: hidden;
+      background:
+        conic-gradient(rgba(107,74,43,0.05) 25%, transparent 0 50%, rgba(107,74,43,0.05) 0 75%, transparent 0) 0 0 / 8px 8px,
+        #FFF6E6;
+      font-family: 'VT323', 'Courier New', monospace;
+      color: #6B4A2B;
+    }
+    .head { font-family: 'Silkscreen', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .frame { border: 3px solid #6B4A2B; box-shadow: 4px 4px 0 rgba(107,74,43,0.35); background: #FFFFFF; }
+    .bevel { border-top: 3px solid #FFD9A8; border-left: 3px solid #FFD9A8; border-bottom: 3px solid #B96B2E; border-right: 3px solid #B96B2E; background: #F2A65A; box-shadow: 4px 4px 0 rgba(107,74,43,0.35); }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 64px 24px 24px 24px; box-sizing: border-box;">
+
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="font-size: 20px; color: #7A5A3A;">Mon, Aug 24 &middot; Lovely afternoon</div>
+      <svg width="24" height="24" viewBox="0 0 24 24" shape-rendering="crispEdges">
+        <rect x="2" y="4" width="20" height="3" fill="#8A6B4C"></rect><rect x="14" y="2" width="5" height="7" fill="#6B4A2B"></rect>
+        <rect x="2" y="11" width="20" height="3" fill="#8A6B4C"></rect><rect x="5" y="9" width="5" height="7" fill="#6B4A2B"></rect>
+        <rect x="2" y="18" width="20" height="3" fill="#8A6B4C"></rect><rect x="11" y="16" width="5" height="7" fill="#6B4A2B"></rect>
+      </svg>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; margin-top: 24px;">
+      <div class="frame" style="padding: 14px 18px; position: relative; background: #FFFBF5;">
+        <div class="head" style="position: absolute; top: 8px; right: 10px; font-size: 12px; color: #B08D63;">zzz</div>
+        <img src="./chocopx.png" alt="Choco Pixel" class="px" style="width: 186px; height: 201px; display: block; max-width: 100%;">
+      </div>
+      <div style="width: 150px; height: 8px; background: #E8CFA8; border: 2px solid #6B4A2B; margin-top: 10px;"></div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 16px;">
+        <div class="head" style="font-size: 22px; font-weight: 700; color: #8A5A2E;">CHOCO PIXEL</div>
+        <div style="border: 2px solid #6B4A2B; background: #F7E9D3; padding: 2px 10px; font-size: 16px; color: #8A6B4C;">PUPPY</div>
+      </div>
+      <div style="font-size: 19px; color: #8A6B4C; margin-top: 6px;">Choco Pixel is having a cozy little nap</div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 26px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 18 18" shape-rendering="crispEdges">
+          <rect x="7" y="1" width="4" height="4" fill="#B96B2E"></rect><rect x="3" y="5" width="12" height="4" fill="#B96B2E"></rect><rect x="7" y="9" width="4" height="4" fill="#B96B2E"></rect><rect x="13" y="12" width="3" height="3" fill="#E8B57E"></rect><rect x="2" y="12" width="2" height="2" fill="#E8B57E"></rect>
+        </svg>
+        <div class="head" style="font-size: 13px; color: #B96B2E;">COLLECTION</div>
+      </div>
+      <div class="bevel" style="padding: 10px 22px; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="12" viewBox="0 0 20 12" shape-rendering="crispEdges">
+          <rect x="0" y="0" width="4" height="5" fill="#FFFBF5"></rect><rect x="0" y="7" width="4" height="5" fill="#FFFBF5"></rect><rect x="16" y="0" width="4" height="5" fill="#FFFBF5"></rect><rect x="16" y="7" width="4" height="5" fill="#FFFBF5"></rect><rect x="2" y="4" width="16" height="4" fill="#FFFBF5"></rect>
+        </svg>
+        <div class="head" style="font-size: 13px; color: #FFFFFF;">FEED &middot; 5</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 24px;">
+      <div class="head" style="font-size: 12px; color: #B08D63;">TODAY'S LITTLE THINGS</div>
+      <div class="head" style="font-size: 12px; color: #B96B2E;">EDIT</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+      <div class="frame" style="background: #FFE9D4; padding: 13px 16px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 26px; height: 26px; background: #F2A65A; border: 3px solid #6B4A2B; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
+          <svg width="14" height="11" viewBox="0 0 14 11" shape-rendering="crispEdges">
+            <rect x="0" y="5" width="3" height="3" fill="#FFFFFF"></rect><rect x="3" y="8" width="3" height="3" fill="#FFFFFF"></rect><rect x="6" y="5" width="3" height="3" fill="#FFFFFF"></rect><rect x="9" y="2" width="3" height="3" fill="#FFFFFF"></rect><rect x="11" y="0" width="3" height="3" fill="#FFFFFF"></rect>
+          </svg>
+        </div>
+        <div style="font-size: 21px; color: #6B4A2B;">Drink 8 cups of water</div>
+      </div>
+      <div class="frame" style="padding: 13px 16px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 26px; height: 26px; background: #FFFBF5; border: 3px solid #6B4A2B; box-sizing: border-box;"></div>
+        <div style="font-size: 21px; color: #6B4A2B;">Learn 20 new words</div>
+      </div>
+      <div class="frame" style="padding: 13px 16px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 26px; height: 26px; background: #FFFBF5; border: 3px solid #6B4A2B; box-sizing: border-box;"></div>
+        <div style="font-size: 21px; color: #6B4A2B;">Walk the dog</div>
+      </div>
+    </div>
+
+    <div style="margin-top: auto;">
+      <div class="frame" style="background: #FFF8EF; padding: 13px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="14" height="14" viewBox="0 0 14 14" shape-rendering="crispEdges"><rect x="5" y="0" width="4" height="14" fill="#6B4A2B"></rect><rect x="0" y="5" width="14" height="4" fill="#6B4A2B"></rect></svg>
+        <div class="head" style="font-size: 13px; color: #6B4A2B;">JOT IT DOWN</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
