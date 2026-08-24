@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 
 import '../data/event_log_store.dart';
 import '../domain/task_history.dart';
-import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
-import 'theme/pet_radii.dart';
-import 'theme/pet_shadows.dart';
+import 'theme/pixel_background.dart';
 import 'theme/pet_spacing.dart';
 import 'theme/pet_text_styles.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({
@@ -40,9 +40,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: const Text('Things we did together'),
         backgroundColor: PetColors.transparent,
+        // Same auto-back behavior as the stock AppBar leading — shown only
+        // when the route can pop — with the pixel icon skin.
+        leading: (ModalRoute.of(context)?.canPop ?? false)
+            ? IconButton(
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const PxIcon(PxIconData.back),
+              )
+            : null,
       ),
-      body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+      body: PixelBackground(
         child: FutureBuilder<List<HistoryWeek>>(
           future: _history,
           builder: (context, snapshot) {
@@ -92,13 +100,8 @@ class _WeekCard extends StatelessWidget {
   final bool isCurrentWeek;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => PxCard(
     padding: const EdgeInsets.all(PetSpacing.s18),
-    decoration: const BoxDecoration(
-      color: PetColors.white,
-      borderRadius: PetRadii.cardBorder,
-      boxShadow: PetShadows.panel,
-    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -123,7 +126,14 @@ class _WeekCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Text('♥ ', style: PetTextStyles.small),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 3, right: 5),
+                    child: PxIcon(
+                      PxIconData.heart,
+                      size: 12,
+                      color: PetColors.bodySoft,
+                    ),
+                  ),
                   Expanded(
                     child: Text(item.title, style: PetTextStyles.body15Soft),
                   ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'pet_colors.dart';
-import 'pet_radii.dart';
 import 'pet_text_styles.dart';
+import 'stair_border.dart';
 
 abstract final class AppTheme {
   static const LinearGradient screenGradient = LinearGradient(
@@ -14,6 +14,7 @@ abstract final class AppTheme {
   static ThemeData get light => ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
+    fontFamily: PetTextStyles.bodyFamily,
     scaffoldBackgroundColor: PetColors.screenTop,
     colorScheme: const ColorScheme.light(
       primary: PetColors.primary,
@@ -34,20 +35,54 @@ abstract final class AppTheme {
       filled: true,
       fillColor: PetColors.inputFill,
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      border: OutlineInputBorder(
-        borderRadius: PetRadii.inputBorder,
+      border: StairInputBorder(
         borderSide: BorderSide(color: PetColors.stroke, width: 2),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: PetRadii.inputBorder,
+      enabledBorder: StairInputBorder(
         borderSide: BorderSide(color: PetColors.stroke, width: 2),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: PetRadii.inputBorder,
+      focusedBorder: StairInputBorder(
         borderSide: BorderSide(color: PetColors.primary, width: 2),
       ),
-      hintStyle: TextStyle(fontSize: 16, color: PetColors.caption),
+      hintStyle: PetTextStyles.inputHint,
     ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        shape: const StairBorder.large(),
+        textStyle: PetTextStyles.button,
+        minimumSize: const Size(0, 54),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: const StairBorder.large(),
+        side: const BorderSide(color: PetColors.bodyStrong, width: 2),
+        textStyle: PetTextStyles.button.copyWith(color: PetColors.bodyStrong),
+        minimumSize: const Size(0, 54),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: const StairBorder.small(),
+        textStyle: PetTextStyles.body16Strong,
+      ),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: const WidgetStatePropertyAll<OutlinedBorder>(
+          StairBorder.small(),
+        ),
+        textStyle: const WidgetStatePropertyAll<TextStyle>(
+          PetTextStyles.body15Strong,
+        ),
+      ),
+    ),
+    dialogTheme: const DialogThemeData(shape: StairBorder.large()),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: PetColors.screenTop,
+      shape: StairBorder.large(),
+    ),
+    snackBarTheme: const SnackBarThemeData(shape: StairBorder.small()),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: PetColors.primary,
       selectionColor: PetColors.doneFill,

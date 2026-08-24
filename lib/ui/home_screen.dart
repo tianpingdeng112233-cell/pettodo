@@ -10,25 +10,31 @@ import 'history_screen.dart';
 import 'hatch_request_screen.dart';
 import 'settings_screen.dart';
 import 'task_editor_sheet.dart';
-import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
 import 'theme/pet_motion.dart';
-import 'theme/pet_radii.dart';
+import 'theme/pixel_background.dart';
 import 'theme/pet_shadows.dart';
 import 'theme/pet_spacing.dart';
 import 'theme/pet_stage_theme.dart';
 import 'theme/pet_text_styles.dart';
+import 'theme/stair_border.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     required this.controller,
     required this.eventLog,
+    this.now,
+    this.visualTestMode = false,
   });
 
   final AppController controller;
   final EventLogStore eventLog;
+  final DateTime? now;
+  final bool visualTestMode;
 
   @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
@@ -38,13 +44,17 @@ class HomeScreen extends StatelessWidget {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
     child: Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+      body: PixelBackground(
+        showHalo: true,
         child: Stack(
           children: <Widget>[
-            const _SunHalo(),
             Positioned.fill(
-              child: _HomeContent(controller: controller, eventLog: eventLog),
+              child: _HomeContent(
+                controller: controller,
+                eventLog: eventLog,
+                now: now,
+                visualTestMode: visualTestMode,
+              ),
             ),
             _UnlockBanner(controller: controller),
             if (controller.theaterVisible)
@@ -57,10 +67,17 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HomeContent extends StatefulWidget {
-  const _HomeContent({required this.controller, required this.eventLog});
+  const _HomeContent({
+    required this.controller,
+    required this.eventLog,
+    required this.now,
+    required this.visualTestMode,
+  });
 
   final AppController controller;
   final EventLogStore eventLog;
+  final DateTime? now;
+  final bool visualTestMode;
 
   @override
   State<_HomeContent> createState() => _HomeContentState();
@@ -166,7 +183,7 @@ class _HomeContentState extends State<_HomeContent> {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  _dateGreeting(DateTime.now()),
+                  _dateGreeting(widget.now ?? DateTime.now()),
                   style: PetTextStyles.status,
                 ),
               ),
@@ -187,8 +204,8 @@ class _HomeContentState extends State<_HomeContent> {
                   child: const SizedBox(
                     width: PetSpacing.s44,
                     height: PetSpacing.s44,
-                    child: Icon(
-                      Icons.tune_rounded,
+                    child: PxIcon(
+                      PxIconData.sliders,
                       size: PetSpacing.s20,
                       color: PetColors.caption,
                     ),
@@ -199,7 +216,13 @@ class _HomeContentState extends State<_HomeContent> {
           ),
         ),
       ),
-      Flexible(flex: 4, child: _PetStage(controller: controller)),
+      Flexible(
+        flex: 4,
+        child: _PetStage(
+          controller: controller,
+          visualTestMode: widget.visualTestMode,
+        ),
+      ),
       _TreatBar(controller: controller),
       Flexible(
         flex: 5,
@@ -229,37 +252,18 @@ class _HomeContentState extends State<_HomeContent> {
   );
 }
 
-class _SunHalo extends StatelessWidget {
-  const _SunHalo();
-
-  @override
-  Widget build(BuildContext context) => Positioned(
-    top: PetSpacing.sunTop,
-    left: (MediaQuery.sizeOf(context).width - PetSpacing.sunSize) / 2,
-    child: const ExcludeSemantics(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: <Color>[PetColors.sunHalo, PetColors.transparent],
-            stops: <double>[PetSpacing.zero, PetEffects.haloStop],
-          ),
-        ),
-        child: SizedBox.square(dimension: PetSpacing.sunSize),
-      ),
-    ),
-  );
-}
-
 class _PetStage extends StatelessWidget {
-  const _PetStage({required this.controller});
+  const _PetStage({required this.controller, required this.visualTestMode});
 
   final AppController controller;
+  final bool visualTestMode;
 
   @override
   Widget build(BuildContext context) {
     final name = controller.state.petName;
-    final status = controller.statusLine;
+    final status = visualTestMode
+        ? '$name is having a cozy little nap'
+        : controller.statusLine;
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: SizedBox(
@@ -268,15 +272,15 @@ class _PetStage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            _BreathingSprite(controller: controller),
+            _BreathingSprite(
+              controller: controller,
+              visualTestMode: visualTestMode,
+            ),
             Transform.translate(
               offset: const Offset(PetSpacing.zero, -PetSpacing.s12),
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  color: PetColors.groundShadow,
-                  borderRadius: PetRadii.pillBorder,
-                ),
-                child: SizedBox(width: PetSpacing.s170, height: PetSpacing.s20),
+              child: const PxGroundBar(
+                width: PetSpacing.s170,
+                height: PetSpacing.s20,
               ),
             ),
             Transform.translate(
@@ -287,9 +291,9 @@ class _PetStage extends StatelessWidget {
                   Text(name, style: PetTextStyles.display30),
                   const SizedBox(width: PetSpacing.s8),
                   DecoratedBox(
-                    decoration: const BoxDecoration(
+                    decoration: const ShapeDecoration(
                       color: PetColors.badgeFill,
-                      borderRadius: PetRadii.pillBorder,
+                      shape: StairBorder.small(),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -328,14 +332,15 @@ class _PetStage extends StatelessWidget {
                 container: true,
                 excludeSemantics: true,
                 button: true,
-                label: 'Your pet is on its way — no rush. Open adoption request',
+                label:
+                    'Your pet is on its way — no rush. Open adoption request',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => HatchRequestScreen(controller: controller),
                   ),
                 ),
                 child: InkWell(
-                  borderRadius: PetRadii.pillBorder,
+                  customBorder: const StairBorder.small(),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) =>
@@ -363,9 +368,13 @@ class _PetStage extends StatelessWidget {
 }
 
 class _BreathingSprite extends StatefulWidget {
-  const _BreathingSprite({required this.controller});
+  const _BreathingSprite({
+    required this.controller,
+    required this.visualTestMode,
+  });
 
   final AppController controller;
+  final bool visualTestMode;
 
   @override
   State<_BreathingSprite> createState() => _BreathingSpriteState();
@@ -420,7 +429,9 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                   animation: _breath,
                   builder: (context, child) {
                     final eased = Curves.easeInOut.transform(_breath.value);
-                    final isIdle = widget.controller.petAnimation == 'idle';
+                    final isIdle =
+                        widget.visualTestMode ||
+                        widget.controller.petAnimation == 'idle';
                     return Transform.translate(
                       offset: Offset(
                         PetSpacing.zero,
@@ -437,22 +448,28 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                     );
                   },
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: treatment.frameColor,
-                        width: treatment.frameWidth,
+                    decoration: ShapeDecoration(
+                      color: PetColors.inputFill,
+                      shape: StairBorder.large(
+                        side: BorderSide(
+                          color: treatment.frameColor,
+                          width: treatment.frameWidth,
+                        ),
                       ),
-                      borderRadius: PetRadii.spriteBorder,
                     ),
                     child: PetSprite(
                       atlas: widget.controller.spriteAtlas,
-                      stateName: widget.controller.petAnimation,
-                      fixedFrame: widget.controller.petAnimationFrame,
+                      stateName: widget.visualTestMode
+                          ? 'idle'
+                          : widget.controller.petAnimation,
+                      fixedFrame: widget.visualTestMode
+                          ? 0
+                          : widget.controller.petAnimationFrame,
                     ),
                   ),
                 ),
               ),
-              if (widget.controller.scheduleShowsZzz)
+              if (widget.controller.scheduleShowsZzz && !widget.visualTestMode)
                 const Positioned(
                   top: PetSpacing.s12,
                   right: PetSpacing.s10,
@@ -535,7 +552,11 @@ class _TreatBar extends StatelessWidget {
                 builder: (_) => CollectionScreen(controller: controller),
               ),
             ),
-            icon: const Icon(Icons.auto_awesome_rounded),
+            icon: const PxIcon(
+              PxIconData.sparkle,
+              size: PetSpacing.s18,
+              color: PetColors.accentText,
+            ),
             label: const Text('Collection'),
           ),
         ),
@@ -546,16 +567,19 @@ class _TreatBar extends StatelessWidget {
             enabled: controller.state.treats > 0,
             label:
                 'Feed ${controller.state.petName}, ${controller.state.treats} ${controller.selectedPet.treatName}s available',
-            child: FilledButton(
+            child: PxButton(
               onPressed: controller.state.treats > 0
                   ? () async {
                       final fed = await controller.feedTreat();
                       if (fed) await HapticFeedback.lightImpact();
                     }
                   : null,
-              child: Text(
-                '${controller.selectedPet.treatEmoji} Feed · ${controller.state.treats}',
+              icon: const PxIcon(
+                PxIconData.bone,
+                size: PetSpacing.s20,
+                color: PetColors.white,
               ),
+              label: Text('Feed · ${controller.state.treats}'),
             ),
           ),
         ),
@@ -607,7 +631,7 @@ class _TaskList extends StatelessWidget {
               IconButton(
                 tooltip: 'Things we did together',
                 onPressed: onHistory,
-                icon: const Icon(Icons.favorite_outline_rounded),
+                icon: const PxIcon(PxIconData.heart),
               ),
               TextButton(
                 onPressed: onToggleEditing,
@@ -645,7 +669,7 @@ class _TaskList extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: onQuickAdd,
-            icon: const Icon(Icons.add_rounded),
+            icon: const PxIcon(PxIconData.plus, size: PetSpacing.s18),
             label: Text(
               onQuickAdd == null
                   ? 'Seven little things are plenty for now'
@@ -703,21 +727,27 @@ class _TaskCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: PetMotion.task,
         constraints: const BoxConstraints(minHeight: PetSpacing.s78),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: checked ? PetColors.doneFill : PetColors.white,
-          borderRadius: PetRadii.cardBorder,
-          boxShadow: checked ? PetShadows.taskDone : PetShadows.task,
+          shape: StairBorder.large(
+            side: BorderSide(
+              color: checked ? PetColors.primary : PetColors.stroke,
+              width: 2,
+            ),
+          ),
+          shadows: checked ? PetShadows.taskDone : PetShadows.task,
         ),
         child: Material(
           color: PetColors.transparent,
-          borderRadius: PetRadii.cardBorder,
+          shape: const StairBorder.large(),
+          clipBehavior: Clip.hardEdge,
           child: InkWell(
             onTap: editing
                 ? onEdit
                 : checked
                 ? null
                 : onTap,
-            borderRadius: PetRadii.cardBorder,
+            customBorder: const StairBorder.large(),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: PetSpacing.s20,
@@ -725,30 +755,7 @@ class _TaskCard extends StatelessWidget {
               ),
               child: Row(
                 children: <Widget>[
-                  ExcludeSemantics(
-                    child: AnimatedContainer(
-                      duration: PetMotion.task,
-                      width: PetSpacing.s44,
-                      height: PetSpacing.s44,
-                      decoration: BoxDecoration(
-                        color: checked
-                            ? PetColors.primary
-                            : PetColors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: checked ? PetColors.primary : PetColors.stroke,
-                          width: PetSpacing.stroke,
-                        ),
-                      ),
-                      child: checked
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: PetSpacing.s24,
-                              color: PetColors.white,
-                            )
-                          : null,
-                    ),
-                  ),
+                  ExcludeSemantics(child: PxCheckbox(checked: checked)),
                   const SizedBox(width: PetSpacing.s16),
                   Expanded(
                     child: Column(
@@ -783,12 +790,12 @@ class _TaskCard extends StatelessWidget {
                     IconButton(
                       tooltip: 'Edit $title',
                       onPressed: onEdit,
-                      icon: const Icon(Icons.edit_outlined),
+                      icon: const PxIcon(PxIconData.edit),
                     ),
                     IconButton(
                       tooltip: 'Remove $title',
                       onPressed: onRemove,
-                      icon: const Icon(Icons.remove_circle_outline_rounded),
+                      icon: const PxIcon(PxIconData.minus),
                     ),
                   ],
                 ],
@@ -879,10 +886,12 @@ class _UnlockBanner extends StatelessWidget {
                 horizontal: PetSpacing.s18,
                 vertical: PetSpacing.s14,
               ),
-              decoration: const BoxDecoration(
+              decoration: const ShapeDecoration(
                 color: PetColors.white,
-                borderRadius: PetRadii.bannerBorder,
-                boxShadow: PetShadows.banner,
+                shape: StairBorder.large(
+                  side: BorderSide(color: PetColors.stroke, width: 2),
+                ),
+                shadows: PetShadows.banner,
               ),
               child: Row(
                 children: <Widget>[
@@ -1006,31 +1015,10 @@ class _PrimaryButton extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    button: true,
-    child: DecoratedBox(
-      decoration: const BoxDecoration(
-        color: PetColors.primary,
-        borderRadius: PetRadii.pillBorder,
-        boxShadow: PetShadows.theaterButton,
-      ),
-      child: Material(
-        color: PetColors.transparent,
-        borderRadius: PetRadii.pillBorder,
-        child: InkWell(
-          borderRadius: PetRadii.pillBorder,
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? PetSpacing.s32 : PetSpacing.s20,
-              vertical: PetSpacing.s13,
-            ),
-            child: Text(label, style: PetTextStyles.button16),
-          ),
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => PxButton(
+    label: Text(label, style: PetTextStyles.button16),
+    onPressed: onTap,
+    compact: compact,
   );
 }
 
@@ -1086,7 +1074,8 @@ class _StarPainter extends CustomPainter {
       );
       final x = (index * 73 % 337) / 337 * size.width;
       final y = (index * 127 % 691) / 691 * size.height;
-      canvas.drawCircle(Offset(x, y), PetSpacing.xxs + (index % 3), paint);
+      final side = PetSpacing.xxs + (index % 3);
+      canvas.drawRect(Rect.fromLTWH(x, y, side, side), paint);
     }
   }
 

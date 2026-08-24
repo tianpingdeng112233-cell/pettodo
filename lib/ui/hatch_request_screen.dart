@@ -7,11 +7,13 @@ import 'package:share_plus/share_plus.dart';
 
 import '../application/app_controller.dart';
 import '../data/pet_pack_service.dart';
-import 'theme/app_theme.dart';
 import 'theme/pet_colors.dart';
-import 'theme/pet_radii.dart';
+import 'theme/pixel_background.dart';
 import 'theme/pet_spacing.dart';
 import 'theme/pet_text_styles.dart';
+import 'theme/stair_border.dart';
+import 'widgets/pixel_components.dart';
+import 'widgets/pixel_icon.dart';
 
 const String invalidPackMessage =
     "This pack doesn't fit — ask for a fresh one.";
@@ -128,8 +130,7 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppTheme.screenGradient),
+    body: PixelBackground(
       child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -144,7 +145,7 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
                 IconButton(
                   tooltip: 'Back',
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: const PxIcon(PxIconData.back),
                 ),
                 const SizedBox(width: PetSpacing.s8),
                 const Expanded(
@@ -199,7 +200,11 @@ class _NewRequest extends StatelessWidget {
     children: <Widget>[
       const Center(
         child: ExcludeSemantics(
-          child: Text('🐾', style: TextStyle(fontSize: PetSpacing.s78)),
+          child: PxIcon(
+            PxIconData.paw,
+            size: PetSpacing.s78,
+            color: PetColors.inactive,
+          ),
         ),
       ),
       const Text(
@@ -219,8 +224,11 @@ class _NewRequest extends StatelessWidget {
               label: 'Pet photo ${index + 1}',
               child: Stack(
                 children: <Widget>[
-                  ClipRRect(
-                    borderRadius: PetRadii.spriteBorder,
+                  ClipPath(
+                    clipper: const ShapeBorderClipper(
+                      shape: StairBorder.large(),
+                    ),
+                    clipBehavior: Clip.hardEdge,
                     child: Image.file(
                       File(photos[index].path),
                       width: PetSpacing.s78,
@@ -233,7 +241,7 @@ class _NewRequest extends StatelessWidget {
                     child: IconButton(
                       tooltip: 'Remove photo ${index + 1}',
                       onPressed: () => onRemove(index),
-                      icon: const Icon(Icons.cancel_rounded),
+                      icon: const PxIcon(PxIconData.close),
                     ),
                   ),
                 ],
@@ -247,7 +255,7 @@ class _NewRequest extends StatelessWidget {
           Expanded(
             child: OutlinedButton.icon(
               onPressed: photos.length < 5 ? onGallery : null,
-              icon: const Icon(Icons.photo_library_outlined),
+              icon: const PxIcon(PxIconData.photo, size: 18),
               label: const Text('Photo library'),
             ),
           ),
@@ -255,7 +263,7 @@ class _NewRequest extends StatelessWidget {
           Expanded(
             child: OutlinedButton.icon(
               onPressed: photos.length < 5 ? onCamera : null,
-              icon: const Icon(Icons.camera_alt_outlined),
+              icon: const PxIcon(PxIconData.camera, size: 18),
               label: const Text('Camera'),
             ),
           ),
@@ -289,7 +297,11 @@ class _PendingRequest extends StatelessWidget {
     children: <Widget>[
       const Center(
         child: ExcludeSemantics(
-          child: Text('🐾', style: TextStyle(fontSize: PetSpacing.s78)),
+          child: PxIcon(
+            PxIconData.paw,
+            size: PetSpacing.s78,
+            color: PetColors.inactive,
+          ),
         ),
       ),
       const Text(
@@ -314,14 +326,18 @@ class _PendingRequest extends StatelessWidget {
               origin: box.localToGlobal(Offset.zero) & box.size,
             );
           },
-          icon: const Icon(Icons.ios_share_rounded),
+          icon: const PxIcon(
+            PxIconData.share,
+            size: 18,
+            color: PetColors.white,
+          ),
           label: const Text('Send to the adoption center'),
         ),
       ),
       const SizedBox(height: PetSpacing.s10),
       OutlinedButton.icon(
         onPressed: () => importPetPackFromPicker(context, controller),
-        icon: const Icon(Icons.inventory_2_outlined),
+        icon: const PxIcon(PxIconData.package, size: 18),
         label: const Text('Import pet pack'),
       ),
       const SizedBox(height: PetSpacing.s10),
@@ -342,17 +358,11 @@ class _HatchPanel extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: const BoxDecoration(
-      color: PetColors.white,
-      borderRadius: PetRadii.cardBorder,
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(PetSpacing.s20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
-      ),
+  Widget build(BuildContext context) => PxCard(
+    padding: const EdgeInsets.all(PetSpacing.s20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     ),
   );
 }
