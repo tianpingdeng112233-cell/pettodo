@@ -6,6 +6,7 @@ import '../data/event_log_store.dart';
 import '../domain/app_state.dart';
 import '../domain/onboarding_flow.dart';
 import '../sprite/pet_sprite.dart';
+import '../sprite/rig_pet_sprite.dart';
 import 'collection_screen.dart';
 import 'history_screen.dart';
 import 'hatch_request_screen.dart';
@@ -420,7 +421,13 @@ class _BreathingSpriteState extends State<_BreathingSprite>
             dy: _lastTapPosition.dy - PetSpacing.s208 / 2,
           );
         },
-        onLongPress: widget.controller.nuzzlePet,
+        onLongPressStart: (details) {
+          _lastTapPosition = details.localPosition;
+          widget.controller.nuzzlePet(
+            dx: _lastTapPosition.dx - PetSpacing.s192 / 2,
+            dy: _lastTapPosition.dy - PetSpacing.s208 / 2,
+          );
+        },
         child: SizedBox(
           width: PetSpacing.s192,
           height: PetSpacing.s208,
@@ -433,8 +440,9 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                   builder: (context, child) {
                     final eased = Curves.easeInOut.transform(_breath.value);
                     final isIdle =
-                        widget.visualTestMode ||
-                        widget.controller.petAnimation == 'idle';
+                        !widget.controller.selectedPet.isRig &&
+                        (widget.visualTestMode ||
+                            widget.controller.petAnimation == 'idle');
                     return Transform.translate(
                       offset: Offset(
                         PetSpacing.zero,
@@ -460,15 +468,28 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                         ),
                       ),
                     ),
-                    child: PetSprite(
-                      atlas: widget.controller.spriteAtlas,
-                      stateName: widget.visualTestMode
-                          ? 'idle'
-                          : widget.controller.petAnimation,
-                      fixedFrame: widget.visualTestMode
-                          ? 0
-                          : widget.controller.petAnimationFrame,
-                    ),
+                    child: widget.controller.selectedPet.isRig
+                        ? RigPetSprite(
+                            key: ValueKey<(String, int)>((
+                              widget.controller.selectedPet.id,
+                              widget.controller.rigAnimationNonce,
+                            )),
+                            pet: widget.controller.rigPet!,
+                            action: widget.controller.rigAction,
+                            target: widget.controller.rigTarget,
+                            fixedElapsed: widget.visualTestMode
+                                ? Duration.zero
+                                : null,
+                          )
+                        : PetSprite(
+                            atlas: widget.controller.spriteAtlas,
+                            stateName: widget.visualTestMode
+                                ? 'idle'
+                                : widget.controller.petAnimation,
+                            fixedFrame: widget.visualTestMode
+                                ? 0
+                                : widget.controller.petAnimationFrame,
+                          ),
                   ),
                 ),
               ),
@@ -1047,10 +1068,15 @@ class _LittleTheater extends StatelessWidget {
                   child: SizedBox(
                     width: PetSpacing.s192,
                     height: PetSpacing.s208,
-                    child: PetSprite(
-                      atlas: controller.spriteAtlas,
-                      stateName: 'review',
-                    ),
+                    child: controller.selectedPet.isRig
+                        ? RigPetSprite(
+                            pet: controller.rigPet!,
+                            action: controller.rigAction,
+                          )
+                        : PetSprite(
+                            atlas: controller.spriteAtlas,
+                            stateName: 'review',
+                          ),
                   ),
                 ),
                 const SizedBox(height: PetSpacing.s16),

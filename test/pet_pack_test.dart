@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/data/hatch_request_store.dart';
 import 'package:pettodo/data/pet_pack_service.dart';
+import 'package:pettodo/sprite/rig_pet.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 
 void main() {
@@ -14,6 +16,7 @@ void main() {
   late Directory temporary;
   late Uint8List metadataBytes;
   late Uint8List spritesheetBytes;
+  late Uint8List poseBytes;
 
   setUp(() async {
     temporary = Directory.systemTemp.createTempSync('pettodo-pack-test');
@@ -23,6 +26,7 @@ void main() {
     spritesheetBytes = (await rootBundle.load(
       'assets/pets/choco/spritesheet-extended.webp',
     )).buffer.asUint8List();
+    poseBytes = await _makePosePng();
   });
 
   tearDown(() => temporary.deleteSync(recursive: true));
@@ -180,6 +184,180 @@ void main() {
     );
   });
 
+  test(
+    'rig pack validates, installs, and reloads through the v3 route',
+    () async {
+      final service = PetPackService(() async => temporary);
+      final pack = _writeRigPack(temporary, poseBytes: poseBytes);
+
+      final validated = await service.validate(pack);
+      expect(validated.descriptor.format, PetAssetFormat.rigV3);
+      expect(validated.descriptor.rig?.species, 'dog');
+      expect(
+        validated.files.keys,
+        containsAll(<String>[
+          'pack.json',
+          'rig.json',
+          'front-open.png',
+          'front-closed.png',
+          'sleep.png',
+          'side.png',
+        ]),
+      );
+
+      final installed = await service.install(pack);
+      expect(
+        installed.descriptor.rig?.rigAsset,
+        endsWith('/pets/pip/rig.json'),
+      );
+      final loaded = await service.loadInstalledPets();
+      expect(loaded, hasLength(1));
+      expect(loaded.single.id, 'pip');
+      expect(loaded.single.isRig, isTrue);
+    },
+  );
+
+  test(
+    'rig pack rejects unsupported species and invalid coordinates',
+    () async {
+      final service = PetPackService(() async => temporary);
+      final unsupported = _writeRigPack(
+        temporary,
+        poseBytes: poseBytes,
+        species: 'rabbit',
+        fileName: 'unsupported',
+      );
+      final invalidRig = _rigJson();
+      final front = invalidRig['front']! as Map<String, Object?>;
+      final boxes = front['boxes']! as Map<String, Object?>;
+      boxes['head'] = <int>[16, 4, 80, 28];
+      final invalid = _writeRigPack(
+        temporary,
+        poseBytes: poseBytes,
+        rig: invalidRig,
+        fileName: 'invalid-rig',
+      );
+
+      expect(service.validate(unsupported), throwsA(isA<PetPackException>()));
+      expect(service.validate(invalid), throwsA(isA<PetPackException>()));
+    },
+  );
+
+  test(
+    'rig pack rejects missing pose files and directory-prefixed entries',
+    () async {
+      final service = PetPackService(() async => temporary);
+      final missing = _writeRigPack(
+        temporary,
+        poseBytes: poseBytes,
+        includeSide: false,
+        fileName: 'missing-side',
+      );
+      final nested = _writeRigPack(
+        temporary,
+        poseBytes: poseBytes,
+        includeNestedEntry: true,
+        fileName: 'nested-entry',
+      );
+
+      expect(service.validate(missing), throwsA(isA<PetPackException>()));
+      expect(service.validate(nested), throwsA(isA<PetPackException>()));
+    },
+  );
+
+  test(
+    'rig loader precomposes front, closed-head, body, tail, and side legs',
+    () async {
+      final service = PetPackService(() async => temporary);
+      final installed = await service.install(
+        _writeRigPack(temporary, poseBytes: poseBytes),
+      );
+
+      final pet = await RigPetLoader().load(installed.descriptor);
+      addTearDown(pet.dispose);
+      expect(pet.frontLayers.body.width, 64);
+      expect(pet.frontLayers.closedHead, isNotNull);
+      expect(pet.frontLayers.tail.height, 64);
+      expect(pet.sideLayers.frontLeg, isNotNull);
+      expect(pet.sideLayers.hindLeg, isNotNull);
+    },
+  );
+
+  test(
+    'v2 and rig pets load together and registry replacement stays last-wins',
+    () async {
+      final service = PetPackService(() async => temporary);
+      await service.install(
+        _writePack(
+          temporary,
+          id: 'atlas-pet',
+          metadataBytes: metadataBytes,
+          spritesheetBytes: spritesheetBytes,
+        ),
+      );
+      await service.install(
+        _writeRigPack(temporary, id: 'rig-pet', poseBytes: poseBytes),
+      );
+
+      final installed = await service.loadInstalledPets();
+      expect(installed.map((pet) => pet.id), <String>['atlas-pet', 'rig-pet']);
+      expect(installed.map((pet) => pet.format), <PetAssetFormat>[
+        PetAssetFormat.atlasV2,
+        PetAssetFormat.rigV3,
+      ]);
+      final merged = mergePetRegistry(<PetAssetDescriptor>[
+        installed.last.copyWith(
+          metadataAsset: 'old-rig',
+          spritesheetAsset: 'old-front',
+        ),
+      ], installed);
+      // replacement wins by content; position stays stable (first insertion)
+      // so a re-imported pet never jumps around the Collection
+      expect(merged.map((pet) => pet.id), <String>['rig-pet', 'atlas-pet']);
+      final overridden = merged.firstWhere((pet) => pet.id == 'rig-pet');
+      expect(overridden.metadataAsset, endsWith('/rig-pet/rig.json'));
+    },
+  );
+
+  test(
+    'same-id rig install atomically replaces an atlas installation',
+    () async {
+      final service = PetPackService(() async => temporary);
+      await service.install(
+        _writePack(
+          temporary,
+          id: 'same-pet',
+          metadataBytes: metadataBytes,
+          spritesheetBytes: spritesheetBytes,
+        ),
+      );
+
+      final installed = await service.install(
+        _writeRigPack(
+          temporary,
+          id: 'same-pet',
+          displayName: 'Rig Replacement',
+          poseBytes: poseBytes,
+        ),
+      );
+
+      expect(installed.descriptor.isRig, isTrue);
+      expect(
+        File(
+          '${temporary.path}/pets/same-pet/spritesheet-extended.webp',
+        ).existsSync(),
+        isFalse,
+      );
+      expect(
+        File('${temporary.path}/pets/same-pet/rig.json').existsSync(),
+        isTrue,
+      );
+      final reloaded = await service.loadInstalledPets();
+      expect(reloaded, hasLength(1));
+      expect(reloaded.single.formatVersion, 3);
+    },
+  );
+
   test('create then import matching pack clears the request', () async {
     final requests = HatchRequestStore(() async => temporary);
     final photo = File('${temporary.path}/source.jpg')
@@ -233,6 +411,154 @@ void main() {
       expect(merged.last.source, PetAssetSource.fileSystem);
     },
   );
+
+  test(
+    'rig pack rejects a pose image without a transparent background',
+    () async {
+      final service = PetPackService(() async => temporary);
+      final opaque = await _makeOpaquePosePng();
+      final pack = _writeRigPack(
+        temporary,
+        poseBytes: opaque,
+        fileName: 'opaque-pose',
+      );
+      expect(service.validate(pack), throwsA(isA<PetPackException>()));
+    },
+  );
+
+  test(
+    'body layer erases full width to the chin and keeps the neck strip',
+    () async {
+      final service = PetPackService(() async => temporary);
+      final installed = await service.install(
+        _writeRigPack(temporary, poseBytes: poseBytes),
+      );
+      final pet = await RigPetLoader().load(installed.descriptor);
+      addTearDown(pet.dispose);
+      final data = (await pet.frontLayers.body.toByteData())!;
+      int alpha(int x, int y) =>
+          data.getUint8((y * pet.frontWidth + x) * 4 + 3);
+      // head box is [16,4,48,28]: full-width erase above the neck notch,
+      // sides erased down to the chin line, protected neck strip kept
+      expect(alpha(32, 20), 0);
+      expect(alpha(18, 27), lessThan(40));
+      expect(alpha(32, 27), greaterThan(200));
+    },
+  );
+}
+
+Future<Uint8List> _makeOpaquePosePng() async {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder)
+    ..drawColor(const ui.Color(0xfff2e5cf), ui.BlendMode.src)
+    ..drawRRect(
+      ui.RRect.fromRectAndRadius(
+        const ui.Rect.fromLTWH(8, 4, 48, 56),
+        const ui.Radius.circular(8),
+      ),
+      ui.Paint()..color = const ui.Color(0xffb87333),
+    );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(64, 64);
+  picture.dispose();
+  final data = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  return data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+}
+
+Future<Uint8List> _makePosePng() async {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder)
+    ..drawColor(const ui.Color(0x00000000), ui.BlendMode.src)
+    ..drawRRect(
+      ui.RRect.fromRectAndRadius(
+        const ui.Rect.fromLTWH(8, 4, 48, 56),
+        const ui.Radius.circular(8),
+      ),
+      ui.Paint()..color = const ui.Color(0xffb87333),
+    );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(64, 64);
+  picture.dispose();
+  final data = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  return data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+}
+
+Map<String, Object?> _rigJson() => <String, Object?>{
+  'rigVersion': 1,
+  'front': <String, Object?>{
+    'groundY': 60,
+    'boxes': <String, Object?>{
+      'head': <int>[16, 4, 48, 28],
+      'tail': <int>[50, 24, 62, 50],
+      'leftFrontLeg': <int>[18, 34, 28, 60],
+      'rightFrontLeg': <int>[36, 34, 46, 60],
+    },
+    'pivots': <String, Object?>{
+      'head': <int>[32, 26],
+      'tail': <int>[52, 28],
+    },
+  },
+  'side': <String, Object?>{
+    'groundY': 60,
+    'facing': 'right',
+    'boxes': <String, Object?>{
+      'head': <int>[38, 8, 62, 30],
+      'tail': <int>[2, 16, 18, 36],
+      'frontLeg': <int>[40, 30, 49, 60],
+      'hindLeg': <int>[20, 30, 29, 60],
+    },
+    'pivots': <String, Object?>{
+      'head': <int>[42, 28],
+      'tail': <int>[16, 24],
+      'frontLeg': <int>[44, 32],
+      'hindLeg': <int>[24, 32],
+    },
+  },
+};
+
+File _writeRigPack(
+  Directory directory, {
+  String id = 'pip',
+  String displayName = 'Pip',
+  String species = 'dog',
+  String fileName = 'Pip',
+  required Uint8List poseBytes,
+  Map<String, Object?>? rig,
+  bool includeSide = true,
+  bool includeNestedEntry = false,
+}) {
+  final packBytes = utf8.encode(
+    jsonEncode(<String, Object?>{
+      'formatVersion': 3,
+      'id': id,
+      'display_name': displayName,
+      'species': species,
+      'treat': <String, Object?>{'name': 'Tiny Biscuit', 'emoji': '🪴'},
+    }),
+  );
+  final rigBytes = utf8.encode(jsonEncode(rig ?? _rigJson()));
+  final archive = Archive()
+    ..addFile(ArchiveFile('pack.json', packBytes.length, packBytes))
+    ..addFile(ArchiveFile('rig.json', rigBytes.length, rigBytes));
+  for (final name in const <String>[
+    'front-open.png',
+    'front-closed.png',
+    'sleep.png',
+    'side.png',
+  ]) {
+    if (name == 'side.png' && !includeSide) continue;
+    archive.addFile(ArchiveFile(name, poseBytes.length, poseBytes));
+  }
+  if (includeNestedEntry) {
+    archive.addFile(
+      ArchiveFile('nested/extra.png', poseBytes.length, poseBytes),
+    );
+  }
+  final output = File('${directory.path}/$fileName.pettodopet');
+  output.writeAsBytesSync(ZipEncoder().encode(archive)!);
+  return output;
 }
 
 File _writePack(

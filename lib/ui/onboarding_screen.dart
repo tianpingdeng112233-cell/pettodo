@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import '../domain/onboarding_flow.dart';
 import '../sprite/pet_sprite.dart';
+import '../sprite/rig_pet.dart';
+import '../sprite/rig_pet_sprite.dart';
 import '../sprite/sprite_atlas.dart';
 import 'hatch_request_screen.dart';
 import 'theme/pet_colors.dart';
@@ -393,11 +395,27 @@ class _PetChoice extends StatelessWidget {
             SizedBox(
               width: PetSpacing.s64,
               height: 69,
-              child: FutureBuilder<LoadedSpriteAtlas>(
-                future: controller.petAtlas(pet),
-                builder: (context, snapshot) => snapshot.hasData
-                    ? PetSprite(atlas: snapshot.data!, fixedFrame: 0)
-                    : const PxIcon(PxIconData.paw, color: PetColors.inactive),
+              child: FutureBuilder<Object>(
+                future: pet.isRig
+                    ? controller.petRig(pet)
+                    : controller.petAtlas(pet),
+                builder: (context, snapshot) {
+                  final visual = snapshot.data;
+                  if (visual is LoadedRigPet) {
+                    return RigPetSprite(
+                      pet: visual,
+                      fixedElapsed: Duration.zero,
+                    );
+                  }
+                  if (visual is LoadedSpriteAtlas) {
+                    // Still frame: a list of looping pets is visual noise.
+                    return PetSprite(atlas: visual, fixedFrame: 0);
+                  }
+                  return const PxIcon(
+                    PxIconData.paw,
+                    color: PetColors.inactive,
+                  );
+                },
               ),
             ),
             const SizedBox(height: PetSpacing.s4),
@@ -1056,11 +1074,13 @@ class _OnboardingSprite extends StatelessWidget {
     child: SizedBox(
       width: width,
       height: height,
-      child: PetSprite(
-        atlas: controller.spriteAtlas,
-        stateName: state,
-        fixedFrame: fixedFrame,
-      ),
+      child: controller.selectedPet.isRig
+          ? RigPetSprite(pet: controller.rigPet!, fixedElapsed: Duration.zero)
+          : PetSprite(
+              atlas: controller.spriteAtlas,
+              stateName: state,
+              fixedFrame: fixedFrame,
+            ),
     ),
   );
 }
