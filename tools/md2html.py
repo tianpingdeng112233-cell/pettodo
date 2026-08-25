@@ -35,8 +35,21 @@ def convert(md):
     def flushq():
         if quote:
             out.append('<blockquote>'+inline(' '.join(quote))+'</blockquote>'); quote.clear()
+    table=[]
+    def flusht():
+        if not table: return
+        rows=[[inline(c.strip()) for c in r.strip().strip('|').split('|')] for r in table]
+        table.clear()
+        body=[r for r in rows if not all(re.fullmatch(r'[\s:-]*', re.sub(r'<[^>]+>','',c)) for c in r)]
+        if not body: return
+        head, rest = body[0], body[1:]
+        h='<table><thead><tr>'+''.join(f'<th>{c}</th>' for c in head)+'</tr></thead><tbody>'
+        h+=''.join('<tr>'+''.join(f'<td>{c}</td>' for c in r)+'</tr>' for r in rest)
+        out.append(h+'</tbody></table>')
     for line in md.split('\n'):
         s=line.rstrip()
+        if s.strip().startswith('|'): flush(); table.append(s); continue
+        flusht()
         if s.startswith('> '): flush(); quote.append(s[2:]); continue
         flushq()
         if not s.strip(): flush(); continue
@@ -44,7 +57,7 @@ def convert(md):
         if m: flush(); out.append(f'<h{len(m.group(1))}>{inline(m.group(2))}</h{len(m.group(1))}>'); continue
         if re.match(r'^-{3,}$', s.strip()): flush(); out.append('<hr>'); continue
         buf.append(s.strip())
-    flush(); flushq()
+    flush(); flushq(); flusht()
     return '\n'.join(out)
 
 CSS="""
@@ -62,8 +75,11 @@ blockquote { margin:10pt 0; padding:8pt 12pt; background:#f7f7f5; border-left:3p
 blockquote p { margin:0; }
 figure { margin:12pt 0 16pt; text-align:center; page-break-inside:avoid; break-inside:avoid; }
 figcaption { font-weight:600; font-size:10.5pt; text-align:left; margin:0 0 6pt; }
-figure img { max-height:135mm; max-width:44%; width:auto; height:auto; border:1px solid #ddd; border-radius:6px; }
+figure img { max-height:135mm; max-width:100%; width:auto; height:auto; border:1px solid #ddd; border-radius:6px; }
 hr { border:0; border-top:1px solid #e0e0e0; margin:16pt 0; }
+table { border-collapse:collapse; width:100%; margin:8pt 0 14pt; font-size:10pt; page-break-inside:avoid; }
+th, td { border:1px solid #ccc; padding:4pt 6pt; vertical-align:top; text-align:left; }
+th { background:#f2f2f2; }
 """
 md=open(sys.argv[1]).read()
 open(sys.argv[2],'w').write(
