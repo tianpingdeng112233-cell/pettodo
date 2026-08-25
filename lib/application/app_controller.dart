@@ -8,6 +8,7 @@ import '../data/app_state_store.dart';
 import '../data/event_log_store.dart';
 import '../data/hatch_request_store.dart';
 import '../data/notification_service.dart';
+import '../data/overlay_service.dart';
 import '../data/pet_pack_service.dart';
 import '../domain/app_state.dart';
 import '../domain/day_rollover.dart';
@@ -23,6 +24,7 @@ class AppController extends ChangeNotifier {
     required AppStateStore stateStore,
     required EventLogStore eventLog,
     required NotificationService notifications,
+    OverlayService? overlayService,
     SpriteAtlasLoader? spriteLoader,
     HatchRequestStore? hatchRequestStore,
     PetPackService? petPackService,
@@ -30,6 +32,7 @@ class AppController extends ChangeNotifier {
     stateStore,
     eventLog,
     notifications,
+    overlayService ?? OverlayService(),
     spriteLoader ?? SpriteAtlasLoader(),
     hatchRequestStore ?? HatchRequestStore.onDevice(),
     petPackService ?? PetPackService.onDevice(),
@@ -39,6 +42,7 @@ class AppController extends ChangeNotifier {
     this._stateStore,
     this._eventLog,
     this._notifications,
+    this._overlayService,
     this._spriteLoader,
     this._hatchRequestStore,
     this._petPackService,
@@ -47,6 +51,7 @@ class AppController extends ChangeNotifier {
   final AppStateStore _stateStore;
   final EventLogStore _eventLog;
   final NotificationService _notifications;
+  final OverlayService _overlayService;
   final SpriteAtlasLoader _spriteLoader;
   final HatchRequestStore _hatchRequestStore;
   final PetPackService _petPackService;
@@ -101,6 +106,10 @@ class AppController extends ChangeNotifier {
       _animationTimer?.isActive != true &&
       currentSchedule.effect == PetScheduleEffect.zzz;
 
+  bool get overlaySupported => _overlayService.supported;
+  bool get overlayEnabled => _overlayService.enabled;
+  bool get overlayBusy => _overlayService.busy;
+
   Future<void> initialize() async {
     final now = DateTime.now();
     state = rollOverIfNeeded(await _stateStore.load(now), now);
@@ -129,6 +138,7 @@ class AppController extends ChangeNotifier {
     await _stateStore.save(state);
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
+    await _overlayService.initialize(petName: state.petName);
     _scheduleDayBoundary();
     _scheduleScheduleBoundary();
   }
@@ -180,6 +190,7 @@ class AppController extends ChangeNotifier {
       petName: descriptor.displayName,
     );
     await _stateStore.save(state);
+    await _overlayService.updatePetName(state.petName);
     if (await _hatchRequestStore.clearIfMatchingPack(
       requestId: installed.requestId,
       displayName: descriptor.displayName,
@@ -216,6 +227,7 @@ class AppController extends ChangeNotifier {
       petName: descriptor.displayName,
     );
     await _stateStore.save(state);
+    await _overlayService.updatePetName(state.petName);
     await _refreshNotificationSchedule();
     _applySchedule(DateTime.now());
     notifyListeners();
@@ -234,6 +246,7 @@ class AppController extends ChangeNotifier {
     }
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
+    await _overlayService.refresh(petName: state.petName);
     _scheduleDayBoundary();
     _applySchedule(DateTime.now());
     _scheduleScheduleBoundary();
@@ -339,6 +352,9 @@ class AppController extends ChangeNotifier {
     );
     lastTreatDrop = treatDrop;
     treatDropNonce++;
+    // Send the native event before persistence/logging so a visible companion
+    // starts celebrating comfortably inside the one-second product budget.
+    await _overlayService.celebrate();
     await _stateStore.save(state);
     await _log(
       isDaily ? PetEventType.taskComplete : PetEventType.oneoffComplete,
@@ -438,8 +454,18 @@ class AppController extends ChangeNotifier {
   Future<void> updatePetName(String value) async {
     state = state.copyWith(petName: _normalized(value, state.petName));
     await _stateStore.save(state);
+    await _overlayService.updatePetName(state.petName);
     await _refreshNotificationSchedule();
     notifyListeners();
+  }
+
+  Future<bool> setOverlayEnabled(bool enabled) async {
+    final result = await _overlayService.setEnabled(
+      enabled,
+      petName: state.petName,
+    );
+    notifyListeners();
+    return result;
   }
 
   Future<bool> addTask({
@@ -800,6 +826,7 @@ class AppController extends ChangeNotifier {
     _cancelMomentTimers();
     _dayBoundaryTimer?.cancel();
     _scheduleTimer?.cancel();
+    _overlayService.dispose();
     for (final atlas in _spriteCache.values.toSet()) {
       atlas.image.dispose();
     }
