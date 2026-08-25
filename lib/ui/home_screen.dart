@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
 import '../domain/app_state.dart';
+import '../domain/onboarding_flow.dart';
 import '../sprite/pet_sprite.dart';
 import 'collection_screen.dart';
 import 'history_screen.dart';
@@ -57,6 +58,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             _UnlockBanner(controller: controller),
+            if (controller.eveningHelloVisible)
+              _EveningHelloBubble(controller: controller),
             if (controller.theaterVisible)
               _LittleTheater(controller: controller),
           ],
@@ -651,6 +654,7 @@ class _TaskList extends StatelessWidget {
                 title: task.title,
                 note: task.note,
                 kind: task.kind,
+                firstWin: isFirstWinTask(task),
                 hasReminder: task.reminder?.enabled ?? false,
                 checked: task.completedToday,
                 editing: editing,
@@ -689,6 +693,7 @@ class _TaskCard extends StatelessWidget {
     required this.title,
     required this.note,
     required this.kind,
+    required this.firstWin,
     required this.hasReminder,
     required this.checked,
     required this.editing,
@@ -700,6 +705,7 @@ class _TaskCard extends StatelessWidget {
   final String title;
   final String? note;
   final TaskKind kind;
+  final bool firstWin;
   final bool hasReminder;
   final bool checked;
   final bool editing;
@@ -731,11 +737,11 @@ class _TaskCard extends StatelessWidget {
           color: checked ? PetColors.doneFill : PetColors.white,
           shape: StairBorder.large(
             side: BorderSide(
-              color: checked ? PetColors.primary : PetColors.stroke,
-              width: 2,
+              color: checked || firstWin ? PetColors.primary : PetColors.stroke,
+              width: firstWin ? 3 : 2,
             ),
           ),
-          shadows: checked ? PetShadows.taskDone : PetShadows.task,
+          shadows: checked || firstWin ? PetShadows.taskDone : PetShadows.task,
         ),
         child: Material(
           color: PetColors.transparent,
@@ -773,7 +779,9 @@ class _TaskCard extends StatelessWidget {
                           const SizedBox(height: PetSpacing.xs),
                           Text(note!, style: PetTextStyles.small),
                         ],
-                        if (kind == TaskKind.oneOff || hasReminder) ...<Widget>[
+                        if (!firstWin &&
+                            (kind == TaskKind.oneOff ||
+                                hasReminder)) ...<Widget>[
                           const SizedBox(height: PetSpacing.xs),
                           Text(
                             [
@@ -786,6 +794,12 @@ class _TaskCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (firstWin && !editing)
+                    const PxIcon(
+                      PxIconData.sparkle,
+                      size: PetSpacing.s22,
+                      color: PetColors.accentText,
+                    ),
                   if (editing) ...<Widget>[
                     IconButton(
                       tooltip: 'Edit $title',
@@ -854,6 +868,70 @@ class _QuickAddDialogState extends State<_QuickAddDialog> {
       FilledButton(onPressed: _keep, child: const Text('Keep it')),
     ],
   );
+}
+
+class _EveningHelloBubble extends StatelessWidget {
+  const _EveningHelloBubble({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    left: PetSpacing.s24,
+    right: PetSpacing.s24,
+    top: 282,
+    child: Semantics(
+      container: true,
+      label: 'Evening hello invitation',
+      child: PxCard(
+        padding: const EdgeInsets.all(PetSpacing.s16),
+        shadows: PetShadows.banner,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Text(
+              'May I say hi in the evening?',
+              style: PetTextStyles.body16Strong,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: PetSpacing.s4),
+            const Text(
+              'Just because I miss you — never to rush',
+              style: PetTextStyles.caption,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: PetSpacing.s12),
+            PxButton(
+              height: PetSpacing.s48,
+              label: Text(
+                'Sure! See you at ${_homeTime(controller.state.notificationHour, controller.state.notificationMinute)}',
+                style: PetTextStyles.button16,
+              ),
+              onPressed: () => controller.respondToEveningHello(true),
+            ),
+            TextButton(
+              onPressed: () => controller.respondToEveningHello(false),
+              child: const Text(
+                "Not now, I'll come find you",
+                style: PetTextStyles.secondaryLink,
+              ),
+            ),
+            const SizedBox(height: PetSpacing.s4),
+            const Text(
+              "Turn it off anytime — I won't mind",
+              style: PetTextStyles.disabledSmall,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+String _homeTime(int hour24, int minute) {
+  final hour = hour24 % 12 == 0 ? 12 : hour24 % 12;
+  final suffix = hour24 < 12 ? 'AM' : 'PM';
+  return '$hour:${minute.toString().padLeft(2, '0')} $suffix';
 }
 
 class _UnlockBanner extends StatelessWidget {

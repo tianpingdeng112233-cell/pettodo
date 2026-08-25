@@ -12,6 +12,7 @@ import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/data/pet_pack_service.dart';
 import 'package:pettodo/domain/app_state.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
+import 'package:pettodo/domain/onboarding_flow.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
 import 'package:pettodo/ui/hatch_request_screen.dart';
@@ -177,27 +178,65 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: OnboardingScreen(controller: fixture.controller),
+        home: OnboardingScreen(
+          controller: fixture.controller,
+          showStayOnScreen: false,
+        ),
       ),
     );
     await tester.pump();
 
     _expectButtonNode(tester, "That's the one");
-    _expectButtonNode(tester, 'Adopt your own pet from photos');
+    _expectButtonNode(
+      tester,
+      'Your real pet can live here too — from your photos, unlockable anytime',
+    );
     expect(tester.takeException(), isNull);
 
-    for (final transition in <(String, String)>[
-      ("That's the one", "That's my name!"),
-      ("That's my name!", 'These three!'),
-      ('These three!', 'Sure! See you at 8:00 PM'),
-    ]) {
-      await tester.tap(find.text(transition.$1));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
-      await tester.pump(const Duration(milliseconds: 350));
-      _expectButtonNode(tester, transition.$2);
-      expect(tester.takeException(), isNull);
-    }
+    await tester.tap(find.text("That's the one"));
+    await tester.pump();
+    // Bounded pump: live sprite loops forever, pumpAndSettle never settles.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    _expectButtonNode(tester, 'Nice to meet you, Choco');
+
+    await tester.tap(find.text('Nice to meet you, Choco'));
+    await tester.pump();
+    // Bounded pump: live sprite loops forever, pumpAndSettle never settles.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Pick at least one'), findsOneWidget);
+    await tester.ensureVisible(find.text('Get out of bed'));
+    await tester.tap(find.text('Get out of bed'));
+    await tester.pump();
+    _expectButtonNode(tester, 'These three!');
+
+    // The CTA's handler awaits store IO; a fake-zone tap strands its
+    // continuation on the real loop (recurring zone trap), so the step's
+    // domain effect is driven directly and S4 is assembled via the
+    // deterministic initialStep seam.
+    await tester.runAsync(
+      () => fixture.controller.prepareOnboarding(
+        selectedPetId: fixture.controller.state.selectedPetId,
+        petName: 'Choco',
+        taskTitles: const <String>['🛏️ Get out of bed'],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: OnboardingScreen(
+          key: const ValueKey<String>('seam-celebrate-semantics'),
+          controller: fixture.controller,
+          initialStep: OnboardingStep.celebrate,
+          showStayOnScreen: false,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    _expectButtonNode(tester, "Let's go home");
+    expect(tester.takeException(), isNull);
     semantics.dispose();
   });
 

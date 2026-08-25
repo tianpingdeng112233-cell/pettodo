@@ -276,21 +276,25 @@ class PxChip extends StatelessWidget {
     required this.child,
     this.selected = false,
     this.onTap,
+    this.dashed = false,
   });
 
   final Widget child;
   final bool selected;
   final VoidCallback? onTap;
+  final bool dashed;
 
   @override
   Widget build(BuildContext context) {
     final shape = StairBorder.small(
-      side: BorderSide(
-        color: selected ? PetColors.primary : PetColors.stroke,
-        width: 2,
-      ),
+      side: dashed
+          ? BorderSide.none
+          : BorderSide(
+              color: selected ? PetColors.primary : PetColors.stroke,
+              width: 2,
+            ),
     );
-    final content = Container(
+    Widget content = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
       decoration: ShapeDecoration(
         color: selected ? PetColors.primary : PetColors.white,
@@ -303,10 +307,57 @@ class PxChip extends StatelessWidget {
         child: child,
       ),
     );
+    if (dashed) {
+      content = CustomPaint(
+        foregroundPainter: _DashedStairPainter(
+          shape: const StairBorder.small(),
+          color: PetColors.stroke,
+          strokeWidth: 2,
+        ),
+        child: content,
+      );
+    }
     return onTap == null
         ? content
         : InkWell(customBorder: shape, onTap: onTap, child: content);
   }
+}
+
+/// Dashed outline along a [StairBorder] path — the "escape hatch" affordance
+/// for chips that open free input instead of toggling a preset.
+class _DashedStairPainter extends CustomPainter {
+  const _DashedStairPainter({
+    required this.shape,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  final StairBorder shape;
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    const dash = 6.0;
+    const gap = 4.0;
+    final path = shape.getOuterPath(Offset.zero & size);
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = (distance + dash).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = end + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedStairPainter oldDelegate) =>
+      color != oldDelegate.color || strokeWidth != oldDelegate.strokeWidth;
 }
 
 class PxInput extends StatelessWidget {
