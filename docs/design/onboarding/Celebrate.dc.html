@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&amp;family=Baloo+2:wght@400..800&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF8EF; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen { width: 393px; height: 852px; position: relative; overflow: hidden;
+      background: conic-gradient(rgba(185,107,46,0.035) 25%, transparent 0 50%, rgba(185,107,46,0.035) 0 75%, transparent 0) 0 0 / 8px 8px, linear-gradient(#FFF8EF, #FFEFDC);
+      font-family: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif; color: #6B4A2B; }
+    .disp { font-family: 'Pixelify Sans', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .pc { clip-path: polygon(0 12px,4px 12px,4px 4px,12px 4px,12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px)); }
+    .ps { clip-path: polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px)); }
+    .confetti { position: absolute; }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: absolute; top: -110px; left: -14px; width: 420px; height: 420px; background: radial-gradient(closest-side, rgba(255,214,150,0.6) 0 25%, rgba(255,214,150,0.42) 25% 45%, rgba(255,214,150,0.25) 45% 65%, rgba(255,214,150,0.10) 65% 85%, transparent 85%);"></div>
+
+  <div class="confetti ps" style="top: 190px; left: 60px; width: 10px; height: 10px; background: #F2A65A;"></div>
+  <div class="confetti ps" style="top: 150px; left: 320px; width: 8px; height: 8px; background: #E8B57E;"></div>
+  <div class="confetti ps" style="top: 260px; left: 330px; width: 12px; height: 12px; background: #FFD9A8;"></div>
+  <div class="confetti ps" style="top: 300px; left: 40px; width: 8px; height: 8px; background: #B96B2E;"></div>
+  <div class="confetti ps" style="top: 120px; left: 180px; width: 8px; height: 8px; background: #F2A65A;"></div>
+  <div class="confetti ps" style="top: 360px; left: 300px; width: 8px; height: 8px; background: #F2A65A;"></div>
+  <div class="confetti ps" style="top: 380px; left: 90px; width: 10px; height: 10px; background: #E8B57E;"></div>
+
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 64px 28px 26px 28px; box-sizing: border-box; align-items: center;">
+
+    <div style="display: flex; gap: 6px; align-self: flex-start;">
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+    </div>
+
+    <img src="./p-jump.png" alt="Choco jumping" class="px" style="width: 200px; height: 217px; margin-top: 74px;">
+
+    <div class="disp" style="font-size: 27px; font-weight: 600; color: #8A5A2E; margin-top: 26px; text-align: center;">Our little routine<br>is ready!</div>
+
+    <div class="pc" style="background: #FFE9D4; padding: 14px 22px; margin-top: 24px; display: flex; align-items: center; gap: 10px;">
+      <svg width="24" height="15" viewBox="0 0 20 12" shape-rendering="crispEdges">
+        <rect x="0" y="0" width="4" height="5" fill="#B96B2E"></rect><rect x="0" y="7" width="4" height="5" fill="#B96B2E"></rect><rect x="16" y="0" width="4" height="5" fill="#B96B2E"></rect><rect x="16" y="7" width="4" height="5" fill="#B96B2E"></rect><rect x="2" y="4" width="16" height="4" fill="#B96B2E"></rect>
+      </svg>
+      <div style="font-size: 15px; font-weight: 600; color: #6B4A2B;">+1 Little Bone &mdash; for getting us started</div>
+    </div>
+
+    <div style="margin-top: auto; width: 100%;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.35));">
+        <div class="pc" style="background: #F2A65A; padding: 16px 0; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Let's go home</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

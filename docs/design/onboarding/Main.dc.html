@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&amp;family=Baloo+2:wght@400..800&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF8EF; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen { width: 393px; height: 852px; position: relative; overflow: hidden;
+      background: conic-gradient(rgba(185,107,46,0.035) 25%, transparent 0 50%, rgba(185,107,46,0.035) 0 75%, transparent 0) 0 0 / 8px 8px, linear-gradient(#FFF8EF, #FFEFDC);
+      font-family: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif; color: #6B4A2B; }
+    .disp { font-family: 'Pixelify Sans', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .pc { clip-path: polygon(0 12px,4px 12px,4px 4px,12px 4px,12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px)); }
+    .ps { clip-path: polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px)); }
+    .shadow { filter: drop-shadow(0 4px 0 rgba(190,140,80,0.14)); }
+    .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 8px 0; background: #FFFFFF; }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 64px 24px 24px 24px; box-sizing: border-box;">
+
+    <div style="display: flex; gap: 6px;">
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F0DCC2;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F0DCC2;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F0DCC2;"></div>
+    </div>
+
+    <div class="disp" style="font-size: 26px; font-weight: 600; color: #8A5A2E; margin-top: 22px;">Who's coming home?</div>
+    <div style="font-size: 15px; color: #B08D63; margin-top: 6px;">Nine little friends are waiting — take your time</div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.30));">
+        <div class="pc" style="background: #F2A65A; padding: 3px;">
+          <div class="pc cell" style="background: #FFFBF5;">
+            <img src="./p-choco.png" alt="Choco" class="px" style="width: 64px; height: 69px;">
+            <div style="font-size: 13px; font-weight: 600; color: #B96B2E;">Choco</div>
+          </div>
+        </div>
+      </div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-lynne.png" alt="Maple" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Maple</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-golden.png" alt="Sunny" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Sunny</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-smoke.png" alt="Misty" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Misty</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-rusty.png" alt="Rusty" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Rusty</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-ginger.png" alt="Ember" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Ember</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-cream.png" alt="Biscuit" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Biscuit</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-snow.png" alt="Mochi" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Mochi</div>
+      </div></div></div>
+      <div class="shadow"><div class="pc" style="background: #F4C9A0; padding: 2px;"><div class="pc cell">
+        <img src="./p-cocoa.png" alt="Bean" class="px" style="width: 64px; height: 69px;">
+        <div style="font-size: 13px; color: #8A6B4C;">Bean</div>
+      </div></div></div>
+    </div>
+
+    <div class="pc" style="background: rgba(255,255,255,0.55); padding: 12px 16px; margin-top: 14px; display: flex; align-items: center; gap: 12px;">
+      <svg width="26" height="24" viewBox="0 0 20 18" shape-rendering="crispEdges">
+        <rect x="2" y="0" width="4" height="4" fill="#D2B08A"></rect><rect x="8" y="0" width="4" height="4" fill="#D2B08A"></rect><rect x="14" y="0" width="4" height="4" fill="#D2B08A"></rect><rect x="4" y="7" width="12" height="8" fill="#D2B08A"></rect><rect x="6" y="5" width="8" height="2" fill="#D2B08A"></rect><rect x="6" y="15" width="8" height="2" fill="#D2B08A"></rect>
+      </svg>
+      <div style="flex: 1;">
+        <div style="font-size: 15px; font-weight: 600; color: #8A6B4C;">Your real pet can live here too</div>
+        <div style="font-size: 12.5px; color: #B08D63;">From your photos — unlockable anytime</div>
+      </div>
+      <svg width="12" height="16" viewBox="0 0 12 16" shape-rendering="crispEdges"><rect x="2" y="2" width="3" height="3" fill="#D2B08A"></rect><rect x="5" y="5" width="3" height="3" fill="#D2B08A"></rect><rect x="5" y="8" width="3" height="3" fill="#D2B08A"></rect><rect x="2" y="11" width="3" height="3" fill="#D2B08A"></rect></svg>
+    </div>
+
+    <div style="margin-top: auto;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.35));">
+        <div class="pc" style="background: #F2A65A; padding: 16px 0; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 17px; font-weight: 600; color: #FFFFFF;">That's the one</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

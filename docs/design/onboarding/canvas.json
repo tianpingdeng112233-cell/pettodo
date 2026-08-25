@@ -1,0 +1,18 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "S1 · 领养所", "x": 0, "y": 80, "w": 393, "h": 852 },
+    { "file": "Naming.dc.html", "title": "S2 · 相识命名", "x": 453, "y": 80, "w": 393, "h": 852 },
+    { "file": "LittleThings.dc.html", "title": "S3 · 三件小事", "x": 906, "y": 80, "w": 393, "h": 852 },
+    { "file": "Celebrate.dc.html", "title": "S4 · 中场庆祝", "x": 1359, "y": 80, "w": 393, "h": 852 },
+    { "file": "StayOnScreen.dc.html", "title": "S5 · 常驻邀请 (Android)", "x": 1812, "y": 80, "w": 393, "h": 852 },
+    { "file": "FirstWin.dc.html", "title": "落地 · Home 首胜", "x": 2265, "y": 80, "w": 393, "h": 852 }
+  ],
+  "annotations": [
+    { "id": "flow-summary", "x": 0, "y": -170, "w": 500, "text": "Pawside onboarding v2 · 4 步 + 落地(⚖️Q1A 九宫格领养所 / Q2A 付费露出不推销 / 竞对精华重排)\n骨架:领养(选宠)→ 相识(命名)→ 三件小事(零打字)→ 中场庆祝(首个奖励先于任务)→ [Android] 常驻邀请 → Home 首胜。Evening hello 撤出 onboarding,改首个晚间由宠物 in-context 询问。iOS 走 S1-S4 直接落地(4 步)。" },
+    { "id": "borrow-s1s2", "x": 0, "y": 970, "w": 440, "text": "S1/S2 借鉴:命名先于一切+shuffle 逃生门(Finch#1);宠物是唯一发言者、名字交换开启照护关系(Finch#2);选中即预览(Finch#3)。九宫格素材:Choco/Maple(Lynne)为真图,其余 7 只为色相占位,正式素材等 015 E 卡九只预置产出。付费入口只讲「你的真宠物也能住进来」,不报价不拦路(Q2A)。" },
+    { "id": "borrow-s3s4", "x": 906, "y": 970, "w": 440, "text": "S3/S4 借鉴:零打字 emoji chips+自定义逃生门(Tiimo#6);地板级起始目标(Finch/Tiimo#7);CTA 沿用现有正典「These three!」;中场全屏庆祝(Tiimo#10);首个奖励在任何真实任务之前、货币=零食非分数(Finch#5)。" },
+    { "id": "borrow-s5-firstwin", "x": 1812, "y": 970, "w": 460, "text": "S5 借鉴:widget 卖点=在桌面看宠物(Finch#21),预览图直接画桌面效果;拒绝零挽留、一次索取(002 权限纪律),文案守语气双侧雷区(不催不哄)。落地屏借鉴:板永不为空+scripted first win(Habitica#8)——预埋「Give {pet} a pat」白送任务,首次交互必产生完成动画+掉零食。" },
+    { "id": "open-items", "x": 2265, "y": 970, "w": 440, "text": "留给实装卡的口径:①「让用户教宠物」(Finch#4)与性格选择(Finch#3)本版未纳入,防步数膨胀,可作 v3 增强;②S5 在 iOS 的对位屏(widget 引导)等 002-B;③升级老用户不重走 onboarding;④9 只预置的名字为占位,正典名随 015 E 定。" }
+  ],
+  "launch": { "view": "canvas" }
+}

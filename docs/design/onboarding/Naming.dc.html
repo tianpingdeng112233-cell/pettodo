@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&amp;family=Baloo+2:wght@400..800&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF8EF; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen { width: 393px; height: 852px; position: relative; overflow: hidden;
+      background: conic-gradient(rgba(185,107,46,0.035) 25%, transparent 0 50%, rgba(185,107,46,0.035) 0 75%, transparent 0) 0 0 / 8px 8px, linear-gradient(#FFF8EF, #FFEFDC);
+      font-family: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif; color: #6B4A2B; }
+    .disp { font-family: 'Pixelify Sans', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .pc { clip-path: polygon(0 12px,4px 12px,4px 4px,12px 4px,12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px)); }
+    .ps { clip-path: polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px)); }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: absolute; top: -150px; left: -14px; width: 420px; height: 420px; background: radial-gradient(closest-side, rgba(255,214,150,0.55) 0 25%, rgba(255,214,150,0.38) 25% 45%, rgba(255,214,150,0.22) 45% 65%, rgba(255,214,150,0.10) 65% 85%, transparent 85%);"></div>
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 64px 28px 26px 28px; box-sizing: border-box;">
+
+    <div style="display: flex; gap: 6px;">
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F2A65A;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F0DCC2;"></div>
+      <div class="ps" style="width: 26px; height: 8px; background: #F0DCC2;"></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; margin-top: 48px;">
+      <img src="./p-choco.png" alt="Your pet" class="px" style="width: 172px; height: 186px;">
+      <div class="pc" style="background: #FFFFFF; padding: 14px 18px; margin-top: 18px; max-width: 300px; position: relative;">
+        <div style="font-size: 16px; color: #6B4A2B; text-align: center;">Thanks for choosing me!<br>What will you call me?</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 30px;">
+      <div style="display: flex; gap: 10px; align-items: stretch;">
+        <div class="ps" style="flex: 1; border: 2px solid #F4C9A0; background: #FFFBF5; padding: 14px 16px; font-size: 20px; font-weight: 600; color: #6B4A2B;">Choco<span style="opacity: 0.5;">|</span></div>
+        <div class="ps" style="width: 54px; border: 2px solid #F4C9A0; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" shape-rendering="crispEdges">
+            <rect x="2" y="2" width="20" height="20" fill="none" stroke="#B96B2E" stroke-width="2"></rect>
+            <rect x="7" y="7" width="3" height="3" fill="#B96B2E"></rect><rect x="14" y="7" width="3" height="3" fill="#B96B2E"></rect><rect x="7" y="14" width="3" height="3" fill="#B96B2E"></rect><rect x="14" y="14" width="3" height="3" fill="#B96B2E"></rect>
+          </svg>
+        </div>
+      </div>
+      <div style="font-size: 13px; color: #C4A075; margin-top: 10px; text-align: center;">Any name makes me happy — you can change it later</div>
+    </div>
+
+    <div style="margin-top: auto;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.35));">
+        <div class="pc" style="background: #F2A65A; padding: 16px 0; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Nice to meet you, Choco</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

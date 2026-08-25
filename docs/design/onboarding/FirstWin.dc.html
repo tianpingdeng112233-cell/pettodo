@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&amp;family=Baloo+2:wght@400..800&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF8EF; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen { width: 393px; height: 852px; position: relative; overflow: hidden;
+      background: conic-gradient(rgba(185,107,46,0.035) 25%, transparent 0 50%, rgba(185,107,46,0.035) 0 75%, transparent 0) 0 0 / 8px 8px, linear-gradient(#FFF8EF, #FFEFDC);
+      font-family: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif; color: #6B4A2B; }
+    .disp { font-family: 'Pixelify Sans', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .pc { clip-path: polygon(0 12px,4px 12px,4px 4px,12px 4px,12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px)); }
+    .ps { clip-path: polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px)); }
+    .shadow { filter: drop-shadow(0 4px 0 rgba(190,140,80,0.18)); }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: absolute; top: -150px; left: -14px; width: 420px; height: 420px; background: radial-gradient(closest-side, rgba(255,214,150,0.55) 0 25%, rgba(255,214,150,0.38) 25% 45%, rgba(255,214,150,0.22) 45% 65%, rgba(255,214,150,0.10) 65% 85%, transparent 85%);"></div>
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 56px 24px 22px 24px; box-sizing: border-box;">
+
+    <div style="font-size: 15px; color: #7A5A3A;">Tue, Aug 25 &middot; Lovely evening</div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; margin-top: 14px;">
+      <img src="./p-choco.png" alt="Choco" class="px" style="width: 150px; height: 163px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+        <div class="disp" style="font-size: 26px; font-weight: 600; color: #8A5A2E;">Choco</div>
+        <div class="ps" style="background: #F7E9D3; padding: 4px 12px; font-size: 14px; font-weight: 600; color: #B08D63;">Puppy</div>
+      </div>
+      <div style="font-size: 15px; color: #8A6B4C; margin-top: 4px;">Choco is glad you're both home</div>
+    </div>
+
+    <div style="font-size: 16px; color: #B08D63; margin-top: 22px;">Today's little things</div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.30));">
+        <div class="pc" style="background: #F2A65A; padding: 3px;">
+          <div class="pc" style="background: #FFFBF5; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 26px; height: 26px; box-sizing: border-box; border: 3px solid #F2A65A; background: #FFFBF5;"></div>
+            <div>
+              <div style="font-size: 18px; font-weight: 600; color: #6B4A2B;">Give Choco a pat</div>
+              <div style="font-size: 13px; color: #C4A075;">A free one, to see how it feels</div>
+            </div>
+            <svg style="margin-left: auto;" width="22" height="22" viewBox="0 0 22 22" shape-rendering="crispEdges">
+              <rect x="9" y="2" width="4" height="4" fill="#B96B2E"></rect><rect x="5" y="6" width="12" height="4" fill="#B96B2E"></rect><rect x="9" y="10" width="4" height="4" fill="#B96B2E"></rect><rect x="16" y="14" width="3" height="3" fill="#E8B57E"></rect><rect x="3" y="15" width="2" height="2" fill="#E8B57E"></rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="shadow">
+        <div class="pc" style="background: #F4C9A0; padding: 2px;">
+          <div class="pc" style="background: #FFFFFF; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 26px; height: 26px; box-sizing: border-box; border: 3px solid #F2C393; background: #FFFBF5;"></div>
+            <div style="font-size: 18px; font-weight: 600; color: #6B4A2B;">Get out of bed</div>
+          </div>
+        </div>
+      </div>
+      <div class="shadow">
+        <div class="pc" style="background: #F4C9A0; padding: 2px;">
+          <div class="pc" style="background: #FFFFFF; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 26px; height: 26px; box-sizing: border-box; border: 3px solid #F2C393; background: #FFFBF5;"></div>
+            <div style="font-size: 18px; font-weight: 600; color: #6B4A2B;">Drink some water</div>
+          </div>
+        </div>
+      </div>
+      <div class="shadow">
+        <div class="pc" style="background: #F4C9A0; padding: 2px;">
+          <div class="pc" style="background: #FFFFFF; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 26px; height: 26px; box-sizing: border-box; border: 3px solid #F2C393; background: #FFFBF5;"></div>
+            <div style="font-size: 18px; font-weight: 600; color: #6B4A2B;">Take my meds</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: auto;">
+      <div class="pc" style="background: #6B4A2B; padding: 2px;">
+        <div class="pc" style="background: #FFF8EF; padding: 14px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="14" height="14" viewBox="0 0 14 14" shape-rendering="crispEdges"><rect x="5" y="0" width="4" height="14" fill="#6B4A2B"></rect><rect x="0" y="5" width="14" height="4" fill="#6B4A2B"></rect></svg>
+          <div style="font-size: 17px; font-weight: 600; color: #6B4A2B;">Jot it down</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
