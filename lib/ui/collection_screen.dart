@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import '../sprite/sprite_atlas.dart';
 import '../sprite/pet_sprite.dart';
+import '../sprite/rig_pet.dart';
+import '../sprite/rig_pet_sprite.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
 import 'theme/pixel_background.dart';
@@ -109,20 +111,31 @@ class CollectionScreen extends StatelessWidget {
                                   children: <Widget>[
                                     Expanded(
                                       child: ExcludeSemantics(
-                                        child: FutureBuilder<LoadedSpriteAtlas>(
-                                          future: controller.petAtlas(pet),
-                                          builder: (context, snapshot) =>
-                                              snapshot.hasData
+                                        child: FutureBuilder<Object>(
+                                          future: pet.isRig
+                                              ? controller.petRig(pet)
+                                              : controller.petAtlas(pet),
+                                          builder: (context, snapshot) {
+                                            final visual = snapshot.data;
+                                            if (visual is LoadedRigPet) {
+                                              return RigPetSprite(
+                                                pet: visual,
+                                                fixedElapsed: Duration.zero,
+                                              );
+                                            }
+                                            if (visual is LoadedSpriteAtlas) {
                                               // Still frame: a shelf of looping
                                               // pets is visual noise.
-                                              ? PetSprite(
-                                                  atlas: snapshot.data!,
-                                                  fixedFrame: 0,
-                                                )
-                                              : const PxIcon(
-                                                  PxIconData.paw,
-                                                  color: PetColors.inactive,
-                                                ),
+                                              return PetSprite(
+                                                atlas: visual,
+                                                fixedFrame: 0,
+                                              );
+                                            }
+                                            return const PxIcon(
+                                              PxIconData.paw,
+                                              color: PetColors.inactive,
+                                            );
+                                          },
                                         ),
                                       ),
                                     ),

@@ -132,6 +132,35 @@ class SpriteAtlasDefinition {
 
 enum PetAssetSource { bundled, fileSystem }
 
+enum PetAssetFormat { atlasV2, rigV3 }
+
+class RigAssetDescriptor {
+  const RigAssetDescriptor({
+    required this.species,
+    required this.rigAsset,
+    required this.frontOpenAsset,
+    required this.frontClosedAsset,
+    required this.sleepAsset,
+    required this.sideAsset,
+  });
+
+  final String species;
+  final String rigAsset;
+  final String frontOpenAsset;
+  final String frontClosedAsset;
+  final String sleepAsset;
+  final String sideAsset;
+
+  RigAssetDescriptor copyWithRoot(String root) => RigAssetDescriptor(
+    species: species,
+    rigAsset: '$root/rig.json',
+    frontOpenAsset: '$root/front-open.png',
+    frontClosedAsset: '$root/front-closed.png',
+    sleepAsset: '$root/sleep.png',
+    sideAsset: '$root/side.png',
+  );
+}
+
 class PetAssetDescriptor {
   const PetAssetDescriptor({
     required this.id,
@@ -142,6 +171,8 @@ class PetAssetDescriptor {
     this.treatEmoji = '🦴',
     this.stageAssets = const <String, PetStageAssetDescriptor>{},
     this.source = PetAssetSource.bundled,
+    this.format = PetAssetFormat.atlasV2,
+    this.rig,
   });
 
   final String id;
@@ -152,10 +183,16 @@ class PetAssetDescriptor {
   final String treatEmoji;
   final Map<String, PetStageAssetDescriptor> stageAssets;
   final PetAssetSource source;
+  final PetAssetFormat format;
+  final RigAssetDescriptor? rig;
+
+  bool get isRig => format == PetAssetFormat.rigV3;
+  int get formatVersion => isRig ? 3 : 1;
 
   PetAssetDescriptor copyWith({
     String? metadataAsset,
     String? spritesheetAsset,
+    RigAssetDescriptor? rig,
   }) => PetAssetDescriptor(
     id: id,
     displayName: displayName,
@@ -165,6 +202,8 @@ class PetAssetDescriptor {
     treatEmoji: treatEmoji,
     stageAssets: stageAssets,
     source: source,
+    format: format,
+    rig: rig ?? this.rig,
   );
 
   PetStageAssetDescriptor assetsForStage(String? stage) =>

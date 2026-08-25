@@ -15,10 +15,13 @@ import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
 import '../domain/growth.dart';
 import '../domain/onboarding_flow.dart';
+import '../domain/pet_action.dart';
 import '../domain/pet_schedule.dart';
 import '../domain/treat_economy.dart';
 import '../domain/unlocks.dart';
 import '../sprite/sprite_atlas.dart';
+import '../sprite/rig_driver.dart';
+import '../sprite/rig_pet.dart';
 
 class AppController extends ChangeNotifier {
   factory AppController({
@@ -27,6 +30,7 @@ class AppController extends ChangeNotifier {
     required NotificationService notifications,
     OverlayService? overlayService,
     SpriteAtlasLoader? spriteLoader,
+    RigPetLoader? rigLoader,
     HatchRequestStore? hatchRequestStore,
     PetPackService? petPackService,
     DateTime Function()? now,
@@ -36,6 +40,7 @@ class AppController extends ChangeNotifier {
     notifications,
     overlayService ?? OverlayService(),
     spriteLoader ?? SpriteAtlasLoader(),
+    rigLoader ?? RigPetLoader(),
     hatchRequestStore ?? HatchRequestStore.onDevice(),
     petPackService ?? PetPackService.onDevice(),
     now ?? DateTime.now,
@@ -47,6 +52,7 @@ class AppController extends ChangeNotifier {
     this._notifications,
     this._overlayService,
     this._spriteLoader,
+    this._rigLoader,
     this._hatchRequestStore,
     this._petPackService,
     this._now,
@@ -57,11 +63,19 @@ class AppController extends ChangeNotifier {
   final NotificationService _notifications;
   final OverlayService _overlayService;
   final SpriteAtlasLoader _spriteLoader;
+  final RigPetLoader _rigLoader;
   final HatchRequestStore _hatchRequestStore;
   final PetPackService _petPackService;
   final DateTime Function() _now;
   final Map<String, LoadedSpriteAtlas> _spriteCache =
       <String, LoadedSpriteAtlas>{};
+  final Map<String, LoadedRigPet> _rigCache = <String, LoadedRigPet>{};
+  final Map<String, Future<LoadedRigPet>> _rigLoads =
+      <String, Future<LoadedRigPet>>{};
+  // bumped on every replacement/dispose so an in-flight load can tell the
+  // world changed under it and must not cache (and leak) its result
+  int _rigEpoch = 0;
+  bool _rigDisposed = false;
   Timer? _animationTimer;
   Timer? _messageTimer;
   Timer? _bannerTimer;
@@ -73,10 +87,14 @@ class AppController extends ChangeNotifier {
   late AppState state;
   late List<PetAssetDescriptor> pets;
   late List<DecorAssetDescriptor> decorations;
-  late LoadedSpriteAtlas spriteAtlas;
+  LoadedSpriteAtlas? _spriteAtlas;
+  LoadedRigPet? rigPet;
   late PetScheduleEntry currentSchedule;
   String petAnimation = 'idle';
   int? petAnimationFrame;
+  RigPetAction rigAction = RigPetAction.breathing;
+  RigTarget rigTarget = const RigTarget(0, 0);
+  int rigAnimationNonce = 0;
   String? affectionateMessage;
   String? momentStatus;
   String? momentParticle;
@@ -97,6 +115,8 @@ class AppController extends ChangeNotifier {
     (pet) => pet.id == state.selectedPetId,
     orElse: () => pets.first,
   );
+
+  LoadedSpriteAtlas get spriteAtlas => _spriteAtlas!;
 
   String get statusLine {
     if (momentStatus != null) return momentStatus!;
@@ -134,13 +154,8 @@ class AppController extends ChangeNotifier {
     }
     decorations = await _spriteLoader.loadDecorManifest();
     currentSchedule = petScheduleAt(now);
-    petAnimation = currentSchedule.animation;
-    petAnimationFrame = currentSchedule.fixedFrame;
-    spriteAtlas = await _spriteLoader.loadPet(
-      selectedPet,
-      growthStage: growthStage.name,
-    );
-    _spriteCache[selectedPet.id] = spriteAtlas;
+    await _loadSelectedPet(selectedPet);
+    _applySchedule(now);
     await _stateStore.save(state);
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
@@ -183,15 +198,7 @@ class AppController extends ChangeNotifier {
         ...pets.skip(existingIndex + 1),
       ];
     }
-    final loaded = await _spriteLoader.loadPet(
-      descriptor,
-      growthStage: growthStage.name,
-    );
-    // Swap before disposing: the old atlas may be the one on screen right now.
-    final cached = _spriteCache.remove(descriptor.id);
-    _spriteCache[descriptor.id] = loaded;
-    spriteAtlas = loaded;
-    cached?.image.dispose();
+    await _replaceLoadedPet(descriptor);
     state = state.copyWith(
       selectedPetId: descriptor.id,
       petName: descriptor.displayName,
@@ -207,8 +214,13 @@ class AppController extends ChangeNotifier {
     _cancelMomentTimers();
     hatchCeremonyPetName = descriptor.displayName;
     theaterVisible = true;
-    petAnimation = 'review';
-    petAnimationFrame = null;
+    if (descriptor.isRig) {
+      rigAction = RigPetAction.happyJump;
+      rigAnimationNonce++;
+    } else {
+      petAnimation = 'review';
+      petAnimationFrame = null;
+    }
     celebrationNonce++;
     await _refreshNotificationSchedule();
     notifyListeners();
@@ -219,6 +231,9 @@ class AppController extends ChangeNotifier {
       <String, Future<LoadedSpriteAtlas>>{};
 
   Future<LoadedSpriteAtlas> petAtlas(PetAssetDescriptor descriptor) {
+    if (descriptor.isRig) {
+      throw ArgumentError.value(descriptor.id, 'descriptor', 'Not v2');
+    }
     final cached = _spriteCache[descriptor.id];
     if (cached != null) return Future<LoadedSpriteAtlas>.value(cached);
     // Memoize the in-flight load: concurrent callers (grid tiles, selection)
@@ -238,6 +253,96 @@ class AppController extends ChangeNotifier {
     });
   }
 
+  Future<LoadedRigPet> petRig(PetAssetDescriptor descriptor) {
+    if (!descriptor.isRig) {
+      throw ArgumentError.value(descriptor.id, 'descriptor', 'Not v3');
+    }
+    final cached = _rigCache[descriptor.id];
+    if (cached != null) return Future<LoadedRigPet>.value(cached);
+    // dedupe concurrent loads: without this, parallel FutureBuilder rebuilds
+    // would each load a full image set and leak all but the last one
+    final pending = _rigLoads[descriptor.id];
+    if (pending != null) return pending;
+    final epoch = _rigEpoch;
+    final load = () async {
+      final loaded = await _rigLoader.load(descriptor);
+      if (_rigDisposed) {
+        loaded.dispose();
+        throw StateError('AppController was disposed during a rig load');
+      }
+      if (epoch != _rigEpoch) {
+        // a replacement (possibly rig->v2) happened mid-load: this request is
+        // answering a question about a world that no longer exists. Dropping
+        // the images and failing terminally is the only safe option — the
+        // descriptor may not even be a rig any more, and retrying here would
+        // await the very future we are inside (self-referential deadlock).
+        loaded.dispose();
+        throw StateError('The pet registry changed during a rig load');
+      }
+      final existing = _rigCache[descriptor.id];
+      if (existing != null) {
+        // an install/replacement won the race; keep its images, drop ours
+        loaded.dispose();
+        return existing;
+      }
+      _rigCache[descriptor.id] = loaded;
+      return loaded;
+    }();
+    // the callback must not RETURN the removed future — whenComplete awaits a
+    // returned future, and _rigLoads holds this very chain (self-deadlock)
+    final tracked = load.whenComplete(() {
+      _rigLoads.remove(descriptor.id);
+    });
+    _rigLoads[descriptor.id] = tracked;
+    return tracked;
+  }
+
+  Future<void> _loadSelectedPet(PetAssetDescriptor descriptor) async {
+    if (descriptor.isRig) {
+      rigPet = await petRig(descriptor);
+      _spriteAtlas = null;
+    } else {
+      _spriteAtlas = await petAtlas(descriptor);
+      rigPet = null;
+    }
+  }
+
+  Future<void> _replaceLoadedPet(PetAssetDescriptor descriptor) async {
+    _rigEpoch++;
+    if (descriptor.isRig) {
+      final loaded = await _rigLoader.load(descriptor);
+      if (_rigDisposed) {
+        // dispose() ran while the images loaded; caching them now would leak
+        // them forever into a dead controller
+        loaded.dispose();
+        throw StateError('AppController was disposed during a pet replacement');
+      }
+      final oldAtlas = _spriteCache.remove(descriptor.id);
+      final oldRig = _rigCache.remove(descriptor.id);
+      _rigCache[descriptor.id] = loaded;
+      rigPet = loaded;
+      _spriteAtlas = null;
+      oldAtlas?.image.dispose();
+      oldRig?.dispose();
+    } else {
+      final loaded = await _spriteLoader.loadPet(
+        descriptor,
+        growthStage: growthStage.name,
+      );
+      if (_rigDisposed) {
+        loaded.image.dispose();
+        throw StateError('AppController was disposed during a pet replacement');
+      }
+      final oldAtlas = _spriteCache.remove(descriptor.id);
+      final oldRig = _rigCache.remove(descriptor.id);
+      _spriteCache[descriptor.id] = loaded;
+      _spriteAtlas = loaded;
+      rigPet = null;
+      oldAtlas?.image.dispose();
+      oldRig?.dispose();
+    }
+  }
+
   Future<void> selectPet(String id) async {
     final descriptor = pets.firstWhere((pet) => pet.id == id);
     // Selection is UI intent: commit it before the atlas IO so the tap wins
@@ -248,9 +353,17 @@ class AppController extends ChangeNotifier {
       petName: descriptor.displayName,
     );
     notifyListeners();
-    final loaded = await petAtlas(descriptor);
-    if (state.selectedPetId != descriptor.id) return;
-    spriteAtlas = loaded;
+    if (descriptor.isRig) {
+      final loaded = await petRig(descriptor);
+      if (state.selectedPetId != descriptor.id) return;
+      rigPet = loaded;
+      _spriteAtlas = null;
+    } else {
+      final loaded = await petAtlas(descriptor);
+      if (state.selectedPetId != descriptor.id) return;
+      _spriteAtlas = loaded;
+      rigPet = null;
+    }
     await _stateStore.save(state);
     await _overlayService.updatePetName(state.petName);
     await _refreshNotificationSchedule();
@@ -297,9 +410,10 @@ class AppController extends ChangeNotifier {
       treats: state.treats + reward,
       onboardingRewardGranted: true,
     );
-    if (spriteAtlas.descriptor.id != selectedPetId) {
+    if ((_spriteAtlas?.descriptor.id ?? rigPet?.descriptor.id) !=
+        selectedPetId) {
       final descriptor = pets.firstWhere((pet) => pet.id == selectedPetId);
-      spriteAtlas = await petAtlas(descriptor);
+      await _loadSelectedPet(descriptor);
     }
     await _stateStore.save(state);
     notifyListeners();
@@ -402,9 +516,11 @@ class AppController extends ChangeNotifier {
         'lifetimeCompletions': after,
       });
     }
-    if (newStages.isNotEmpty && selectedPet.stageAssets.isNotEmpty) {
+    if (!selectedPet.isRig &&
+        newStages.isNotEmpty &&
+        selectedPet.stageAssets.isNotEmpty) {
       final previous = _spriteCache.remove(selectedPet.id);
-      spriteAtlas = await _spriteLoader.loadPet(
+      _spriteAtlas = await _spriteLoader.loadPet(
         selectedPet,
         growthStage: growthStage.name,
       );
@@ -430,6 +546,7 @@ class AppController extends ChangeNotifier {
     });
     _playMoment(
       animation: 'waving',
+      rigAnimation: RigPetAction.eatTreat,
       status:
           '${state.petName} savors the ${selectedPet.treatName.toLowerCase()}',
       particle: selectedPet.treatEmoji,
@@ -441,8 +558,16 @@ class AppController extends ChangeNotifier {
   Future<void> touchPet({required double dx, required double dy}) async {
     final degrees = (math.atan2(dx, -dy) * 180 / math.pi + 360) % 360;
     final direction = (degrees / 22.5).round() % 16;
-    petAnimation = direction < 8 ? 'look-row-9' : 'look-row-10';
-    petAnimationFrame = direction % 8;
+    if (selectedPet.isRig) {
+      rigAction = rigActionForEvent(PetActionEvent.touched);
+      rigTarget = RigTarget(
+        (dx / 96).clamp(-1.0, 1.0),
+        (dy / 104).clamp(-1.0, 1.0),
+      );
+    } else {
+      petAnimation = direction < 8 ? 'look-row-9' : 'look-row-10';
+      petAnimationFrame = direction % 8;
+    }
     affectionateMessage =
         _affectionateLines[_random.nextInt(_affectionateLines.length)]
             .replaceAll('{petName}', state.petName);
@@ -454,13 +579,21 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> nuzzlePet() async {
+  Future<void> nuzzlePet({double dx = 0, double dy = 0}) async {
     affectionateMessage =
         '${state.petName} leans in close and gives you a gentle nuzzle';
     await _log(PetEventType.petTouch, const <String, Object?>{
       'kind': 'long_press',
     });
-    _playMoment(animation: 'waving', particle: '♥');
+    rigTarget = RigTarget(
+      (dx / 96).clamp(-1.0, 1.0),
+      (dy / 104).clamp(-1.0, 1.0),
+    );
+    _playMoment(
+      animation: 'waving',
+      rigAnimation: RigPetAction.nuzzle,
+      particle: '♥',
+    );
     _holdMessage();
     notifyListeners();
   }
@@ -666,15 +799,24 @@ class AppController extends ChangeNotifier {
         notifyListeners();
       });
     }
-    petAnimation = 'jumping';
-    petAnimationFrame = null;
+    if (selectedPet.isRig) {
+      rigAction = rigActionForEvent(PetActionEvent.taskCompleted);
+      rigAnimationNonce++;
+    } else {
+      petAnimation = 'jumping';
+      petAnimationFrame = null;
+    }
     momentParticle = '+$lastTreatDrop ${selectedPet.treatEmoji}';
     particleNonce++;
     if (showTheater) {
       _theaterTimer = Timer(const Duration(milliseconds: 900), () {
         theaterVisible = true;
-        petAnimation = 'review';
-        petAnimationFrame = null;
+        if (selectedPet.isRig) {
+          rigAction = RigPetAction.breathing;
+        } else {
+          petAnimation = 'review';
+          petAnimationFrame = null;
+        }
         notifyListeners();
       });
     } else {
@@ -724,8 +866,13 @@ class AppController extends ChangeNotifier {
         _theaterTimer?.isActive == true) {
       return;
     }
-    petAnimation = currentSchedule.animation;
-    petAnimationFrame = currentSchedule.fixedFrame;
+    if (selectedPet.isRig) {
+      rigAction = rigActionForSchedule(currentSchedule);
+      rigTarget = const RigTarget(0, 0);
+    } else {
+      petAnimation = currentSchedule.animation;
+      petAnimationFrame = currentSchedule.fixedFrame;
+    }
   }
 
   void _scheduleScheduleBoundary() {
@@ -745,12 +892,18 @@ class AppController extends ChangeNotifier {
 
   void _playMoment({
     required String animation,
+    RigPetAction? rigAnimation,
     String? status,
     String? particle,
   }) {
     _animationTimer?.cancel();
-    petAnimation = animation;
-    petAnimationFrame = null;
+    if (selectedPet.isRig) {
+      rigAction = rigAnimation ?? RigPetAction.breathing;
+      rigAnimationNonce++;
+    } else {
+      petAnimation = animation;
+      petAnimationFrame = null;
+    }
     momentStatus = status;
     momentParticle = particle;
     if (particle != null) particleNonce++;
@@ -851,6 +1004,12 @@ class AppController extends ChangeNotifier {
     for (final atlas in _spriteCache.values.toSet()) {
       atlas.image.dispose();
     }
+    for (final rig in _rigCache.values.toSet()) {
+      rig.dispose();
+    }
+    _rigCache.clear();
+    _rigDisposed = true;
+    _rigEpoch++;
     super.dispose();
   }
 }
