@@ -326,7 +326,7 @@ each, and the factor that decided it.
 | UI framework | Flutter | Native Swift + Kotlin pair | Both give a quality UI; one codebase keeps a solo project able to reach evaluation on both platforms |
 | Pet rendering | `CustomPainter` + `Ticker` | Flame game engine | One animated actor does not justify an engine; keeps animation state in the tested layer |
 | Storage | Versioned JSON + JSONL log | SQLite | Both are reliable; files keep export human-readable and the "no server" promise literal |
-| Animation source | v3 rig pack: 4 poses + skeleton | v2 per-frame generation | Both produce a recognisable pet; v2 took ~40 min per pet and drifted between frames, v3 takes ~1 min and moves deterministically (Section 3.5) |
+| Animation source | 4 generated poses + a template skeleton | Generating every animation frame as its own image | Both produce a recognisable pet; per-frame took ~40 min per pet and drifted between frames, the skeleton takes ~1 min and moves deterministically (Section 3.5) |
 | Visual style | Pixel art ("Cozy Pixel") | Soft photo-derived style | Soft style scored well on warmth but could not hold a stable silhouette (Section 4.4); pixel art is stable and answers the "infantile" objection |
 | Notification cue | Event-based (planned, Section 6) | Time-based clock prompts | Time-based prospective memory is impaired in ADHD adults; event-based is spared |
 
@@ -383,11 +383,13 @@ rework: custom tap targets own container semantics above their gesture
 handlers, decorative art is excluded from the accessibility tree, and
 onboarding scrolls on short viewports.
 
-**Raising system.** State schema v2 with in-place migration, growth stages
+**Raising system.** A second version of the stored-state format with
+in-place migration, growth stages
 derived rather than stored, a treat economy, a full-day pet schedule,
 long-press interaction, and a collection gallery with no progress bars.
 
-**To-do baseline.** Schema v3. Tasks are ID-addressed objects of kind `daily`
+**To-do baseline.** A third version of the stored-state format. Tasks are
+ID-addressed objects of kind `daily`
 or `oneOff`, capped at one to seven; quick capture requires only a title;
 one-off tasks never carry age or overdue data. Positive history is derived
 only from completion events and renders only weeks that contain
@@ -415,7 +417,8 @@ weakness: the idle animation read as choppy. Measurement found the cause. The
 six idle frames were generated independently, so 37–46% of pixels changed
 between neighbouring frames and the silhouette drifted about 4 px — six
 similar dogs rather than one dog breathing. The interim fix held a still
-frame while the pet rests; the real fix is the v3 pipeline in Section 3.5.
+frame while the pet rests; the real fix is the second-generation pipeline
+in Section 3.5.
 
 ### 3.3 The pixel restyle
 
@@ -449,10 +452,10 @@ overlay permission, the app continues silently and never asks again.
 
 ### 3.5 The hatch pipeline, second generation
 
-The v2 pipeline (Section 3.2) produced its pet by generating every animation frame
+The first-generation pipeline (Section 3.2) produced its pet by generating every animation frame
 as its own image: about 14 serial generations and roughly 40 minutes per pet,
 with the inter-frame drift measured in Section 3.2, and the finished pack returned
-to the user by hand. That route is now retired. The v3 pipeline generates
+to the user by hand. That route is now retired. Its replacement generates
 only four canonical poses — sitting with eyes open, the same pose with eyes
 closed, curled asleep, and a side view — plus bounding boxes for the head,
 tail and legs, and packs them as a "rig pack". Everything that moves is code:
@@ -462,12 +465,13 @@ to the pixel grid so it stays honest to the art style. Figure 4 compares the
 two routes. A hatch now takes about a minute and costs roughly £0.03 (¥0.3)
 in model fees, which makes hatching in-app viable: photos go from the app to
 a small proxy backend that holds the image-model key, enforces a species gate
-(cats and dogs only in v1), a per-account hatch quota, rate limits and cost
+(cats and dogs only for now), a per-account hatch quota, rate limits and cost
 ceilings — and returns the finished pack straight to the device. No account
 is created and no photos are retained server-side. The photos themselves can
 be taken from any angle — the in-app guidance says only that different angles
 improve generation quality — and the four poses are generated *outputs*, not
-required inputs. Existing v2 pets keep working: the renderer routes by pack
+required inputs. Pets hatched by the old pipeline keep working: the renderer
+routes by pack
 format, and the two formats run side by side. The "failed" reaction class
 present in early animation drafts is permanently absent, by red line.
 
@@ -480,9 +484,9 @@ hatch attempts, and photos of anything other than a cat or dog are gently
 declined, with the requested species recorded as a wish for a future
 template.
 
-**Figure 4 — The two hatch routes.** v2 generated every frame; v3 generates
-four poses and lets a skeleton do the moving.
-![Flow diagram comparing the v2 and v3 hatch pipelines](figures/hatch-pipeline.png)
+**Figure 4 — The two hatch routes.** The first generation generated every
+frame; the second generates four poses and lets a skeleton do the moving.
+![Flow diagram comparing the two generations of the hatch pipeline](figures/hatch-pipeline.png)
 
 The pipeline is a Python CLI (`tools/rig_pipeline/`, 25 tests) with retries
 and best-of-two sampling built in, and it produced two engineering findings
@@ -675,7 +679,8 @@ running the suite, not by quoting it. The pipeline CLI carries its own suite:
 25 tests across 6 files, run the same way. The unmerged notification rework
 adds five more, including a lint that fails the build if invitation copy ever
 regains a forbidden phrasing. Coverage concentrates on the promises the
-product makes its users: schema v1→v2→v3 migration; day rollover, including
+product makes its users: migration across all three versions of the
+stored-state format; day rollover, including
 that rolling over multiple missed days leaves no historical markers; one-off
 isolation from daily rollover; treat and unlock edges; the sorted, capped
 notification window with one fire per task per day and no re-asking after
@@ -769,7 +774,7 @@ leader — which at least has accounts to restore from. The export mechanism
 exists; making it a visible backup with an honest explanation is a small
 change against a disproportionate risk.
 
-**Finish the v3 rollout.** The pipeline, proxy, renderer, preset roster and
+**Finish the new-pipeline rollout.** The pipeline, proxy, renderer, preset roster and
 unlock flow all exist (Section 3.5); what remains is pricing the unlock (it
 currently ships with a placeholder price), routing the adopted pet onto the
 Android overlay, and the iOS widget as the second ambient surface — which can
