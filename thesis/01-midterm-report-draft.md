@@ -10,9 +10,10 @@ Pawside is a mobile to-do application for adults with ADHD, built for iOS and
 Android from one Flutter codebase. Its starting idea is simple: for this
 population, gentle reminders rarely get a task started, but external anchors —
 a child, a pet, another person who depends on you — often do. So instead of
-sending reminders, Pawside gives the user a virtual pet generated from
-photographs of their own animal, and frames a small daily task list as things
-the user and the pet do together. Safety rules — no punishment, no streaks, no
+sending reminders, Pawside gives the user a virtual pet — adopted from a
+roster of nine preset cats and dogs, or, as a one-off unlock, generated from
+photographs of the user's own animal — and frames a small daily task list as
+things the user and the pet do together. Safety rules — no punishment, no streaks, no
 failure states — are built into the data model rather than left to good
 intentions.
 
@@ -67,8 +68,10 @@ Build and evaluate a to-do application whose engagement mechanism is an
 external anchor rather than a reminder, without importing the guilt that has
 caused similar applications to be abandoned. Objectives: (i) a dual-platform
 core loop that works entirely offline, with no account and no server; (ii) a
-pet generated from the user's *own* animal, on the hypothesis that attachment
-to a real, recognisable companion is stronger than attachment to a generic
+pet the user cares about — a preset roster of cats and dogs so the app is
+complete without owning an animal, plus, as the differentiating unlock, a pet
+generated from the user's *own* animal, on the hypothesis that attachment to
+a real, recognisable companion is stronger than attachment to a generic
 avatar; (iii) safety red lines — no punishment, no streaks, no failure
 states — enforced by the structure of the code, not by discipline; (iv) an
 evaluation against a retention criterion, where the criterion itself is
@@ -447,10 +450,21 @@ in model fees, which makes hatching in-app viable: photos go from the app to
 a small proxy backend that holds the image-model key, enforces a species gate
 (cats and dogs only in v1), a per-account hatch quota, rate limits and cost
 ceilings — and returns the finished pack straight to the device. No account
-is created and no photos are retained server-side. Existing v2 pets keep
-working: the renderer routes by pack format, and the two formats run side by
-side. The "failed" reaction class present in early animation drafts is
-permanently absent, by red line.
+is created and no photos are retained server-side. The photos themselves can
+be taken from any angle — the in-app guidance says only that different angles
+improve generation quality — and the four poses are generated *outputs*, not
+required inputs. Existing v2 pets keep working: the renderer routes by pack
+format, and the two formats run side by side. The "failed" reaction class
+present in early animation drafts is permanently absent, by red line.
+
+The same pipeline also produced the preset roster: nine cats and dogs
+generated from breed descriptions alone, no photographs involved, with
+several candidates rendered per pet and the best face hand-picked. The
+presets are free, so the app is complete for someone who owns no animal at
+all; hatching your *own* pet is a one-off paid unlock that includes three
+hatch attempts, and photos of anything other than a cat or dog are gently
+declined, with the requested species recorded as a wish for a future
+template.
 
 **Figure 4 — The two hatch routes.** v2 generated every frame; v3 generates
 four poses and lets a skeleton do the moving.
@@ -470,10 +484,12 @@ judges from the centre of the detected head box.
 
 The original onboarding introduced features. The rebuilt flow introduces the
 pet first, on the reasoning that Section 1.3.2 supports: the app is opened to see
-the pet, so the first minute should establish that bond. The user meets a
-grid of adoptable pets ("Who's coming home?"), picks one, and names it — with
+the pet, so the first minute should establish that bond. The user meets an
+adoption grid of the nine preset pets ("Who's coming home?"), rendered from
+the live pet registry rather than hardcoded, picks one, and names it — with
 a dice button that rolls a name from a preset pool, so the single typing
-moment has a zero-effort escape. They then pick up to three "little things"
+moment has a zero-effort escape. A quiet line beneath the grid — "Your real
+pet can live here too" — points at the own-pet unlock without selling it. They then pick up to three "little things"
 from tappable chips (get out of bed, drink some water, take my meds…), with
 typing needed only for a custom entry. A mid-point celebration awards the
 first treat *before* any real task is done, so the reward loop is
@@ -739,12 +755,11 @@ leader — which at least has accounts to restore from. The export mechanism
 exists; making it a visible backup with an honest explanation is a small
 change against a disproportionate risk.
 
-**Finish the v3 rollout.** The pipeline, proxy and renderer exist (Section 3.5);
-what remains is production and productisation: a roster of preset pets
-generated through the same pipeline so the adoption grid offers real
-variety, the one-off unlock flow for hatching a user's own pet, and the iOS
-widget as the second ambient surface — which can now reuse the pixel asset
-form the Android overlay draws.
+**Finish the v3 rollout.** The pipeline, proxy, renderer, preset roster and
+unlock flow all exist (Section 3.5); what remains is pricing the unlock (it
+currently ships with a placeholder price), routing the adopted pet onto the
+Android overlay, and the iOS widget as the second ambient surface — which can
+now reuse the pixel asset form the overlay draws.
 
 **Evaluation.** Ethics enquiry, recruitment, the fourteen-day run with a
 day-60 follow-up, and analysis. The outstanding intellectual work is deciding
