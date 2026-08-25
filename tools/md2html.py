@@ -83,5 +83,5 @@ th { background:#f2f2f2; }
 """
 md=open(sys.argv[1]).read()
 open(sys.argv[2],'w').write(
- f'<!doctype html><html><head><meta charset="utf-8"><title>PetTodo Mid-term Report</title>'
+ f'<!doctype html><html><head><meta charset="utf-8"><title>Pawside Progress Report</title>'
  f'<style>{CSS}</style></head><body>{convert(md)}</body></html>')

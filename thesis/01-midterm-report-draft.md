@@ -1,14 +1,16 @@
-# PetTodo — Progress Report
+# Pawside — Progress Report
+
+*(formerly PetTodo — renamed during the period this report covers, §3.3)*
 
 ---
 
 ## Abstract
 
-PetTodo is a mobile to-do application for adults with ADHD, built for iOS and
+Pawside is a mobile to-do application for adults with ADHD, built for iOS and
 Android from one Flutter codebase. Its starting idea is simple: for this
 population, gentle reminders rarely get a task started, but external anchors —
 a child, a pet, another person who depends on you — often do. So instead of
-sending reminders, PetTodo gives the user a virtual pet generated from
+sending reminders, Pawside gives the user a virtual pet generated from
 photographs of their own animal, and frames a small daily task list as things
 the user and the pet do together. Safety rules — no punishment, no streaks, no
 failure states — are built into the data model rather than left to good
@@ -55,7 +57,7 @@ mechanisms this project set out to improve on.
 
 What people with ADHD say works for them is concrete and external: a child, a
 dog that must be walked, an alarm clock placed across the room — not
-motivational messages. PetTodo asks whether that observation survives being
+motivational messages. Pawside asks whether that observation survives being
 built: can a virtual pet made from the user's own animal act as an external
 anchor for small daily tasks?
 
@@ -139,7 +141,7 @@ concern billing disputes, and its Android rating has collapsed to 3.29★. A
 newer cluster of quest-style apps (Hyper, TaskHero, LifeUp) competes for the
 same users with "levelling up, not being told what to do".
 
-**Figure 2 — Three mechanisms from the category leader that PetTodo
+**Figure 2 — Three mechanisms from the category leader that Pawside
 deliberately leaves out.** Left to right: Finch's streak counter ("1 DAY
 STREAK"), its seven-day free-trial offer with a countdown, and its cosmetics
 shop. Each maps to a documented failure mode: streaks to guilt on lapse,
@@ -149,7 +151,7 @@ rewards to the reported ceiling of the pet mechanism.
 
 Three design consequences follow. The pet-bond mechanism is validated and its
 ceiling untouched. Data loss is existential for an emotional product — and
-*worse* for PetTodo, whose pet is irreplaceable and whose storage is
+*worse* for Pawside, whose pet is irreplaceable and whose storage is
 local-only. And subscription dark patterns are a category-wide trust failure
 that a competitor can differentiate against simply by not committing them.
 
@@ -170,7 +172,7 @@ variance, and finds it *impairs* complex tasks
 ([Bond & Titus 1983](https://doi.org/10.1037/0033-2909.94.2.265)). Animal
 care has never been tested as a task-initiation aid in ADHD adults. Nothing I
 retrieved supports the chain *human presence helps → animal responsibility
-helps → a photo-derived virtual animal helps*. PetTodo is therefore
+helps → a photo-derived virtual animal helps*. Pawside is therefore
 **testing** a mechanism, not implementing a proven one, and this report makes
 its claims accordingly.
 
@@ -255,7 +257,7 @@ widgets, deliberately kept outside `lib/ui/`.
 **Figure 3 — Code structure.** The Flutter application and the two things
 that live outside it: the hatch route that turns photos into a pet, and the
 native surfaces Flutter cannot reach.
-![Layer diagram of the PetTodo codebase](figures/architecture.png)
+![Layer diagram of the Pawside codebase](figures/architecture.png)
 
 The dependency arrows only point one way, which is what makes the safety
 rules testable. To see why, follow one tap through the layers. When the user
@@ -406,12 +408,15 @@ decision has been carried through the whole product, not just the sprite. The
 pixel fonts and icons; the bundled pet Choco was regenerated as pixel-art
 canon with a full QA atlas. Because the restyle is confined to `lib/ui/` and
 asset files, it landed without touching domain logic — the architectural
-claim in §2.1, demonstrated a second time. In the same wave the user-facing
-name became "Pawside", with paw-print imagery replacing the egg motif; this
-report keeps the project name PetTodo throughout. The retro aesthetic is also
-a positioning answer: §1.3.2 documents adults calling the category leader
-infantile, and pixel art reads as adult nostalgia rather than as a children's
-toy.
+claim in §2.1, demonstrated a second time. The same wave carried a naming
+change: the product took its release name, **Pawside**, replacing the working
+title PetTodo, with paw-print imagery replacing the egg motif and user-facing
+copy moving from "hatching" to "adoption" language. This report uses Pawside
+throughout; repository paths and technical identifiers such as the
+`.pettodopet` pack extension deliberately keep the old name. The retro
+aesthetic is also a positioning answer: §1.3.2 documents adults calling the
+category leader infantile, and pixel art reads as adult nostalgia rather than
+as a children's toy.
 
 ### 3.4 The ambient layer on Android
 
