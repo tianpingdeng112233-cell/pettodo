@@ -14,6 +14,7 @@ import '../domain/app_state.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
 import '../domain/growth.dart';
+import '../domain/onboarding_flow.dart';
 import '../domain/pet_schedule.dart';
 import '../domain/treat_economy.dart';
 import '../domain/unlocks.dart';
@@ -28,6 +29,7 @@ class AppController extends ChangeNotifier {
     SpriteAtlasLoader? spriteLoader,
     HatchRequestStore? hatchRequestStore,
     PetPackService? petPackService,
+    DateTime Function()? now,
   }) => AppController._(
     stateStore,
     eventLog,
@@ -36,6 +38,7 @@ class AppController extends ChangeNotifier {
     spriteLoader ?? SpriteAtlasLoader(),
     hatchRequestStore ?? HatchRequestStore.onDevice(),
     petPackService ?? PetPackService.onDevice(),
+    now ?? DateTime.now,
   );
 
   AppController._(
@@ -46,6 +49,7 @@ class AppController extends ChangeNotifier {
     this._spriteLoader,
     this._hatchRequestStore,
     this._petPackService,
+    this._now,
   );
 
   final AppStateStore _stateStore;
@@ -55,6 +59,7 @@ class AppController extends ChangeNotifier {
   final SpriteAtlasLoader _spriteLoader;
   final HatchRequestStore _hatchRequestStore;
   final PetPackService _petPackService;
+  final DateTime Function() _now;
   final Map<String, LoadedSpriteAtlas> _spriteCache =
       <String, LoadedSpriteAtlas>{};
   Timer? _animationTimer;
@@ -83,6 +88,7 @@ class AppController extends ChangeNotifier {
   int lastTreatDrop = 0;
   HatchRequest? pendingHatchRequest;
   String? hatchCeremonyPetName;
+  bool eveningHelloVisible = false;
   int _taskIdNonce = 0;
 
   PetGrowthStage get growthStage => growthStageFor(state.lifetimeCompletions);
@@ -139,6 +145,7 @@ class AppController extends ChangeNotifier {
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
     await _overlayService.initialize(petName: state.petName);
+    _refreshEveningHelloOffer();
     _scheduleDayBoundary();
     _scheduleScheduleBoundary();
   }
@@ -208,24 +215,42 @@ class AppController extends ChangeNotifier {
     return descriptor;
   }
 
-  Future<LoadedSpriteAtlas> petAtlas(PetAssetDescriptor descriptor) async {
+  final Map<String, Future<LoadedSpriteAtlas>> _spriteLoads =
+      <String, Future<LoadedSpriteAtlas>>{};
+
+  Future<LoadedSpriteAtlas> petAtlas(PetAssetDescriptor descriptor) {
     final cached = _spriteCache[descriptor.id];
-    if (cached != null) return cached;
-    final loaded = await _spriteLoader.loadPet(
-      descriptor,
-      growthStage: growthStage.name,
-    );
-    _spriteCache[descriptor.id] = loaded;
-    return loaded;
+    if (cached != null) return Future<LoadedSpriteAtlas>.value(cached);
+    // Memoize the in-flight load: concurrent callers (grid tiles, selection)
+    // must share one decode, or the later completion would drop the earlier
+    // ui.Image without anyone left to dispose it.
+    return _spriteLoads.putIfAbsent(descriptor.id, () async {
+      try {
+        final loaded = await _spriteLoader.loadPet(
+          descriptor,
+          growthStage: growthStage.name,
+        );
+        _spriteCache[descriptor.id] = loaded;
+        return loaded;
+      } finally {
+        _spriteLoads.remove(descriptor.id);
+      }
+    });
   }
 
   Future<void> selectPet(String id) async {
     final descriptor = pets.firstWhere((pet) => pet.id == id);
-    spriteAtlas = await petAtlas(descriptor);
+    // Selection is UI intent: commit it before the atlas IO so the tap wins
+    // immediately, and guard the swap so a slower load for an earlier tap
+    // can never clobber the pet the user settled on.
     state = state.copyWith(
       selectedPetId: descriptor.id,
       petName: descriptor.displayName,
     );
+    notifyListeners();
+    final loaded = await petAtlas(descriptor);
+    if (state.selectedPetId != descriptor.id) return;
+    spriteAtlas = loaded;
     await _stateStore.save(state);
     await _overlayService.updatePetName(state.petName);
     await _refreshNotificationSchedule();
@@ -247,64 +272,53 @@ class AppController extends ChangeNotifier {
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
     await _overlayService.refresh(petName: state.petName);
+    _refreshEveningHelloOffer();
     _scheduleDayBoundary();
     _applySchedule(DateTime.now());
     _scheduleScheduleBoundary();
     notifyListeners();
   }
 
-  Future<void> completeOnboarding({
+  Future<void> prepareOnboarding({
     required String selectedPetId,
     required String petName,
     required List<String> taskTitles,
-    required bool enableNotifications,
-    required int notificationHour,
-    required int notificationMinute,
   }) async {
-    if (taskTitles.length < minimumTaskCount ||
-        taskTitles.length > maximumTaskCount) {
-      throw ArgumentError('Choose between 1 and 7 little things.');
-    }
-    var permission = state.notificationPermission;
-    var enabled = false;
-    if (enableNotifications &&
-        permission != NotificationPermissionState.denied) {
-      final granted = await _notifications.requestPermission();
-      permission = granted
-          ? NotificationPermissionState.granted
-          : NotificationPermissionState.denied;
-      enabled = granted;
-    }
+    final descriptor = pets.firstWhere((pet) => pet.id == selectedPetId);
+    final normalizedName = _normalized(petName, descriptor.displayName);
+    final reward = state.onboardingRewardGranted ? 0 : 1;
     state = state.copyWith(
-      onboardingComplete: true,
       selectedPetId: selectedPetId,
-      petName: _normalized(
-        petName,
-        pets.firstWhere((pet) => pet.id == selectedPetId).displayName,
+      petName: normalizedName,
+      tasks: buildOnboardingTasks(
+        petName: normalizedName,
+        littleThings: taskTitles,
       ),
-      tasks: List<TodoTask>.generate(
-        taskTitles.length,
-        (index) => TodoTask(
-          id: 'daily-${index + 1}',
-          title: _normalized(
-            taskTitles[index],
-            defaultTaskTitles[index % defaultTaskTitles.length],
-          ),
-          kind: TaskKind.daily,
-        ),
-        growable: false,
-      ),
-      notificationPermission: permission,
-      notificationEnabled: enabled,
-      notificationHour: notificationHour,
-      notificationMinute: notificationMinute,
+      treats: state.treats + reward,
+      onboardingRewardGranted: true,
     );
     if (spriteAtlas.descriptor.id != selectedPetId) {
       final descriptor = pets.firstWhere((pet) => pet.id == selectedPetId);
       spriteAtlas = await petAtlas(descriptor);
     }
     await _stateStore.save(state);
+    notifyListeners();
+  }
+
+  Future<void> finishOnboarding() async {
+    state = state.copyWith(onboardingComplete: true, eveningHelloPending: true);
+    _refreshEveningHelloOffer();
+    await _stateStore.save(state);
     await _refreshNotificationSchedule();
+    notifyListeners();
+  }
+
+  Future<void> respondToEveningHello(bool accepted) async {
+    if (!state.eveningHelloPending) return;
+    eveningHelloVisible = false;
+    state = state.copyWith(eveningHelloPending: false);
+    await _stateStore.save(state);
+    if (accepted) await setNotificationEnabled(true);
     notifyListeners();
   }
 
@@ -761,6 +775,13 @@ class AppController extends ChangeNotifier {
       affectionateMessage = null;
       notifyListeners();
     });
+  }
+
+  void _refreshEveningHelloOffer() {
+    eveningHelloVisible = shouldOfferEveningHello(
+      pending: state.onboardingComplete && state.eveningHelloPending,
+      now: _now(),
+    );
   }
 
   /// Reminders are a nice-to-have layered on top of the real work. A platform

@@ -9,6 +9,7 @@ import 'package:pettodo/data/event_log_store.dart';
 import 'package:pettodo/data/hatch_request_store.dart';
 import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/data/pet_pack_service.dart';
+import 'package:pettodo/domain/onboarding_flow.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/collection_screen.dart';
@@ -52,11 +53,25 @@ void main() {
       CollectionScreen(controller: fixture.controller),
       'goldens/pixel_collection_393.png',
     );
-    await _expectGolden(
-      tester,
-      OnboardingScreen(controller: fixture.controller),
-      'goldens/pixel_onboarding_393.png',
-    );
+    for (final entry in <(OnboardingStep, String)>[
+      (OnboardingStep.choosePet, 'goldens/pixel_onboarding_s1_393.png'),
+      (OnboardingStep.namePet, 'goldens/pixel_onboarding_s2_393.png'),
+      (OnboardingStep.littleThings, 'goldens/pixel_onboarding_s3_393.png'),
+      (OnboardingStep.celebrate, 'goldens/pixel_onboarding_s4_393.png'),
+      (OnboardingStep.stayOnScreen, 'goldens/pixel_onboarding_s5_393.png'),
+    ]) {
+      await _expectGolden(
+        tester,
+        OnboardingScreen(
+          key: ValueKey<OnboardingStep>(entry.$1),
+          controller: fixture.controller,
+          initialStep: entry.$1,
+          showStayOnScreen: true,
+          initialSelectedThingIndexes: const <int>{0, 1, 3},
+        ),
+        entry.$2,
+      );
+    }
   });
 }
 

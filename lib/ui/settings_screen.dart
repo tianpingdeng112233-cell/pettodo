@@ -392,7 +392,10 @@ class _OverlayPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Let $petName stay on your screen', style: PetTextStyles.body16Strong),
+                  Text(
+                    'Let $petName stay on your screen',
+                    style: PetTextStyles.body16Strong,
+                  ),
                   const SizedBox(height: PetSpacing.xs),
                   Text(
                     controller.overlayEnabled

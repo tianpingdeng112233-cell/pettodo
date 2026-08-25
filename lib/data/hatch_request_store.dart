@@ -133,7 +133,9 @@ class HatchRequestStore {
 
   Future<File> export() async {
     final request = await load();
-    if (request == null) throw StateError('There is no adoption request to send.');
+    if (request == null) {
+      throw StateError('There is no adoption request to send.');
+    }
     final directory = await requestDirectory;
     final output = File('${directory.parent.path}/${request.requestId}.zip');
     final archive = Archive();

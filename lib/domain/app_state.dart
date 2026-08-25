@@ -149,6 +149,8 @@ class AppState {
     required this.notificationEnabled,
     required this.notificationHour,
     required this.notificationMinute,
+    required this.onboardingRewardGranted,
+    required this.eveningHelloPending,
   }) : tasks = List<TodoTask>.unmodifiable(tasks),
        unlockedDecorIds = List<String>.unmodifiable(unlockedDecorIds) {
     if (this.tasks.length < minimumTaskCount ||
@@ -177,6 +179,8 @@ class AppState {
     notificationEnabled: false,
     notificationHour: 20,
     notificationMinute: 0,
+    onboardingRewardGranted: false,
+    eveningHelloPending: false,
   );
 
   factory AppState.fromJson(Map<String, Object?> json, DateTime now) {
@@ -209,6 +213,11 @@ class AppState {
         0,
         59,
       ),
+      onboardingRewardGranted:
+          json['onboardingRewardGranted'] as bool? ?? false,
+      // Legacy completed states stay exactly as they were. Only v2 onboarding
+      // explicitly creates a pending first-evening invitation.
+      eveningHelloPending: json['eveningHelloPending'] as bool? ?? false,
     );
   }
 
@@ -225,6 +234,8 @@ class AppState {
   final bool notificationEnabled;
   final int notificationHour;
   final int notificationMinute;
+  final bool onboardingRewardGranted;
+  final bool eveningHelloPending;
 
   List<TodoTask> get dailyTasks => tasks
       .where((task) => task.kind == TaskKind.daily)
@@ -262,6 +273,8 @@ class AppState {
     bool? notificationEnabled,
     int? notificationHour,
     int? notificationMinute,
+    bool? onboardingRewardGranted,
+    bool? eveningHelloPending,
   }) => AppState(
     onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     selectedPetId: selectedPetId ?? this.selectedPetId,
@@ -279,6 +292,9 @@ class AppState {
     notificationEnabled: notificationEnabled ?? this.notificationEnabled,
     notificationHour: notificationHour ?? this.notificationHour,
     notificationMinute: notificationMinute ?? this.notificationMinute,
+    onboardingRewardGranted:
+        onboardingRewardGranted ?? this.onboardingRewardGranted,
+    eveningHelloPending: eveningHelloPending ?? this.eveningHelloPending,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -296,6 +312,8 @@ class AppState {
     'notificationEnabled': notificationEnabled,
     'notificationHour': notificationHour,
     'notificationMinute': notificationMinute,
+    'onboardingRewardGranted': onboardingRewardGranted,
+    'eveningHelloPending': eveningHelloPending,
   };
 
   static List<TodoTask> _tasksFromJson(Map<String, Object?> json) {
