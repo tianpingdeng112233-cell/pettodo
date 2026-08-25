@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 
 import '../data/app_state_store.dart';
 import '../data/event_log_store.dart';
+import '../data/feature_gate.dart';
+import '../data/hatch_api_client.dart';
 import '../data/hatch_request_store.dart';
 import '../data/notification_service.dart';
 import '../data/overlay_service.dart';
@@ -22,6 +24,7 @@ import '../domain/unlocks.dart';
 import '../sprite/sprite_atlas.dart';
 import '../sprite/rig_driver.dart';
 import '../sprite/rig_pet.dart';
+import 'hatch_flow.dart';
 
 class AppController extends ChangeNotifier {
   factory AppController({
@@ -34,6 +37,9 @@ class AppController extends ChangeNotifier {
     HatchRequestStore? hatchRequestStore,
     PetPackService? petPackService,
     DateTime Function()? now,
+    HatchApi? hatchApi,
+    FeatureGate? featureGate,
+    HatchDelay? hatchDelay,
   }) => AppController._(
     stateStore,
     eventLog,
@@ -44,6 +50,9 @@ class AppController extends ChangeNotifier {
     hatchRequestStore ?? HatchRequestStore.onDevice(),
     petPackService ?? PetPackService.onDevice(),
     now ?? DateTime.now,
+    hatchApi ?? HatchApiClient.onDevice(),
+    featureGate ?? LocalFeatureGate.onDevice(),
+    hatchDelay,
   );
 
   AppController._(
@@ -56,7 +65,20 @@ class AppController extends ChangeNotifier {
     this._hatchRequestStore,
     this._petPackService,
     this._now,
-  );
+    HatchApi hatchApi,
+    this._featureGate,
+    HatchDelay? hatchDelay,
+  ) {
+    _hatchFlow = HatchFlowMachine(
+      api: hatchApi,
+      featureGate: _featureGate,
+      importPack: _importHatchedPack,
+      delay: hatchDelay,
+      onAccepted: _rememberHatchId,
+      onReady: () => _notifications.showHatchReady(petName: state.petName),
+      onChanged: notifyListeners,
+    );
+  }
 
   final AppStateStore _stateStore;
   final EventLogStore _eventLog;
@@ -67,6 +89,8 @@ class AppController extends ChangeNotifier {
   final HatchRequestStore _hatchRequestStore;
   final PetPackService _petPackService;
   final DateTime Function() _now;
+  final FeatureGate _featureGate;
+  late final HatchFlowMachine _hatchFlow;
   final Map<String, LoadedSpriteAtlas> _spriteCache =
       <String, LoadedSpriteAtlas>{};
   final Map<String, LoadedRigPet> _rigCache = <String, LoadedRigPet>{};
@@ -105,6 +129,7 @@ class AppController extends ChangeNotifier {
   int treatDropNonce = 0;
   int lastTreatDrop = 0;
   HatchRequest? pendingHatchRequest;
+  bool hatchUnlocked = false;
   String? hatchCeremonyPetName;
   bool eveningHelloVisible = false;
   int _taskIdNonce = 0;
@@ -135,6 +160,8 @@ class AppController extends ChangeNotifier {
   bool get overlaySupported => _overlayService.supported;
   bool get overlayEnabled => _overlayService.enabled;
   bool get overlayBusy => _overlayService.busy;
+  HatchFlowState get hatchFlow => _hatchFlow.state;
+  String get hatchPriceLabel => _featureGate.priceLabel;
 
   Future<void> initialize() async {
     final now = DateTime.now();
@@ -147,6 +174,11 @@ class AppController extends ChangeNotifier {
     } on Object {
       installedPets = const <PetAssetDescriptor>[];
       pendingHatchRequest = null;
+    }
+    try {
+      hatchUnlocked = await _featureGate.isUnlocked();
+    } on Object {
+      hatchUnlocked = false;
     }
     pets = mergePetRegistry(bundledPets, installedPets);
     if (!pets.any((pet) => pet.id == state.selectedPetId)) {
@@ -163,6 +195,10 @@ class AppController extends ChangeNotifier {
     _refreshEveningHelloOffer();
     _scheduleDayBoundary();
     _scheduleScheduleBoundary();
+    final hatchId = pendingHatchRequest?.hatchId;
+    if (hatchUnlocked && hatchId != null) {
+      unawaited(_hatchFlow.resume(hatchId));
+    }
   }
 
   Future<HatchRequest> createHatchRequest({
@@ -177,9 +213,63 @@ class AppController extends ChangeNotifier {
     return pendingHatchRequest!;
   }
 
+  Future<void> unlockHatching() async {
+    await _featureGate.unlock();
+    hatchUnlocked = true;
+    notifyListeners();
+  }
+
+  Future<void> startHatch({
+    required List<File> photos,
+    required String petName,
+  }) async {
+    if (!hatchUnlocked) {
+      await _hatchFlow.submit(photos: photos, petName: petName);
+      return;
+    }
+    pendingHatchRequest = await _hatchRequestStore.create(
+      photos: photos,
+      petName: petName,
+    );
+    notifyListeners();
+    final savedPhotos = await _hatchRequestStore.photosFor(
+      pendingHatchRequest!,
+    );
+    unawaited(_hatchFlow.submit(photos: savedPhotos, petName: petName));
+  }
+
+  Future<void> retryHatch() async {
+    final request = pendingHatchRequest;
+    if (!hatchUnlocked || request == null) return;
+    if (request.hatchId != null) {
+      unawaited(_hatchFlow.resume(request.hatchId!));
+      return;
+    }
+    final photos = await _hatchRequestStore.photosFor(request);
+    unawaited(_hatchFlow.submit(photos: photos, petName: request.petName));
+  }
+
+  Future<void> submitSpeciesWish(String speciesText) =>
+      _hatchFlow.submitSpeciesWish(speciesText);
+
+  Future<void> _rememberHatchId(String hatchId) async {
+    pendingHatchRequest = await _hatchRequestStore.attachHatchId(hatchId);
+    if (!_rigDisposed) notifyListeners();
+  }
+
+  Future<void> _importHatchedPack(File file) async {
+    await importPetPack(file);
+    if (pendingHatchRequest != null) {
+      await _hatchRequestStore.cancel();
+      pendingHatchRequest = null;
+      notifyListeners();
+    }
+  }
+
   Future<File> exportHatchRequest() => _hatchRequestStore.export();
 
   Future<void> cancelHatchRequest() async {
+    _hatchFlow.pause();
     await _hatchRequestStore.cancel();
     pendingHatchRequest = null;
     notifyListeners();
@@ -372,6 +462,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> onResume() async {
+    _hatchFlow.resumeForeground();
     final rolled = rollOverIfNeeded(state, DateTime.now());
     if (!identical(rolled, state)) {
       _cancelMomentTimers();
@@ -390,7 +481,13 @@ class AppController extends ChangeNotifier {
     _applySchedule(DateTime.now());
     _scheduleScheduleBoundary();
     notifyListeners();
+    final hatchId = pendingHatchRequest?.hatchId;
+    if (hatchUnlocked && hatchId != null) {
+      unawaited(_hatchFlow.resume(hatchId));
+    }
   }
+
+  void onPause() => _hatchFlow.pause();
 
   Future<void> prepareOnboarding({
     required String selectedPetId,
@@ -997,6 +1094,7 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _hatchFlow.pause();
     _cancelMomentTimers();
     _dayBoundaryTimer?.cancel();
     _scheduleTimer?.cancel();
@@ -1010,6 +1108,7 @@ class AppController extends ChangeNotifier {
     _rigCache.clear();
     _rigDisposed = true;
     _rigEpoch++;
+    _hatchFlow.dispose();
     super.dispose();
   }
 }

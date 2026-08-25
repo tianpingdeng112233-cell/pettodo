@@ -44,11 +44,29 @@ void main() {
             as Map<String, Object?>;
     expect(requestJson['petName'], 'Pip');
 
+    final attached = await store.attachHatchId('hatch-1');
+    expect(attached.hatchId, 'hatch-1');
+    expect((await store.load())?.hatchId, 'hatch-1');
+
     await store.cancel();
     expect(await store.load(), isNull);
     // Cancelling takes the exported zip with it — otherwise every request the
     // user ever sent stays in documents forever.
     expect(exported.existsSync(), isFalse);
+  });
+
+  test('request accepts at most three photos', () async {
+    final photos = List<File>.generate(
+      4,
+      (index) =>
+          File('${temporary.path}/source-$index.jpg')
+            ..writeAsBytesSync(<int>[index]),
+    );
+
+    await expectLater(
+      store.create(photos: photos, petName: 'Pip'),
+      throwsArgumentError,
+    );
   });
 
   test('exporting a second request leaves no stale zip behind', () async {

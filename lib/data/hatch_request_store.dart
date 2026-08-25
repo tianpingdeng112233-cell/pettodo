@@ -10,6 +10,7 @@ class HatchRequest {
     required this.petName,
     required this.createdAt,
     required List<String> photoFiles,
+    this.hatchId,
   }) : photoFiles = List<String>.unmodifiable(photoFiles);
 
   factory HatchRequest.fromJson(Map<String, Object?> json) {
@@ -19,16 +20,20 @@ class HatchRequest {
     final photos = (json['photos'] as List<Object?>? ?? const <Object?>[])
         .whereType<String>()
         .toList(growable: false);
+    final hatchId = json['hatchId'];
     if (requestId is! String ||
         requestId.isEmpty ||
         petName is! String ||
         createdAt == null ||
         photos.isEmpty ||
+        // Concierge-era requests could contain five photos. Keep loading and
+        // exporting those while all newly created requests use the v1 limit.
         photos.length > 5 ||
         photos.toSet().length != photos.length ||
         photos.any(
           (photo) => !RegExp(r'^photo-[1-5]\.[a-z0-9]{1,5}$').hasMatch(photo),
-        )) {
+        ) ||
+        (hatchId != null && (hatchId is! String || hatchId.isEmpty))) {
       throw const FormatException('Invalid adoption request.');
     }
     return HatchRequest(
@@ -36,6 +41,7 @@ class HatchRequest {
       petName: petName,
       createdAt: createdAt,
       photoFiles: photos,
+      hatchId: hatchId as String?,
     );
   }
 
@@ -43,12 +49,22 @@ class HatchRequest {
   final String petName;
   final DateTime createdAt;
   final List<String> photoFiles;
+  final String? hatchId;
+
+  HatchRequest withHatchId(String value) => HatchRequest(
+    requestId: requestId,
+    petName: petName,
+    createdAt: createdAt,
+    photoFiles: photoFiles,
+    hatchId: value,
+  );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'requestId': requestId,
     'petName': petName,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'photos': photoFiles,
+    if (hatchId != null) 'hatchId': hatchId,
   };
 }
 
@@ -86,8 +102,8 @@ class HatchRequestStore {
     required String petName,
     DateTime? now,
   }) async {
-    if (photos.isEmpty || photos.length > 5) {
-      throw ArgumentError('Choose between 1 and 5 photos.');
+    if (photos.isEmpty || photos.length > 3) {
+      throw ArgumentError('Choose between 1 and 3 photos.');
     }
     if (await load() != null) {
       throw StateError('Only one adoption request can wait at a time.');
@@ -148,6 +164,27 @@ class HatchRequestStore {
     await output.writeAsBytes(encoded, flush: true);
     await _deleteExports(keep: output.path);
     return output;
+  }
+
+  Future<HatchRequest> attachHatchId(String hatchId) async {
+    final request = await load();
+    if (request == null) {
+      throw StateError('There is no adoption request waiting.');
+    }
+    final updated = request.withHatchId(hatchId);
+    final directory = await requestDirectory;
+    final file = File('${directory.path}/request.json');
+    final temporary = File('${file.path}.tmp');
+    await temporary.writeAsString(jsonEncode(updated.toJson()), flush: true);
+    await temporary.rename(file.path);
+    return updated;
+  }
+
+  Future<List<File>> photosFor(HatchRequest request) async {
+    final directory = await requestDirectory;
+    return request.photoFiles
+        .map((name) => File('${directory.path}/$name'))
+        .toList(growable: false);
   }
 
   Future<void> cancel() async {

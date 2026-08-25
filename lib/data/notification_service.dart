@@ -184,7 +184,29 @@ List<ScheduledPetNotification> buildNotificationWindow({
   );
 }
 
+const int adoptionReadyNotificationId = 990001;
+
 class NotificationService {
+  /// Immediate local notification for a finished adoption; gentle wording,
+  /// never a demand (zero-punishment line).
+  Future<void> showHatchReady({required String petName}) async {
+    try {
+      await _plugin.show(
+        id: adoptionReadyNotificationId,
+        title: '$petName is ready to meet you',
+        body: 'Your new friend has settled in whenever you are.',
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'pet_invitations',
+            'Pet invitations',
+          ),
+        ),
+      );
+    } on Object {
+      // notifications must never break the adoption flow
+    }
+  }
+
   NotificationService({FlutterLocalNotificationsPlugin? plugin})
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
