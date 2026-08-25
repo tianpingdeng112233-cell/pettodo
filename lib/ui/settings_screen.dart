@@ -654,8 +654,10 @@ class _HatchPanel extends StatelessWidget {
               style: PetTextStyles.body16Strong,
             ),
             subtitle: Text(
-              controller.pendingHatchRequest == null
-                  ? 'Start with 1–5 photos'
+              !controller.hatchUnlocked
+                  ? 'Unlock once · includes 3 hatches'
+                  : controller.pendingHatchRequest == null
+                  ? 'Start with 1–3 photos'
                   : 'Your pet is on its way — no rush.',
               style: PetTextStyles.captionSoft,
             ),
