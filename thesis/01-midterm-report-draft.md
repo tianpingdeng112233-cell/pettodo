@@ -26,8 +26,9 @@ in diagnosed ADHD samples. The safety rules survived better, though studies of
 trackers with no character and no failure state show that removing punishment
 does not by itself remove guilt.
 
-At the time of writing, the core loop is complete on both platforms and 58
-automated tests pass. Since mid-term the project has also shipped a pixel-art
+At the time of writing, the core loop is complete on both platforms, and 112
+automated tests pass across the application, the generation pipeline and the
+hatch backend. Since mid-term the project has also shipped a pixel-art
 restyle, an ambient pet overlay on Android, a new generation pipeline that
 turns photos into an animated pet in about a minute, and a rebuilt onboarding.
 A user study that would test the anchor mechanism is designed and ready, but
@@ -447,8 +448,18 @@ overlay, written natively in Kotlin, that keeps the pet on screen at a small
 ambient size whatever the user is doing. The first build rendered the pet at
 a third of the screen; the shipped version draws it at 1× — ambient means
 peripheral. In line with the red lines, the overlay never speaks about tasks:
-no reminders come from it, it is simply company. If the user declines the
-overlay permission, the app continues silently and never asks again.
+no reminders come from it, it is simply company. It does react to the app in
+one direction only — completing a task inside the app makes the overlay pet
+celebrate within a second; nothing negative ever crosses to it. The pet's
+position is draggable and survives even the app's process being killed. If
+the user declines the overlay permission, the app continues silently and
+never asks again. For now the overlay draws the bundled pet; routing the
+user's adopted pet onto it is queued follow-up work (Section 6).
+
+**Figure 4 — The pet on the user's screen.** Left: the overlay on the Android
+home screen, sitting among the user's own icons. Right: the same pet
+persisting above another application.
+![Two Android screenshots showing the pixel pet floating on the home screen and above Chrome](figures/app/08-android-overlay.png)
 
 ### 3.5 The hatch pipeline, second generation
 
@@ -461,11 +472,11 @@ closed, curled asleep, and a side view — plus bounding boxes for the head,
 tail and legs, and packs them as a "rig pack". Everything that moves is code:
 a template skeleton drives breathing, blinking, gaze-following, a happy jump,
 eating a treat, stretching, falling asleep and running, with motion quantised
-to the pixel grid so it stays honest to the art style. Figure 4 compares the
+to the pixel grid so it stays honest to the art style. Figure 5 compares the
 two routes. A hatch now takes about a minute and costs roughly £0.03 (¥0.3)
 in model fees, which makes hatching in-app viable: photos go from the app to
 a small proxy backend that holds the image-model key, enforces a species gate
-(cats and dogs only for now), a per-account hatch quota, rate limits and cost
+(cats and dogs only for now), a per-device hatch quota, rate limits and cost
 ceilings — and returns the finished pack straight to the device. No account
 is created and no photos are retained server-side. The photos themselves can
 be taken from any angle — the in-app guidance says only that different angles
@@ -484,7 +495,7 @@ hatch attempts, and photos of anything other than a cat or dog are gently
 declined, with the requested species recorded as a wish for a future
 template.
 
-**Figure 4 — The two hatch routes.** The first generation generated every
+**Figure 5 — The two hatch routes.** The first generation generated every
 frame; the second generates four poses and lets a skeleton do the moving.
 ![Flow diagram comparing the two generations of the hatch pipeline](figures/hatch-pipeline.png)
 
@@ -538,7 +549,7 @@ simulator running the current build — the pixel restyle of Section 3.3 —
 from a clean install, with the preset pet Choco adopted during onboarding.
 They are ordered as a user would meet them.
 
-**Figure 5 — Home with a mixed task list.**
+**Figure 6 — Home with a mixed task list.**
 ![Home showing a completed daily task, two outstanding dailies and a one-off](figures/app/01-home-mixed-list.png)
 
 The pet takes the top half of the screen and the task list the bottom, and
@@ -553,7 +564,7 @@ items can never grow into a wall of text. The header reads "Today's little
 things", and a completed item stays visible in a warm tint rather than being
 struck through or removed.
 
-**Figure 6 — Quick capture.**
+**Figure 7 — Quick capture.**
 ![The Jot it down dialog with the text "Call the vet" entered](figures/app/02-quick-capture.png)
 
 Capture is two steps: tap *Jot it down*, type, confirm. The field is
@@ -564,7 +575,7 @@ here becomes a one-off by default, because demanding a recurrence decision at
 capture time is exactly the friction that loses the thought. The dismissal
 option says "Not now", not "Cancel" or "Discard".
 
-**Figure 7 — Completing a task.**
+**Figure 8 — Completing a task.**
 ![A completed task card in warm tint with a filled check, and the treat counter increased to 2](figures/app/03-completion-moment.png)
 
 Completion produces warmth and nothing else: the card takes a warm tint, the
@@ -574,7 +585,7 @@ bar and no "3 of 4 done" anywhere on screen, because a progress indicator is
 also a deficit indicator. The treat is the only currency, it is spent on
 feeding the pet, and spending it is optional.
 
-**Figure 8 — The Little Theater, shown when the day's list is finished.**
+**Figure 9 — The Little Theater, shown when the day's list is finished.**
 ![A full-screen celebration with the pet enlarged, particles, a +3 treat award, and the message "Choco nuzzles you happily — thank you for today"](figures/app/04-little-theater.png)
 
 Finishing everything on the list triggers the one moment the application
@@ -586,7 +597,7 @@ scoreboard. This is the emotional peak of the design. It is also, by
 construction, the *only* moment with this weight — there is no equivalent
 screen for failure, because no failure state exists.
 
-**Figure 9 — Positive history.**
+**Figure 10 — Positive history.**
 ![The "Things we did together" screen showing one week with one dated group of three completed tasks](figures/app/05-positive-history.png)
 
 The history screen is the clearest single expression of the safety
@@ -598,7 +609,7 @@ them. There is no streak counter, no calendar grid with gaps that read as
 failure, and no comparison with last week. The framing is "things we did
 together", not "your completion rate".
 
-**Figure 10 — The collection.**
+**Figure 11 — The collection.**
 ![The collection screen showing the pet shelf with Choco above a grid of locked keepsakes reading "A little mystery"](figures/app/06-collection.png)
 
 Two things share this screen. The pet shelf lists every pet the user has —
@@ -611,7 +622,7 @@ little mystery". They carry no progress bar, no unlock threshold and no "2
 more to go", so the gallery cannot be read as a list of things not yet
 earned.
 
-**Figure 11 — Settings.**
+**Figure 12 — Settings.**
 ![The settings screen showing the pet name field, the four tasks with their recurrence labels, the evening notification toggle and time chips](figures/app/07-settings.png)
 
 Settings is deliberately short. Tasks are listed with their kind stated in
@@ -624,8 +635,11 @@ denied permission is never requested again.
 
 ### 4.2 The hatch loop, end to end
 
-The acceptance walkthrough for the differentiating feature ran on the same
-device from a clean install: onboarding → hatchery → photograph → export of a
+The acceptance walkthrough below exercised the first-generation flow, which
+worked by exporting a request and importing the resulting pack by hand — the
+current pipeline (Section 3.5) needs neither step, but the walkthrough is
+kept because it is what was actually verified end to end on a device. It ran
+from a clean install: onboarding → hatchery → photograph → export of a
 139 KB request archive → import through the real iOS document picker → both
 pets listed with the new one selected → switching between them → completing
 onboarding → Home showing the imported pet with its hatch ceremony — ending
@@ -674,9 +688,10 @@ the category leader in Section 1.3.2.
 
 ### 5.1 Software testing
 
-`flutter test` passes 58 tests across 20 files — a figure I verified by
-running the suite, not by quoting it. The pipeline CLI carries its own suite:
-25 tests across 6 files, run the same way. The unmerged notification rework
+`flutter test` passes 58 tests across 20 files on the main line, and 65 with
+the skeleton renderer's additions. The generation pipeline carries its own
+suite of 25 tests across 6 files, and the hatch backend another 22 across 4 —
+every one of these figures comes from running the suites, not quoting them. The unmerged notification rework
 adds five more, including a lint that fails the build if invitation copy ever
 regains a forbidden phrasing. Coverage concentrates on the promises the
 product makes its users: migration of stored data across format changes;
