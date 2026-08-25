@@ -97,7 +97,7 @@ tasks". Commenters have a name for this state: a *shame reminder*.
 #### 1.3.2 Survey of existing systems
 
 I surveyed the four dominant applications in this space using 4,754 store
-reviews collected for this report (method and sampling caveats in §2.2), their
+reviews collected for this report (method and sampling caveats in Section 2.2), their
 public store metadata, and hands-on sessions with each app on my own device.
 Figure 1 shows one representative screen from each.
 
@@ -159,7 +159,7 @@ that a competitor can differentiate against simply by not committing them.
 
 Before this report I treated the anchor mechanism as established and the
 safety rules as obviously sufficient. I ran a structured literature search
-across sixteen questions to check both (method in §2.2). It changed my
+across sixteen questions to check both (method in Section 2.2). It changed my
 position on each, and this report states the revised positions instead of
 defending the original ones.
 
@@ -218,7 +218,7 @@ attributed practitioner opinion. And the 1–7 task cap cannot cite Miller:
 "seven plus or minus two" is about immediate memory span, and Cowan calls the
 seven a rhetorical device
 ([Cowan 2001](https://doi.org/10.1017/s0140525x01003922)). The cap is instead
-defended by the observation in §1.3.2: small daily maintenance is where the
+defended by the observation in Section 1.3.2: small daily maintenance is where the
 pet mechanism works at all.
 
 **What the evidence does support.** Warmth-only *reinforcement* has a direct
@@ -226,7 +226,7 @@ ADHD result: on an incentive go/no-go task, participants with ADHD gained
 more from social reward — positive facial expressions — than controls did
 ([Kohls et al. 2009](https://doi.org/10.1186/1744-9081-5-20)). And the
 event-based cue is the best-grounded interaction choice available, given the
-prospective-memory dissociation in §1.1. This also matches the cue type
+prospective-memory dissociation in Section 1.1. This also matches the cue type
 independently proposed by the early-years special-needs specialist whose
 feedback my supervisor forwarded — a concrete relative anchor ("can we finish
 this before they finish making your lunch") — rather than the clock-triggered
@@ -243,7 +243,7 @@ product; the deciding factor is scope. Evaluation needs real users on
 whatever handset they own, and a solo project cannot keep two native
 codebases at that standard. The cost is accepted openly: surfaces Flutter
 cannot reach must be written natively — which is exactly what happened with
-the Android overlay, written in Kotlin (§3.4), and will happen again with the
+the Android overlay, written in Kotlin (Section 3.4), and will happen again with the
 iOS widget.
 
 **Architecture: boundaries before features.** Figure 3 shows the structure of
@@ -268,7 +268,7 @@ rewrites the state file atomically; the UI rebuilds from the new state and
 the sprite layer plays the happy animation. At no point can a widget touch
 storage directly, and none of the rules need a widget to be tested. The same
 boundary was demonstrated in practice twice: the approved visual design, and
-later the full pixel restyle (§3.3), were both applied without touching
+later the full pixel restyle (Section 3.3), were both applied without touching
 domain logic.
 
 **Rendering: a small `CustomPainter`, not a game engine.** The Flame engine
@@ -285,9 +285,9 @@ There is no account, no server and no analytics. The reasons are partly
 ethical — the community research records explicit refusal to hand
 mental-health-adjacent data to small developers' cloud services — and partly
 methodological, because it makes evaluation possible without data
-infrastructure. §5 records the cost: retention cannot be measured the way any
+infrastructure. Section 5 records the cost: retention cannot be measured the way any
 cited study measures it. The one server this project now has, the hatch proxy
-(§3.5), holds no user data: it exists to keep the image-model key off the
+(Section 3.5), holds no user data: it exists to keep the image-model key off the
 device and to enforce quotas.
 
 **Process.** Every change starts from a written task specification stating
@@ -297,7 +297,7 @@ user-visible changes are also walked through on a device or simulator. Every
 feature must state which ADHD problem it solves; if that mapping cannot be
 stated, the feature is not built. This constitution is written down and
 version-controlled alongside the code, and several of its rules are enforced
-by tests rather than by discipline (§5).
+by tests rather than by discipline (Section 5).
 
 Table 1 collects the main design decisions, the strongest alternative to
 each, and the factor that decided it.
@@ -309,9 +309,9 @@ each, and the factor that decided it.
 | UI framework | Flutter | Native Swift + Kotlin pair | Both give a quality UI; one codebase keeps a solo project able to reach evaluation on both platforms |
 | Pet rendering | `CustomPainter` + `Ticker` | Flame game engine | One animated actor does not justify an engine; keeps animation state in the tested layer |
 | Storage | Versioned JSON + JSONL log | SQLite | Both are reliable; files keep export human-readable and the "no server" promise literal |
-| Animation source | v3 rig pack: 4 poses + skeleton | v2 per-frame generation | Both produce a recognisable pet; v2 took ~40 min per pet and drifted between frames, v3 takes ~1 min and moves deterministically (§3.5) |
-| Visual style | Pixel art ("Cozy Pixel") | Soft photo-derived style | Soft style scored well on warmth but could not hold a stable silhouette (§4.4); pixel art is stable and answers the "infantile" objection |
-| Notification cue | Event-based (planned, §6) | Time-based clock prompts | Time-based prospective memory is impaired in ADHD adults; event-based is spared |
+| Animation source | v3 rig pack: 4 poses + skeleton | v2 per-frame generation | Both produce a recognisable pet; v2 took ~40 min per pet and drifted between frames, v3 takes ~1 min and moves deterministically (Section 3.5) |
+| Visual style | Pixel art ("Cozy Pixel") | Soft photo-derived style | Soft style scored well on warmth but could not hold a stable silhouette (Section 4.4); pixel art is stable and answers the "infantile" objection |
+| Notification cue | Event-based (planned, Section 6) | Time-based clock prompts | Time-based prospective memory is impaired in ADHD adults; event-based is spared |
 
 ### 2.2 Research method
 
@@ -398,23 +398,23 @@ weakness: the idle animation read as choppy. Measurement found the cause. The
 six idle frames were generated independently, so 37–46% of pixels changed
 between neighbouring frames and the silhouette drifted about 4 px — six
 similar dogs rather than one dog breathing. The interim fix held a still
-frame while the pet rests; the real fix is the v3 pipeline in §3.5.
+frame while the pet rests; the real fix is the v3 pipeline in Section 3.5.
 
 ### 3.3 The pixel restyle
 
-The pixel-art experiment reported in §4.4 settled the style question, and the
+The pixel-art experiment reported in Section 4.4 settled the style question, and the
 decision has been carried through the whole product, not just the sprite. The
 "Cozy Pixel" restyle gives the app stair-stepped borders, hard shadows, and
 pixel fonts and icons; the bundled pet Choco was regenerated as pixel-art
 canon with a full QA atlas. Because the restyle is confined to `lib/ui/` and
 asset files, it landed without touching domain logic — the architectural
-claim in §2.1, demonstrated a second time. The same wave carried a naming
+claim in Section 2.1, demonstrated a second time. The same wave carried a naming
 change: the product took its release name, **Pawside**, replacing the working
 title PetTodo, with paw-print imagery replacing the egg motif and user-facing
 copy moving from "hatching" to "adoption" language. This report uses Pawside
 throughout; repository paths and technical identifiers such as the
 `.pettodopet` pack extension deliberately keep the old name. The retro
-aesthetic is also a positioning answer: §1.3.2 documents adults calling the
+aesthetic is also a positioning answer: Section 1.3.2 documents adults calling the
 category leader infantile, and pixel art reads as adult nostalgia rather than
 as a children's toy.
 
@@ -432,9 +432,9 @@ overlay permission, the app continues silently and never asks again.
 
 ### 3.5 The hatch pipeline, second generation
 
-The v2 pipeline (§3.2) produced its pet by generating every animation frame
+The v2 pipeline (Section 3.2) produced its pet by generating every animation frame
 as its own image: about 14 serial generations and roughly 40 minutes per pet,
-with the inter-frame drift measured in §3.2, and the finished pack returned
+with the inter-frame drift measured in Section 3.2, and the finished pack returned
 to the user by hand. That route is now retired. The v3 pipeline generates
 only four canonical poses — sitting with eyes open, the same pose with eyes
 closed, curled asleep, and a side view — plus bounding boxes for the head,
@@ -469,7 +469,7 @@ judges from the centre of the detected head box.
 ### 3.6 Onboarding, rebuilt around the relationship
 
 The original onboarding introduced features. The rebuilt flow introduces the
-pet first, on the reasoning that §1.3.2 supports: the app is opened to see
+pet first, on the reasoning that Section 1.3.2 supports: the app is opened to see
 the pet, so the first minute should establish that bond. The user meets a
 grid of adoptable pets ("Who's coming home?"), picks one, and names it — with
 a dice button that rolls a name from a preset pool, so the single typing
@@ -477,7 +477,7 @@ moment has a zero-effort escape. They then pick up to three "little things"
 from tappable chips (get out of bed, drink some water, take my meds…), with
 typing needed only for a custom entry. A mid-point celebration awards the
 first treat *before* any real task is done, so the reward loop is
-demonstrated rather than described. On Android, the overlay from §3.4 is
+demonstrated rather than described. On Android, the overlay from Section 3.4 is
 offered as an invitation ("Can I stay on your screen?") through the same
 never-re-ask permission flow. The user lands on Home with one free, scripted
 first win — "Give {name} a pat" — which triggers the normal completion
@@ -491,7 +491,7 @@ permission is requested. Existing users never re-run onboarding.
 A rework of the notification layer — copy in the pet's voice, randomised
 selection, timing jitter, and back-off after unopened days — is implemented
 but unmerged, because the literature contradicts two of its three mechanisms.
-§6 explains the conflict and the resolution path.
+Section 6 explains the conflict and the resolution path.
 
 ---
 
@@ -502,7 +502,7 @@ but unmerged, because the literature contradicts two of its three mechanisms.
 All screenshots below are from one continuous session on an iPhone 17 Pro,
 using a pet hatched from the user's own photographs. They are ordered as a
 user would meet them. They record the build as it stood at mid-term, before
-the pixel restyle of §3.3: layouts, wording and behaviour are current; the
+the pixel restyle of Section 3.3: layouts, wording and behaviour are current; the
 visual style has since changed.
 
 **Figure 5 — Home with a mixed task list.**
@@ -570,7 +570,7 @@ together", not "your completion rate".
 
 Two things share this screen. The pet shelf shows the bundled pet and the
 user's own hatched pet side by side, with the active one outlined — the
-runtime registry from §3.2 made visible, and the point where the
+runtime registry from Section 3.2 made visible, and the point where the
 differentiating feature becomes tangible. Below it, unlocked keepsakes appear
 as illustrated items; locked ones show a paw silhouette and the words "A
 little mystery". They carry no progress bar, no unlock threshold and no "2
@@ -630,9 +630,9 @@ with frame area stable to within 0.2 percentage points: the silhouette stops
 breathing in and out between frames. The improvement was real but partial —
 14% is still far above a hand-animated loop — which is why the style decision
 and the pipeline decision were made together: pixel art made the frames
-consistent (§3.3), and the rig made the motion deterministic (§3.5). The
+consistent (Section 3.3), and the rig made the motion deterministic (Section 3.5). The
 aesthetic choice also answers the "infantile" objection documented against
-the category leader in §1.3.2.
+the category leader in Section 1.3.2.
 
 ---
 
@@ -724,7 +724,7 @@ change still unbuilt: anchoring a task to "after dinner" rather than to 19:00
 uses the prospective-memory channel that is spared in ADHD adults rather than
 the one that is impaired, and matches the cue type the forwarded expert
 feedback independently proposed. The evening check-in's move out of
-onboarding and into context (§3.6) is a first step in this direction.
+onboarding and into context (Section 3.6) is a first step in this direction.
 
 **Design the return screen and an explicit pause.** Zero punishment does not
 stop an accumulated backlog from speaking — the *shame reminder*. Two
@@ -739,7 +739,7 @@ leader — which at least has accounts to restore from. The export mechanism
 exists; making it a visible backup with an honest explanation is a small
 change against a disproportionate risk.
 
-**Finish the v3 rollout.** The pipeline, proxy and renderer exist (§3.5);
+**Finish the v3 rollout.** The pipeline, proxy and renderer exist (Section 3.5);
 what remains is production and productisation: a roster of preset pets
 generated through the same pipeline so the adoption grid offers real
 variety, the one-off unlock flow for hatching a user's own pet, and the iOS
