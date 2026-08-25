@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&amp;family=Baloo+2:wght@400..800&amp;display=swap">
+  <style>
+    body { margin: 0; background: #FFF8EF; }
+    a { color: #B96B2E; } a:hover { color: #8A5A2E; }
+    .screen { width: 393px; height: 852px; position: relative; overflow: hidden;
+      background: conic-gradient(rgba(185,107,46,0.035) 25%, transparent 0 50%, rgba(185,107,46,0.035) 0 75%, transparent 0) 0 0 / 8px 8px, linear-gradient(#FFF8EF, #FFEFDC);
+      font-family: 'Baloo 2', 'Arial Rounded MT Bold', sans-serif; color: #6B4A2B; }
+    .disp { font-family: 'Pixelify Sans', 'Courier New', monospace; }
+    .px { image-rendering: pixelated; }
+    .pc { clip-path: polygon(0 12px,4px 12px,4px 4px,12px 4px,12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px)); }
+    .ps { clip-path: polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px)); }
+  </style>
+</helmet>
+<div class="screen">
+  <div style="position: relative; display: flex; flex-direction: column; height: 100%; padding: 64px 28px 26px 28px; box-sizing: border-box; align-items: center;">
+
+    <div class="ps" style="align-self: flex-start; background: #F7E9D3; padding: 4px 12px; font-size: 12.5px; font-weight: 600; color: #B08D63;">Android only</div>
+
+    <div class="pc" style="background: #6B4A2B; padding: 3px; margin-top: 30px;">
+      <div style="width: 216px; height: 380px; background: #2B2B33; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 14px; left: 16px; font-size: 11px; color: #CFCFD8; font-family: 'Baloo 2', sans-serif;">Tue, Aug 25</div>
+        <div style="position: absolute; top: 60px; left: 0; width: 100%; display: flex; justify-content: center; gap: 14px;">
+          <div style="width: 30px; height: 30px; border-radius: 15px; background: #E8E8EC;"></div>
+          <div style="width: 30px; height: 30px; border-radius: 15px; background: #E8E8EC;"></div>
+          <div style="width: 30px; height: 30px; border-radius: 15px; background: #E8E8EC;"></div>
+        </div>
+        <img src="./p-choco.png" alt="Choco on your home screen" class="px" style="position: absolute; width: 96px; height: 104px; left: 24px; bottom: 96px;">
+        <div style="position: absolute; bottom: 24px; left: 18px; right: 18px; height: 34px; border-radius: 17px; background: #E8E8EC;"></div>
+      </div>
+    </div>
+
+    <div class="pc" style="background: #FFFFFF; padding: 14px 18px; margin-top: 26px; max-width: 320px;">
+      <div style="font-size: 16px; color: #6B4A2B; text-align: center;">Can I stay on your screen<br>while you go about your day?</div>
+    </div>
+    <div style="font-size: 13px; color: #C4A075; margin-top: 10px; text-align: center;">No reminders from out there &mdash; just company.<br>You can change your mind in Settings.</div>
+
+    <div style="margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 12px;">
+      <div style="filter: drop-shadow(0 4px 0 rgba(185,107,46,0.35));">
+        <div class="pc" style="background: #F2A65A; padding: 16px 0; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Let Choco stay</div>
+        </div>
+      </div>
+      <div style="padding: 10px 0; display: flex; align-items: center; justify-content: center;">
+        <div style="font-size: 15px; color: #B99F7D;">Maybe later</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
