@@ -125,3 +125,55 @@ afterwards. The `.pettodopet` file was selectable in the picker, so the 08-12
   image — a fake loader that hands the same image to two pets double-disposes it
   and fails in teardown. Real packs each decode their own file, so per-pet images
   are also the truthful fixture.
+
+## Task 002-A — Android floating companion (2026-08-25)
+
+- The Android overlay is a native `TYPE_APPLICATION_OVERLAY` window owned by a
+  foreground service. The Dart `OverlayService` is the only platform-channel
+  seam: it checks support/state without prompting, requests the special overlay
+  permission only after an explicit Settings toggle, starts/stops the service,
+  and sends the completion celebration event before task persistence/log IO.
+  A denial returns `false` immediately so the toggle falls back; resume and
+  startup only inspect state and never reopen permission Settings.
+- **Foreground-service type decision (Android 14/15): `specialUse`.** Android 14
+  (target API 34+) requires every foreground service to declare an applicable
+  type and its type-specific permission. A persistent user-enabled floating
+  companion does not fit camera, connected-device, data-sync, health, location,
+  media, projection, microphone, phone-call, remote-messaging, or short-service
+  semantics, so the manifest declares `specialUse`,
+  `FOREGROUND_SERVICE_SPECIAL_USE`, and a free-form
+  `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` explanation. This follows the official
+  foreground-service type table:
+  https://developer.android.com/develop/background-work/services/fgs/service-types#special-use
+- Android 15 narrows the `SYSTEM_ALERT_WINDOW` exemption for *background* FGS
+  starts: a visible `TYPE_APPLICATION_OVERLAY` window must already exist. The
+  service is therefore first started only by the foreground Settings action;
+  it creates its overlay in `onCreate` before promotion and uses `START_STICKY`
+  for system recreation. There is deliberately no boot receiver or other
+  background launch path. Basis:
+  https://developer.android.com/about/versions/15/behavior-changes-15#fgs-saw-restrictions
+- `tool/slice_overlay_frames.dart` reads the same bundled 8×11 metadata used by
+  the in-app renderer and deterministically crops only the required calm-idle
+  and jumping frames from the canonical WebP. Generated `drawable-nodpi` PNGs
+  remain exactly 192×208; the native view scales by an integer 2× with bitmap
+  filtering, anti-aliasing, and dithering disabled. The service ticks at 8 fps
+  and removes callbacks while the screen is off.
+- The overlay contains only the pet. Drag end persists native pixel coordinates
+  in private preferences; a tap opens Pawside. The ongoing notification says
+  “{pet} is keeping you company” / “Tap to visit Pawside” and contains no task
+  state or pressure copy.
+- **07-22 release-resource lesson applied:** every generated overlay frame is
+  referenced statically from Kotlin and `res/raw/keep.xml` additionally keeps
+  `overlay_*`. The notification uses the statically referenced
+  `R.drawable.ic_notification`, while the existing keep rule remains in place.
+  No resource lookup is allowed to become a pre-`runApp` Dart dependency.
+- Validation in this managed sandbox: `flutter analyze --no-pub` is clean and
+  `flutter build bundle --release --no-pub` succeeds. API-36 `aapt2` compiled
+  all Android resources, then both Kotlin files compiled against Android 36,
+  the real Flutter embedding, and the generated current-project `R` class.
+  Running the slicer twice produced byte-identical SHA-256 hashes for all 11
+  frames. Full `flutter test` still cannot start because the sandbox denies its
+  required `127.0.0.1:0` harness socket; Gradle likewise cannot create its local
+  file-lock socket, and ADB cannot create its localhost smart-socket listener.
+  Therefore the three live suite passes, APK/release launch, emulator overlay
+  walkthrough, and screenshot capture must be rerun outside this sandbox.

@@ -253,6 +253,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: PetSpacing.s14),
+                    if (widget.controller.overlaySupported) ...<Widget>[
+                      _OverlayPanel(controller: widget.controller),
+                      const SizedBox(height: PetSpacing.s14),
+                    ],
                     _NotificationPanel(
                       controller: widget.controller,
                       onPickTime: _pickTime,
@@ -368,6 +372,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OverlayPanel extends StatelessWidget {
+  const _OverlayPanel({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final petName = controller.state.petName;
+    return _SettingsPanel(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text('Let $petName stay on your screen', style: PetTextStyles.body16Strong),
+                  const SizedBox(height: PetSpacing.xs),
+                  Text(
+                    controller.overlayEnabled
+                        ? '$petName will keep you company wherever you go'
+                        : '$petName will stay cozy inside Pawside',
+                    style: PetTextStyles.captionSoft,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: PetSpacing.s14),
+            PxToggle(
+              value: controller.overlayEnabled,
+              enabled: !controller.overlayBusy,
+              onChanged: controller.setOverlayEnabled,
+              label: 'Let $petName stay on your screen',
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
