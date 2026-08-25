@@ -255,7 +255,7 @@ private class OverlayPetView(
     private val touchSlop = ViewConfiguration.get(appContext).scaledTouchSlop
     private val frameWidth = idleFrames.first().width
     private val frameHeight = idleFrames.first().height
-    private val pixelScale = 2
+    private val pixelScale = 1
 
     val layoutParams: WindowManager.LayoutParams = WindowManager.LayoutParams(
         frameWidth * pixelScale,
