@@ -3,6 +3,11 @@ xcuserdata/
 build/
 DerivedData/
 
+# Python tool/test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 # Flutter build artifacts
 .dart_tool/
 .flutter-plugins-dependencies
