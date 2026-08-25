@@ -152,6 +152,20 @@ subscription pressure to the category-wide billing complaints, and cosmetic
 rewards to the reported ceiling of the pet mechanism.
 ![Three Finch screenshots: streak, paywall, cosmetics bag](figures/finch-patterns.png)
 
+Each omission has evidence behind it, not taste. A streak counter turns a
+missed day into a visible failure state: the reviews above show broken
+streaks producing guilt severe enough that users stop opening the app, and
+Section 1.3.3 shows guilt arising even in trackers with *no* failure state —
+so a streak manufactures exactly the self-judgement that drives abandonment,
+and for an ADHD user missed days are the texture of the condition, not a
+lapse of will. A trial countdown monetises the very impairment the app
+claims to serve — forgetting to cancel *is* an executive-function failure —
+and Numo's collapse shows the cost of being caught doing it. And the
+cosmetics shop sits at the mechanism's known ceiling: shop rewards do not
+motivate ("clothes for a virtual bird"), while a richer shop invites the
+faked completions users already report. This is why Pawside's treat is the
+only currency, is spent on the pet, and buys nothing else.
+
 Three design consequences follow. The pet-bond mechanism is validated and its
 ceiling untouched. Data loss is existential for an emotional product — and
 *worse* for Pawside, whose pet is irreplaceable and whose storage is
