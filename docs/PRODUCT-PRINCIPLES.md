@@ -34,14 +34,15 @@ r/ADHD, r/adhdwomen). Citations below read `App-X` / `Ppl-X` against those files
 both are linked from `PLAN-2026-08-13-post-research.md`. These rules exist to stop
 settled questions from being reopened by future feature discussions.
 
-### Absence semantics — PROPOSED, NOT YET DECIDED
+### Absence semantics — DECIDED (⚖️2026-08-25, David)
 
-> **Status: awaiting David's decision.** This is a proposal, not a red line, and
-> must not be cited as settled. It was drafted on 2026-08-13 and implemented on
-> the `w1/notification-detox` branch, which is deliberately unmerged until the
-> call is made.
+> **Status: settled.** Option B — the pet lives its own good day — with the
+> "presence without a request" refinement folded in: the pet may still speak
+> (notifications stay), but only ever about itself. This answers the
+> strongest counter-evidence (the widget bird that "speaks up") without
+> reintroducing the guilt debt: our pet reaches out, it just never asks.
 
-**The proposal:** the pet's wellbeing is never a function of user presence. The
+**The rule:** the pet's wellbeing is never a function of user presence. The
 pet lives its own good day — sunning itself, napping, watching the window, on
 its own schedule. Opening the app is *joining* that day, never *compensating*
 for a missed one; the pet never waits, misses the user, or summons them back.
@@ -66,7 +67,7 @@ abandonment.
 **A middle option exists** and has not been costed: the pet speaks, but only
 about itself — presence without a request.
 
-### Reward rules — PROPOSED, NOT YET DECIDED
+### Reward rules — DECIDED (⚖️2026-08-25, David)
 
 | Rule | ADHD problem it answers |
 |---|---|
@@ -77,8 +78,8 @@ The existing treat economy stays as-is and is explicitly **weak-coupled**: treat
 drop on completion, there are no combos, no progress bars, no deadlines, and
 spending them is optional. Weak coupling is permitted; strong coupling is not.
 
-> **Status: awaiting David's decision**, and the literature argues the second
-> rule is over-cautious. The undermining effect is confined to expected,
+> **Status: settled as written** — both rules are constitution now, chosen
+> knowing the literature argues the second is over-cautious. The undermining effect is confined to expected,
 > tangible, task-contingent rewards, while positive feedback *enhances*
 > free-choice persistence ([Deci et al. 1999](https://doi.org/10.1037/0033-2909.125.6.627)),
 > and the ADHD reinforcement literature finds contingent immediate
