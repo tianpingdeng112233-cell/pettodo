@@ -383,14 +383,13 @@ rework: custom tap targets own container semantics above their gesture
 handlers, decorative art is excluded from the accessibility tree, and
 onboarding scrolls on short viewports.
 
-**Raising system.** A second version of the stored-state format with
-in-place migration, growth stages
-derived rather than stored, a treat economy, a full-day pet schedule,
-long-press interaction, and a collection gallery with no progress bars.
+**Raising system.** Growth stages derived rather than stored, a treat
+economy, a full-day pet schedule, long-press interaction, and a collection
+gallery with no progress bars. Stored data migrates in place when the
+format grows, so an update never loses a pet.
 
-**To-do baseline.** A third version of the stored-state format. Tasks are
-ID-addressed objects of kind `daily`
-or `oneOff`, capped at one to seven; quick capture requires only a title;
+**To-do baseline.** Tasks are ID-addressed objects of kind `daily` or
+`oneOff`, capped at one to seven; quick capture requires only a title;
 one-off tasks never carry age or overdue data. Positive history is derived
 only from completion events and renders only weeks that contain
 completions — no streak, gap, zero or missed-day state exists anywhere in the
@@ -679,8 +678,8 @@ running the suite, not by quoting it. The pipeline CLI carries its own suite:
 25 tests across 6 files, run the same way. The unmerged notification rework
 adds five more, including a lint that fails the build if invitation copy ever
 regains a forbidden phrasing. Coverage concentrates on the promises the
-product makes its users: migration across all three versions of the
-stored-state format; day rollover, including
+product makes its users: migration of stored data across format changes;
+day rollover, including
 that rolling over multiple missed days leaves no historical markers; one-off
 isolation from daily rollover; treat and unlock edges; the sorted, capped
 notification window with one fire per task per day and no re-asking after
