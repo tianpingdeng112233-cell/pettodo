@@ -30,8 +30,9 @@ At the time of writing, the core loop is complete on both platforms and 58
 automated tests pass. Since mid-term the project has also shipped a pixel-art
 restyle, an ambient pet overlay on Android, a new generation pipeline that
 turns photos into an animated pet in about a minute, and a rebuilt onboarding.
-The remaining work is an evaluation designed to test the anchor mechanism
-rather than assume it.
+A user study that would test the anchor mechanism is designed and ready, but
+does not fit inside the project window; the report is explicit about what can
+and cannot be claimed without it.
 
 ---
 
@@ -697,36 +698,47 @@ Habitica Play reviews, 63 of them one or two stars).
 
 ### 5.2 User evaluation
 
-The full plan is written up as a separate document. In summary: five to ten
-seed participants who are ADHD-leaning pet owners, recruited through my
-personal network only; a fourteen-day run; a short questionnaire at days 7
-and 14; user-initiated local data export as the only data channel; and
-qualitative red-light monitoring for guilt or uncanny reactions to the user's
-own animal, treated as a finding that outweighs any retention number. Covert
-recruitment in ADHD communities is ruled out both ethically and
-pragmatically — the community research documents moderators publicly naming
-products for stealth marketing. Ethics approval is the longest-lead-time item
-and the first question for the school.
+A user study was designed for this project and is written up as a separate
+document. In summary: five to ten seed participants who are ADHD-leaning pet
+owners, recruited through my personal network only; a fourteen-day run; a
+short questionnaire at days 7 and 14; user-initiated local data export as the
+only data channel; and qualitative red-light monitoring for guilt or uncanny
+reactions to the user's own animal, treated as a finding that outweighs any
+retention number. Covert recruitment in ADHD communities was ruled out both
+ethically and pragmatically — the community research documents moderators
+publicly naming products for stealth marketing.
 
-Two revisions to the evaluation follow from the literature, and are recorded
-here because they change what the evaluation can claim. First, the community
-benchmark of ">50% retention at two weeks" conflates two incompatible frames:
-real-world median 15-day retention for mental-health apps is 3.9%
-([Baumel et al. 2019](https://doi.org/10.2196/14567)), while recruited trials
-run near 75% and report usage a median 4.06× higher than real-world use of
-the same programs
-([Baumel et al. 2019](https://doi.org/10.1093/tbm/ibz147)). A recruited seed
-group is a trial population, so >50% is a weak bar in that frame and an
-extraordinary one in the other — the report will state which frame it is in.
-Second, two weeks is the wrong window anyway: the review corpus locates two
-failure points, days 2–4 when setup enthusiasm fades, and roughly the second
-month when novelty does. A day-60 check is added. Unblinded self-report is
-also the most inflation-prone outcome in this field —
-behavioural-intervention effects in children collapsed to non-significance
-under probably-blinded assessment
-([Sonuga-Barke et al. 2013](https://doi.org/10.1176/appi.ajp.2012.12070991)) —
-so the analysis privileges the logged event data over questionnaire answers
-wherever the two disagree.
+That study will not run within this project's window, and the reasons are
+recorded honestly rather than hidden. Ethics approval is the
+longest-lead-time item, and the literature broke the study's own timetable.
+The community benchmark of ">50% retention at two weeks" conflates two
+incompatible frames: real-world median 15-day retention for mental-health
+apps is 3.9% ([Baumel et al. 2019](https://doi.org/10.2196/14567)), while
+recruited trials run near 75% and report usage a median 4.06× higher than
+real-world use of the same programs
+([Baumel et al. 2019](https://doi.org/10.1093/tbm/ibz147)) — so a recruited
+seed group clearing 50% in two weeks would prove almost nothing. The review
+corpus also locates the real failure points at days 2–4, when setup
+enthusiasm fades, and around the second month, when novelty does — so a
+credible run needs a day-60 check. And unblinded self-report is the most
+inflation-prone outcome in this field — behavioural-intervention effects in
+children collapsed to non-significance under probably-blinded assessment
+([Sonuga-Barke et al. 2013](https://doi.org/10.1176/appi.ajp.2012.12070991)).
+A study worth running does not fit between now and submission, and a study
+squeezed to fit would produce numbers that could not support any claim.
+
+What the evaluation stands on instead is stated plainly. The software testing
+of Section 5.1. The four-body evidence audit of Section 2.2, which functions
+as an evaluation of the design's premises and has already changed the
+design — it is why the notification rework is held back (Section 3.7) and
+why three claims were withdrawn (Section 1.3.3). Structured self-use: I am in the target
+population, my daily use runs against the logged event data, and it has
+already produced real findings (the idle-animation measurement of
+Section 3.2). And informal use beyond the author, which so far means one
+friend — reported as exactly that, not inflated into a study. What none of
+these can do is test the anchor mechanism on users who are not the author.
+That is the project's main limitation, and the report states it as such; the
+full study design remains ready to run after submission.
 
 ---
 
@@ -779,7 +791,10 @@ currently ships with a placeholder price), routing the adopted pet onto the
 Android overlay, and the iOS widget as the second ambient surface — which can
 now reuse the pixel asset form the overlay draws.
 
-**Evaluation.** Ethics enquiry, recruitment, the fourteen-day run with a
-day-60 follow-up, and analysis. The outstanding intellectual work is deciding
-what the project claims when its central mechanism is, on present evidence,
-unproven — and running an evaluation honest enough to find out.
+**Evaluation, after submission.** The designed study — ethics enquiry,
+recruitment, the fourteen-day run with a day-60 follow-up — remains the right
+test and stays on the plan, beyond the project window (Section 5.2). Within
+the window, the project's claims rest on the build, its tests, and the
+evidence audit; the central mechanism is therefore, on present evidence,
+unproven on anyone but the author — and the report says so plainly rather
+than claiming otherwise.
