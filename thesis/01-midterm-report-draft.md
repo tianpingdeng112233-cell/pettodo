@@ -532,14 +532,13 @@ Section 6 explains the conflict and the resolution path.
 
 ### 4.1 The working application
 
-All screenshots below are from one continuous session on an iPhone 17 Pro,
-using a pet hatched from the user's own photographs. They are ordered as a
-user would meet them. They record the build as it stood at mid-term, before
-the pixel restyle of Section 3.3: layouts, wording and behaviour are current; the
-visual style has since changed.
+All screenshots below are from one continuous session on an iPhone 17 Pro
+simulator running the current build — the pixel restyle of Section 3.3 —
+from a clean install, with the preset pet Choco adopted during onboarding.
+They are ordered as a user would meet them.
 
 **Figure 5 — Home with a mixed task list.**
-![Home showing a completed daily task, two outstanding dailies and a one-off](../artifacts/screenshots/01-home-mixed-list.png)
+![Home showing a completed daily task, two outstanding dailies and a one-off](figures/app/01-home-mixed-list.png)
 
 The pet takes the top half of the screen and the task list the bottom, and
 that proportion is deliberate: the pet is not a decoration on a to-do list,
@@ -554,7 +553,7 @@ things", and a completed item stays visible in a warm tint rather than being
 struck through or removed.
 
 **Figure 6 — Quick capture.**
-![The Jot it down dialog with the text "Call the vet" entered](../artifacts/screenshots/02-quick-capture.png)
+![The Jot it down dialog with the text "Call the vet" entered](figures/app/02-quick-capture.png)
 
 Capture is two steps: tap *Jot it down*, type, confirm. The field is
 autofocused, only a title is required, and the placeholder — "A thought
@@ -565,7 +564,7 @@ capture time is exactly the friction that loses the thought. The dismissal
 option says "Not now", not "Cancel" or "Discard".
 
 **Figure 7 — Completing a task.**
-![A completed task card in warm tint with a filled check, and the treat counter increased to 2](../artifacts/screenshots/03-completion-moment.png)
+![A completed task card in warm tint with a filled check, and the treat counter increased to 2](figures/app/03-completion-moment.png)
 
 Completion produces warmth and nothing else: the card takes a warm tint, the
 circle fills, the pet plays a brief happy animation, and a treat drops — the
@@ -575,23 +574,23 @@ also a deficit indicator. The treat is the only currency, it is spent on
 feeding the pet, and spending it is optional.
 
 **Figure 8 — The Little Theater, shown when the day's list is finished.**
-![A full-screen celebration with the pet enlarged, particles, a +3 treat award, and the message "Choco Two nuzzles you happily — thank you for today"](../artifacts/screenshots/04-little-theater.png)
+![A full-screen celebration with the pet enlarged, particles, a +3 treat award, and the message "Choco nuzzles you happily — thank you for today"](figures/app/04-little-theater.png)
 
 Finishing everything on the list triggers the one moment the application
 makes a fuss: the pet fills the screen, particles rise, three bonus treats
-are awarded, and the message reads "Choco Two nuzzles you happily — thank you
-for today". The dismiss button says "Thank you, Choco Two", keeping the
+are awarded, and the message reads "Choco nuzzles you happily — thank you
+for today". The dismiss button says "Thank you, Choco", keeping the
 exchange between the user and the animal rather than between the user and a
 scoreboard. This is the emotional peak of the design. It is also, by
 construction, the *only* moment with this weight — there is no equivalent
 screen for failure, because no failure state exists.
 
 **Figure 9 — Positive history.**
-![The "Things we did together" screen showing one week with one dated group of three completed tasks](../artifacts/screenshots/05-positive-history.png)
+![The "Things we did together" screen showing one week with one dated group of three completed tasks](figures/app/05-positive-history.png)
 
 The history screen is the clearest single expression of the safety
-architecture. It reads "This week, you and Choco Two did 3 things together",
-and lists only Thursday — because Thursday is the only day with completions.
+architecture. It reads "This week, you and Choco did 3 things together",
+and lists only Tuesday — because Tuesday is the only day with completions.
 Days without completions are not shown as empty, greyed or zero: **they do
 not exist in the data model at all**, so no view can accidentally surface
 them. There is no streak counter, no calendar grid with gaps that read as
@@ -599,19 +598,20 @@ failure, and no comparison with last week. The framing is "things we did
 together", not "your completion rate".
 
 **Figure 10 — The collection.**
-![The collection screen showing two pets, Choco and the selected Choco Two, above a grid of locked keepsakes reading "A little mystery"](../artifacts/screenshots/06-collection.png)
+![The collection screen showing the pet shelf with Choco above a grid of locked keepsakes reading "A little mystery"](figures/app/06-collection.png)
 
-Two things share this screen. The pet shelf shows the bundled pet and the
-user's own hatched pet side by side, with the active one outlined — the
-runtime registry from Section 3.2 made visible, and the point where the
-differentiating feature becomes tangible. Below it, unlocked keepsakes appear
+Two things share this screen. The pet shelf lists every pet the user has —
+here the adopted preset, Choco — with the active one outlined; a hatched
+own-pet appears alongside it, which is the runtime registry from
+Section 3.2 made visible and the point where the differentiating feature
+becomes tangible. Below it, unlocked keepsakes appear
 as illustrated items; locked ones show a paw silhouette and the words "A
 little mystery". They carry no progress bar, no unlock threshold and no "2
 more to go", so the gallery cannot be read as a list of things not yet
 earned.
 
 **Figure 11 — Settings.**
-![The settings screen showing the pet name field, the four tasks with their recurrence labels, the evening notification toggle and time chips](../artifacts/screenshots/07-settings.png)
+![The settings screen showing the pet name field, the four tasks with their recurrence labels, the evening notification toggle and time chips](figures/app/07-settings.png)
 
 Settings is deliberately short. Tasks are listed with their kind stated in
 words ("Every day" against "Just once") and removed with a single control;

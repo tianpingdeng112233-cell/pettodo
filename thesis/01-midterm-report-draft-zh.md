@@ -380,12 +380,12 @@ too"(你的真宠物也能住进来)——把自家宠物解锁露出来,但不�
 
 ### 4.1 可用的应用
 
-以下截图出自 iPhone 17 Pro 上一次连续会话,宠物由用户自己的照片孵出,顺序按用户
-遇到它们的顺序排列。它们记录的是期中时点、像素改版(第 3.3 节)之前的构建:布局、
-文案与行为是当前的,视觉风格此后已更换。
+以下截图出自 iPhone 17 Pro 模拟器上一次连续会话,跑的是现行构建(即第 3.3 节的
+像素改版),从全新安装开始,onboarding 里领养了预置宠物 Choco。顺序按用户遇到
+它们的顺序排列。
 
 **图 5 — Home:混合任务清单。**
-![Home 显示一条已完成的每日任务、两条未完成每日任务和一条一次性任务](../artifacts/screenshots/01-home-mixed-list.png)
+![Home 显示一条已完成的每日任务、两条未完成每日任务和一条一次性任务](figures/app/01-home-mixed-list.png)
 
 宠物占上半屏,任务列表占下半屏——这个比例本身就是论点:宠物不是挂在待办清单上
 的装饰,它才是这块屏幕的主角,任务是用户去看它的路上顺便遇到的东西。列表里两种
@@ -396,7 +396,7 @@ too"(你的真宠物也能住进来)——把自家宠物解锁露出来,但不�
 留在原地,不划线、不消失。
 
 **图 6 — 快速记录。**
-![Jot it down 弹窗,已输入 "Call the vet"](../artifacts/screenshots/02-quick-capture.png)
+![Jot it down 弹窗,已输入 "Call the vet"](figures/app/02-quick-capture.png)
 
 记录只有两步:点 *Jot it down*,输入,确认。输入框自动聚焦,只要求一个标题,
 占位文案——"A thought before it slips away"(趁念头溜走之前)——点名了这个
@@ -405,7 +405,7 @@ too"(你的真宠物也能住进来)——把自家宠物解锁露出来,但不�
 的那种摩擦。取消按钮写的是 "Not now",不是 "Cancel" 或 "Discard"。
 
 **图 7 — 完成一个任务。**
-![已完成任务卡片呈暖色,圆圈被填充,零食计数从 1 变为 2](../artifacts/screenshots/03-completion-moment.png)
+![已完成任务卡片呈暖色,圆圈被填充,零食计数从 1 变为 2](figures/app/03-completion-moment.png)
 
 完成只产生温度,别的什么都不产生:卡片染上暖色,圆圈填满,宠物播放一小段开心
 动画,掉下一颗零食——计数从一变成二。屏幕上没有分数、没有连击、没有进度条、
@@ -413,36 +413,37 @@ too"(你的真宠物也能住进来)——把自家宠物解锁露出来,但不�
 宠物,而且花不花随意。
 
 **图 8 — Little Theater(小剧场),当日清单全部完成时出现。**
-![全屏庆祝:宠物放大、粒子上升、+3 零食奖励,文案 "Choco Two nuzzles you happily — thank you for today"](../artifacts/screenshots/04-little-theater.png)
+![全屏庆祝:宠物放大、粒子上升、+3 零食奖励,文案 "Choco nuzzles you happily — thank you for today"](figures/app/04-little-theater.png)
 
 清单全部做完,触发应用唯一一次大张旗鼓:宠物铺满屏幕,粒子升起,奖励三颗零食,
-文案是 "Choco Two nuzzles you happily — thank you for today"(Choco Two 开心地
-蹭蹭你——谢谢你今天做的事)。关闭按钮写的是 "Thank you, Choco Two",让这场
+文案是 "Choco nuzzles you happily — thank you for today"(Choco 开心地蹭蹭你
+——谢谢你今天做的事)。关闭按钮写的是 "Thank you, Choco",让这场
 交换发生在用户与动物之间,而不是用户与记分板之间。这是整个设计的情感峰值,也是
 整条奖励循环存在的意义所在。同时,按构造,它是*唯一*有这种分量的时刻——失败
 没有对应的画面,因为失败态不存在。
 
 **图 9 — 正向历史。**
-!["Things we did together" 页面,一周里只列出有三条完成记录的那一天](../artifacts/screenshots/05-positive-history.png)
+!["Things we did together" 页面,一周里只列出有三条完成记录的那一天](figures/app/05-positive-history.png)
 
-历史页是安全架构最清晰的一次表达。它写着 "This week, you and Choco Two did 3
-things together"(这周你和 Choco Two 一起做了 3 件事),而且只列出周四——因为
-周四是唯一有完成记录的日子。没有完成记录的日子不是被画成空白、灰色或零:**它们
+历史页是安全架构最清晰的一次表达。它写着 "This week, you and Choco did 3
+things together"(这周你和 Choco 一起做了 3 件事),而且只列出周二——因为
+周二是唯一有完成记录的日子。没有完成记录的日子不是被画成空白、灰色或零:**它们
 在数据模型里根本不存在**,所以任何视图都不可能失手把它们显示出来。没有连击
 计数,没有带缺口可供解读为失败的日历网格,不与上一周比较。措辞是"我们一起做过
 的事",不是"你的完成率"。
 
 **图 10 — 收藏馆。**
-![收藏页显示 Choco 与选中的 Choco Two 两只宠物,下方是写着 "A little mystery" 的未解锁纪念品网格](../artifacts/screenshots/06-collection.png)
+![收藏页显示宠物架上的 Choco,下方是写着 "A little mystery" 的未解锁纪念品网格](figures/app/06-collection.png)
 
-这块屏幕上有两件事。宠物架并排展示内置宠物和用户自己孵出的宠物,当前那只有描边
-——第 3.2 节的运行时注册表在这里变得肉眼可见,差异化功能也在这里第一次变得可触摸。
+这块屏幕上有两件事。宠物架列出用户拥有的所有宠物——这里是领养的预置宠物
+Choco——当前那只有描边;孵出的自家宠物会并排出现在它旁边,这正是第 3.2 节的
+运行时注册表变得肉眼可见的地方,差异化功能也在这里第一次变得可触摸。
 下方,已解锁的纪念品以插画形式出现;未解锁的只显示一个爪印剪影和 "A little
 mystery"(一个小谜)。它们没有进度条、没有解锁阈值、没有"还差 2 个",所以这个
 陈列柜没法被读成一张"你还没挣到的东西"的清单。
 
 **图 11 — 设置。**
-![设置页显示宠物名字输入框、四条任务及其循环类型标注、晚间通知开关与时间选项](../artifacts/screenshots/07-settings.png)
+![设置页显示宠物名字输入框、四条任务及其循环类型标注、晚间通知开关与时间选项](figures/app/07-settings.png)
 
 设置刻意做得很短。任务逐条列出,类型用文字写明("Every day" 对 "Just once"),
 一个控件即可删除;没有归档、没有已完成列表、没有任何让做完的事堆积的地方。通知
