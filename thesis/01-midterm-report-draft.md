@@ -1,6 +1,6 @@
 # Pawside — Progress Report
 
-*(formerly PetTodo — renamed during the period this report covers, §3.3)*
+*(formerly PetTodo)*
 
 ---
 
@@ -295,9 +295,9 @@ goal, file scope, constraints and acceptance criteria. I accept a change only
 after reading the full diff and running the build and tests locally;
 user-visible changes are also walked through on a device or simulator. Every
 feature must state which ADHD problem it solves; if that mapping cannot be
-stated, the feature is not built. This constitution is version-controlled in
-`docs/PRODUCT-PRINCIPLES.md`, and several of its rules are enforced by tests
-rather than by discipline (§5).
+stated, the feature is not built. This constitution is written down and
+version-controlled alongside the code, and several of its rules are enforced
+by tests rather than by discipline (§5).
 
 Table 1 collects the main design decisions, the strongest alternative to
 each, and the factor that decided it.
@@ -595,9 +595,8 @@ device from a clean install: onboarding → hatchery → photograph → export o
 139 KB request archive → import through the real iOS document picker → both
 pets listed with the new one selected → switching between them → completing
 onboarding → Home showing the imported pet with its hatch ceremony — ending
-with zero leftover archives in documents. Two further screenshots in the
-repository record the ceremony and the resulting Home screen
-(`artifacts/task-008/screenshots/`).
+with zero leftover archives in documents. Two further screenshots taken
+during that run record the ceremony and the resulting Home screen.
 
 ### 4.3 Implementation findings
 
@@ -664,7 +663,7 @@ Habitica Play reviews, 63 of them one or two stars).
 
 ### 5.2 User evaluation
 
-The full plan is in `thesis/02-user-testing-plan.md`. In summary: five to ten
+The full plan is written up as a separate document. In summary: five to ten
 seed participants who are ADHD-leaning pet owners, recruited through my
 personal network only; a fourteen-day run; a short questionnaire at days 7
 and 14; user-initiated local data export as the only data channel; and
