@@ -26,11 +26,12 @@ in diagnosed ADHD samples. The safety rules survived better, though studies of
 trackers with no character and no failure state show that removing punishment
 does not by itself remove guilt.
 
-At the time of writing, the core loop is complete on both platforms, and 112
+At the time of writing, the core loop is complete on both platforms, and 156
 automated tests pass across the application, the generation pipeline and the
 hatch backend. Since mid-term the project has also shipped a pixel-art
-restyle, an ambient pet overlay on Android, a new generation pipeline that
-turns photos into an animated pet in about a minute, and a rebuilt onboarding.
+restyle, an ambient pet overlay on Android, a generation pipeline that turns
+photos into an animated pet in about a minute, a rebuilt onboarding, and a
+notification layer rewritten so the pet only ever talks about its own day.
 A user study that would test the anchor mechanism is designed and ready, but
 does not fit inside the project window; the report is explicit about what can
 and cannot be claimed without it.
@@ -493,13 +494,15 @@ presets are free, so the app is complete for someone who owns no animal at
 all; hatching your *own* pet is a one-off paid unlock that includes three
 hatch attempts, and photos of anything other than a cat or dog are gently
 declined, with the requested species recorded as a wish for a future
-template.
+template. Bundling the nine finished packs into the app is the next queued
+step; the adoption grid (Section 3.6) renders the live registry, so it fills
+automatically as they land.
 
 **Figure 5 — The two hatch routes.** The first generation generated every
 frame; the second generates four poses and lets a skeleton do the moving.
 ![Flow diagram comparing the two generations of the hatch pipeline](figures/hatch-pipeline.png)
 
-The pipeline is a Python CLI (`tools/rig_pipeline/`, 25 tests) with retries
+The pipeline is a Python CLI (`tools/rig_pipeline/`, 27 tests) with retries
 and best-of-two sampling built in, and it produced two engineering findings
 worth recording. First, retry amplification: retrying at two layers meant a
 single failing request could balloon to sixteen HTTP attempts, and permanent
@@ -509,13 +512,29 @@ side-view tail detector originally judged which side the tail was on from the
 canvas centre, which breaks the moment the subject is off-centre; it now
 judges from the centre of the detected head box.
 
+One small experiment settled the intake design and is shown in Figure 6: the
+same canonical pose generated from one photo of the cat against three photos,
+four candidates each. A single photo already held identity stable across
+candidates — the gain from extra photos is not consistency but *coverage*:
+the parts the camera never saw, such as the asymmetric flank markings a
+tortoiseshell carries, are invented plausibly from one photo and drawn
+faithfully from three. So intake accepts one to three photos, and the in-app
+guidance asks for different angles rather than simply more pictures.
+
+**Figure 6 — One photo against three.** Top row: four candidates generated
+from a single photo. Bottom row: four candidates from three photos of the
+same cat. Identity is stable either way; the extra photos correct the
+markings on the sides the single photo never showed.
+![Eight generated pixel cats comparing one-photo and three-photo inputs](figures/multi-photo-test.png)
+
 ### 3.6 Onboarding, rebuilt around the relationship
 
 The original onboarding introduced features. The rebuilt flow introduces the
 pet first, on the reasoning that Section 1.3.2 supports: the app is opened to see
-the pet, so the first minute should establish that bond. The user meets an
-adoption grid of the nine preset pets ("Who's coming home?"), rendered from
-the live pet registry rather than hardcoded, picks one, and names it — with
+the pet, so the first minute should establish that bond. The user meets the
+adoption question — "Who's coming home?" — over a grid rendered from the
+live pet registry (never hardcoded; the nine-pet roster of Section 3.5 fills
+it as the packs are bundled), picks a pet, and names it — with
 a dice button that rolls a name from a preset pool, so the single typing
 moment has a zero-effort escape. A quiet line beneath the grid — "Your real
 pet can live here too" — points at the own-pet unlock without selling it. They then pick up to three "little things"
@@ -529,14 +548,37 @@ first win — "Give {name} a pat" — which triggers the normal completion
 celebration and does not count against the one-to-seven cap. Finally, the
 evening check-in prompt moved out of onboarding entirely: the pet asks in
 context on the first evening the app is open, which is also when notification
-permission is requested. Existing users never re-run onboarding.
+permission is requested. Existing users never re-run onboarding. Figure 7
+shows four moments from the flow on a clean install.
 
-### 3.7 Held back deliberately
+**Figure 7 — Onboarding, four moments.** Left to right: the adoption
+question, with the own-pet unlock as one quiet line; the three little
+things as tappable chips, typing never required; the mid-point celebration
+awarding the first treat before any task exists; and Home on arrival, with
+the scripted first win — "Give Choco a pat — a free one, to see how it
+feels" — waiting at the top of the list.
+![Four onboarding screenshots: adoption, chips, celebration, first win](figures/app/09-onboarding.png)
 
-A rework of the notification layer — copy in the pet's voice, randomised
-selection, timing jitter, and back-off after unopened days — is implemented
-but unmerged, because the literature contradicts two of its three mechanisms.
-Section 6 explains the conflict and the resolution path.
+### 3.7 The notification layer, resolved and shipped
+
+At mid-term, a rework of the notification layer sat implemented but
+deliberately unmerged, because the literature contradicted two of its three
+mechanisms. That conflict has since been resolved — not by code, but by a
+written decision now recorded in the project's constitution: **the pet's
+wellbeing is never a function of user presence.** The pet lives its own good
+day; it may still speak, but only ever about itself — presence without a
+request. On those semantics the rework shipped. The entire message pool now
+has the pet reporting its own day (a sunbeam, a bird at the window, a big
+stretch); phrasings like "waiting for you", "miss you" and "don't forget"
+are banned on both sides of the screen, enforced by a lint that fails the
+build; timing keeps a ±10-minute jitter; and consecutive unopened days back
+the frequency off — daily, then every other day, then weekly — resetting the
+moment the app is opened. The literature's sharpest objection (Section 6)
+was that backing off is ambiguous withdrawal, and rejection sensitivity
+reads ambiguity as rejection; under "own good day" semantics the ambiguity
+is gone — a pet that never waits cannot be read as giving up on you, its
+news just arrives less often. Two in-app lines that broke the rule ("Just
+because I miss you") were rewritten in the same change.
 
 ---
 
@@ -544,12 +586,13 @@ Section 6 explains the conflict and the resolution path.
 
 ### 4.1 The working application
 
-All screenshots below are from one continuous session on an iPhone 17 Pro
-simulator running the current build — the pixel restyle of Section 3.3 —
-from a clean install, with the preset pet Choco adopted during onboarding.
-They are ordered as a user would meet them.
+All screenshots below are from one continuous session on an Android
+emulator running the current release build, on the same clean install that
+produced Figure 7 — the preset pet Choco adopted during onboarding, and the
+scripted first win already completed. They are ordered as a user would meet
+them.
 
-**Figure 6 — Home with a mixed task list.**
+**Figure 8 — Home with a mixed task list.**
 ![Home showing a completed daily task, two outstanding dailies and a one-off](figures/app/01-home-mixed-list.png)
 
 The pet takes the top half of the screen and the task list the bottom, and
@@ -564,7 +607,7 @@ items can never grow into a wall of text. The header reads "Today's little
 things", and a completed item stays visible in a warm tint rather than being
 struck through or removed.
 
-**Figure 7 — Quick capture.**
+**Figure 9 — Quick capture.**
 ![The Jot it down dialog with the text "Call the vet" entered](figures/app/02-quick-capture.png)
 
 Capture is two steps: tap *Jot it down*, type, confirm. The field is
@@ -575,17 +618,17 @@ here becomes a one-off by default, because demanding a recurrence decision at
 capture time is exactly the friction that loses the thought. The dismissal
 option says "Not now", not "Cancel" or "Discard".
 
-**Figure 8 — Completing a task.**
+**Figure 10 — Completing a task.**
 ![A completed task card in warm tint with a filled check, and the treat counter increased to 2](figures/app/03-completion-moment.png)
 
 Completion produces warmth and nothing else: the card takes a warm tint, the
 circle fills, the pet plays a brief happy animation, and a treat drops — the
-counter has gone from one to two. There is no score, no streak, no progress
+counter ticks up. There is no score, no streak, no progress
 bar and no "3 of 4 done" anywhere on screen, because a progress indicator is
 also a deficit indicator. The treat is the only currency, it is spent on
 feeding the pet, and spending it is optional.
 
-**Figure 9 — The Little Theater, shown when the day's list is finished.**
+**Figure 11 — The Little Theater, shown when the day's list is finished.**
 ![A full-screen celebration with the pet enlarged, particles, a +3 treat award, and the message "Choco nuzzles you happily — thank you for today"](figures/app/04-little-theater.png)
 
 Finishing everything on the list triggers the one moment the application
@@ -597,19 +640,20 @@ scoreboard. This is the emotional peak of the design. It is also, by
 construction, the *only* moment with this weight — there is no equivalent
 screen for failure, because no failure state exists.
 
-**Figure 10 — Positive history.**
+**Figure 12 — Positive history.**
 ![The "Things we did together" screen showing one week with one dated group of three completed tasks](figures/app/05-positive-history.png)
 
 The history screen is the clearest single expression of the safety
-architecture. It reads "This week, you and Choco did 3 things together",
-and lists only Tuesday — because Tuesday is the only day with completions.
+architecture. It reads "This week, you and Choco did 4 things together" —
+the fourth being the scripted first win — and lists only Wednesday, because
+Wednesday is the only day with completions.
 Days without completions are not shown as empty, greyed or zero: **they do
 not exist in the data model at all**, so no view can accidentally surface
 them. There is no streak counter, no calendar grid with gaps that read as
 failure, and no comparison with last week. The framing is "things we did
 together", not "your completion rate".
 
-**Figure 11 — The collection.**
+**Figure 13 — The collection.**
 ![The collection screen showing the pet shelf with Choco above a grid of locked keepsakes reading "A little mystery"](figures/app/06-collection.png)
 
 Two things share this screen. The pet shelf lists every pet the user has —
@@ -622,16 +666,17 @@ little mystery". They carry no progress bar, no unlock threshold and no "2
 more to go", so the gallery cannot be read as a list of things not yet
 earned.
 
-**Figure 12 — Settings.**
+**Figure 14 — Settings.**
 ![The settings screen showing the pet name field, the four tasks with their recurrence labels, the evening notification toggle and time chips](figures/app/07-settings.png)
 
 Settings is deliberately short. Tasks are listed with their kind stated in
 words ("Every day" against "Just once") and removed with a single control;
 there is no archive, no completed-items list and nowhere for finished work to
-pile up. The notification section is one toggle and three fixed times, and
-its subtitle is phrased as something the pet does rather than something the
-user must configure. Notifications are off until explicitly enabled, and a
-denied permission is never requested again.
+pile up. The overlay of Section 3.4 is one row — "Let Choco stay on your
+screen". The notification section is one toggle and three fixed times, and
+its subtitle is the constitution of Section 3.7 made visible: "All quiet —
+Choco is happily minding its own day". Notifications are off until
+explicitly enabled, and a denied permission is never requested again.
 
 ### 4.2 The hatch loop, end to end
 
@@ -688,12 +733,12 @@ the category leader in Section 1.3.2.
 
 ### 5.1 Software testing
 
-`flutter test` passes 58 tests across 20 files on the main line, and 65 with
-the skeleton renderer's additions. The generation pipeline carries its own
-suite of 25 tests across 6 files, and the hatch backend another 22 across 4 —
-every one of these figures comes from running the suites, not quoting them. The unmerged notification rework
-adds five more, including a lint that fails the build if invitation copy ever
-regains a forbidden phrasing. Coverage concentrates on the promises the
+With every wave described in Section 3 merged, `flutter test` passes 107
+tests across 27 files. The generation pipeline carries its own suite of 27
+tests across 6 files, and the hatch backend another 22 across 4 — every one
+of these figures comes from running the suites, not quoting them. The suite
+includes the lint that fails the build if notification copy ever regains a
+forbidden phrasing (Section 3.7). Coverage concentrates on the promises the
 product makes its users: migration of stored data across format changes;
 day rollover, including
 that rolling over multiple missed days leaves no historical markers; one-off
@@ -764,21 +809,21 @@ conducted for this report says the specification was partly wrong. That is
 the honest summary, and the remaining work follows from it rather than from
 the original plan.
 
-**Resolve the notification design against the evidence.** The unmerged branch
-implements randomised copy, timing jitter, and exponential back-off after
-unopened days. The literature supports none of the three as mechanisms: the
-closest test found a purpose-built 30-message bank no better than a single
-fixed string ([Bell et al. 2023](https://doi.org/10.2196/38342)); jitter is
-opposed by cue-consistency accounts of habit formation
-([Lally et al. 2010](https://doi.org/10.1002/ejsp.674)); and one trial found
+**The notification conflict, for the record.** The evidence that held the
+rework back is worth keeping in view even now that Section 3.7 has shipped
+it: the closest test found a purpose-built 30-message bank no better than a
+single fixed string ([Bell et al. 2023](https://doi.org/10.2196/38342));
+jitter is opposed by cue-consistency accounts of habit formation
+([Lally et al. 2010](https://doi.org/10.1002/ejsp.674)); one trial found
 *less* frequent notification produced less viewing and actioning
-([Morrison et al. 2017](https://doi.org/10.1371/journal.pone.0169162)).
-Worse, withdrawing contact is ambiguous by construction, and rejection
-sensitivity is defined as readily perceiving intentional rejection in
-ambiguous behaviour
-([Downey & Feldman 1996](https://doi.org/10.1037/0022-3514.70.6.1327)) — so
-back-off may be a guilt pathway rather than a protection. The copy rewrite is
-kept on separate grounds; the two mechanisms stay under review.
+([Morrison et al. 2017](https://doi.org/10.1371/journal.pone.0169162)); and
+withdrawing contact is ambiguous by construction, which rejection
+sensitivity reads as rejection
+([Downey & Feldman 1996](https://doi.org/10.1037/0022-3514.70.6.1327)). The
+constitutional resolution — the pet only ever speaks about its own day — is
+an argument that the ambiguity, not the back-off, was the hazard. That is a
+design judgement, not a finding; whether it holds is exactly what the
+post-submission study must watch for.
 
 **Move from time-based to event-based cues.** The clearest evidence-led
 change still unbuilt: anchoring a task to "after dinner" rather than to 19:00
@@ -787,11 +832,13 @@ the one that is impaired, and matches the cue type the forwarded expert
 feedback independently proposed. The evening check-in's move out of
 onboarding and into context (Section 3.6) is a first step in this direction.
 
-**Design the return screen and an explicit pause.** Zero punishment does not
-stop an accumulated backlog from speaking — the *shame reminder*. Two
-mechanisms answer it: a first screen after absence that shows the pet's own
-accumulated news rather than the user's arrears, and a deliberate pause
-action that reframes absence as chosen rather than failed.
+**Build the return screen and an explicit pause.** Zero punishment does not
+stop an accumulated backlog from speaking — the *shame reminder*. The
+semantics are now settled in the constitution (Section 3.7): after an
+absence the pet has been living its own good day, so the return screen shows
+the pet's accumulated news rather than the user's arrears. Building that
+screen, and a deliberate pause action that reframes absence as chosen rather
+than failed, is the next piece of guilt engineering.
 
 **Promote export to a user-facing backup.** The application is local-only,
 the pet is generated from the user's own animal and is therefore
@@ -800,11 +847,13 @@ leader — which at least has accounts to restore from. The export mechanism
 exists; making it a visible backup with an honest explanation is a small
 change against a disproportionate risk.
 
-**Finish the new-pipeline rollout.** The pipeline, proxy, renderer, preset roster and
-unlock flow all exist (Section 3.5); what remains is pricing the unlock (it
-currently ships with a placeholder price), routing the adopted pet onto the
-Android overlay, and the iOS widget as the second ambient surface — which can
-now reuse the pixel asset form the overlay draws.
+**Finish the new-pipeline rollout.** The pipeline, proxy, renderer, preset
+roster and unlock flow all exist (Section 3.5); what remains is operational:
+bundle the nine preset packs so the adoption grid fills, deploy the proxy
+backend and point the app at it, price the unlock (it currently ships with a
+placeholder), route the adopted pet onto the Android overlay, and build the
+iOS widget as the second ambient surface — which can now reuse the pixel
+asset form the overlay draws.
 
 **Evaluation, after submission.** The designed study — ethics enquiry,
 recruitment, the fourteen-day run with a day-60 follow-up — remains the right
