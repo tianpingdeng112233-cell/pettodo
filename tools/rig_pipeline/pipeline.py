@@ -18,7 +18,7 @@ from .rig import build_rig
 
 
 POSES = {
-    "front-open.png": "front view, sitting upright, eyes open, both front legs visible and separated, tail visible, looking directly at viewer",
+    "front-open.png": "front view, sitting upright, eyes open, both front legs visible and separated, looking directly at viewer; tail swept out to the side, fully visible and clearly separated from the body so background shows between tail and flank",
     "front-closed.png": "the exact same front sitting pose, framing, silhouette, expression, and limb placement as the supplied front-open canonical image; change only the eyes from open to gently closed",
     "sleep.png": "curled sleeping pose, eyes closed, whole body and tail readable with minimal self-occlusion",
     "side.png": "strict side view standing on all four legs, facing right, head and full tail visible, front and hind legs readable with minimal overlap",
@@ -41,6 +41,11 @@ class PipelineConfig:
     treat_emoji: str
     output: Path
     qa_output: Path
+    # optional anchors: pose_ref pins the canonical pose geometry, style_ref
+    # pins the art style — both are essential for preset batches, where
+    # per-animal drift would otherwise break the shared rig template
+    pose_ref: Path | None = None
+    style_ref: Path | None = None
     best_of: int = 2
     background_threshold: float = 36
     retries: int = 3
@@ -65,6 +70,23 @@ def _select_candidate(
     silhouette_reference: Path | None = None,
 ) -> Image.Image:
     prompt = f"{STYLE_PROMPT}\n{_identity_prompt(config)}\nRequired pose: {POSES[name]}"
+    anchors: list[Path] = []
+    if config.pose_ref is not None and name == "front-open.png":
+        anchors.append(config.pose_ref)
+        prompt += (
+            "\nAnchor image POSE: the first supplied image is a pose reference"
+            " from a different animal — reproduce its exact pose, framing, and"
+            " tail placement, never its species, colours, or markings."
+        )
+    if config.style_ref is not None:
+        anchors.append(config.style_ref)
+        prompt += (
+            f"\nAnchor image STYLE: supplied image {len(anchors)} is a style"
+            " reference from a different animal — match its exact art style:"
+            " outline weight, pixel cluster density, and palette temperature;"
+            " never its species or pose."
+        )
+    references = anchors + references
     if silhouette_reference is not None:
         prompt += "\nThe final supplied image is the selected front-open canonical image; match its silhouette and pixel placement exactly."
     valid: list[tuple[float, Image.Image]] = []
@@ -161,6 +183,21 @@ def run_pipeline(
             side_boxes = detected["side"]["boxes"]
         except (KeyError, TypeError) as error:
             raise ValueError("rig model JSON is missing front/side boxes") from error
+        for view, boxes, path_name in (
+            ("front", front_boxes, "front-open.png"),
+            ("side", side_boxes, "side.png"),
+        ):
+            with Image.open(selected_paths[path_name]) as probe:
+                tail = boxes.get("tail")
+                if not isinstance(tail, (list, tuple)) or len(tail) != 4:
+                    raise ValueError(f"{view} tail box missing from rig detection")
+                tail_w = float(tail[2]) - float(tail[0])
+                tail_h = float(tail[3]) - float(tail[1])
+                if tail_w < probe.width * 0.04 or tail_h < probe.height * 0.04:
+                    raise ValueError(
+                        f"{view} tail looks hidden or tucked (degenerate tail box);"
+                        " the canonical pose requires the tail swept out and visible"
+                    )
         with Image.open(selected_paths["front-open.png"]) as front_image, Image.open(selected_paths["side.png"]) as side_image:
             rig = build_rig(
                 front_boxes=front_boxes,

@@ -34,6 +34,18 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--qa-output", type=Path, help="QA contact sheet PNG path")
     parser.add_argument("--best-of", type=int, default=2, help="generated candidates scored per canonical pose")
     parser.add_argument("--retries", type=int, default=3, help="Gemini retries after the initial attempt")
+    parser.add_argument(
+        "--pose-ref",
+        type=Path,
+        default=None,
+        help="image whose exact pose the front canonical must reproduce (presets: keeps the shared rig template honest)",
+    )
+    parser.add_argument(
+        "--style-ref",
+        type=Path,
+        default=None,
+        help="image whose art style every canonical must match (presets: prevents style drift across the roster)",
+    )
     parser.add_argument("--background-threshold", type=float, default=36, help="RGB Euclidean flood-fill threshold")
     parser.add_argument("--dry-run", action="store_true", help="validate arguments and print the full plan without network or Keychain access")
     return parser
@@ -124,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
         treat_emoji=args.treat_emoji,
         output=output,
         qa_output=qa_output,
+        pose_ref=args.pose_ref,
+        style_ref=args.style_ref,
         best_of=args.best_of,
         background_threshold=args.background_threshold,
         retries=args.retries,
