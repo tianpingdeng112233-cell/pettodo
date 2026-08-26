@@ -20,7 +20,7 @@ class LocalFeatureGate implements FeatureGate {
   final Future<Directory> Function() _directoryProvider;
 
   @override
-  String get priceLabel => 'One-time price coming soon';
+  String get priceLabel => r'$9.99/month or $69.99/year — 7 days free';
 
   Future<File> get _file async {
     final directory = await _directoryProvider();
