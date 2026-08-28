@@ -13,6 +13,9 @@ import '../data/notification_service.dart';
 import '../data/overlay_service.dart';
 import '../data/pet_pack_service.dart';
 import '../data/room_asset_manifest.dart';
+import '../domain/accessory.dart';
+import '../domain/accessory_economy.dart' as accessory_economy;
+import '../domain/accessory_equipment.dart' as accessory_equipment;
 import '../domain/app_state.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
@@ -157,6 +160,13 @@ class AppController extends ChangeNotifier {
   );
 
   LoadedSpriteAtlas get spriteAtlas => _spriteAtlas!;
+
+  List<AccessoryItem> get equippedAccessories => AccessoryAnchor.values
+      .map((anchor) => state.equippedAccessoryByAnchor[anchor.name])
+      .whereType<String>()
+      .map(accessoryById)
+      .whereType<AccessoryItem>()
+      .toList(growable: false);
 
   String get statusLine {
     if (momentStatus != null) return momentStatus!;
@@ -737,6 +747,32 @@ class AppController extends ChangeNotifier {
     await _stateStore.save(state);
     notifyListeners();
     return true;
+  }
+
+  Future<bool> buyAccessory(String accessoryId) async {
+    final item = accessoryById(accessoryId);
+    if (item == null) return false;
+    final next = accessory_economy.purchaseAccessory(state, item);
+    if (next == null) return false;
+    state = next;
+    await _stateStore.save(state);
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> equipAccessory(String accessoryId) async {
+    final next = accessory_equipment.equipAccessory(state, accessoryId);
+    if (next == null) return false;
+    state = next;
+    await _stateStore.save(state);
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> unequipAccessory(AccessoryAnchor anchor) async {
+    state = accessory_equipment.unequipAccessory(state, anchor);
+    await _stateStore.save(state);
+    notifyListeners();
   }
 
   Future<bool> placeFurniture(String furnitureId) async {

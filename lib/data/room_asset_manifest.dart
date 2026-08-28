@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-class RoomFurnitureAsset {
-  const RoomFurnitureAsset({
+class RoomAsset {
+  const RoomAsset({
     required this.id,
     required this.assetPath,
     required this.pixelWidth,
@@ -19,9 +19,13 @@ class RoomFurnitureAsset {
 }
 
 class RoomAssetManifest {
-  const RoomAssetManifest(this.furnitureById);
+  const RoomAssetManifest(
+    this.furnitureById, [
+    this.accessoryById = const <String, RoomAsset>{},
+  ]);
 
-  final Map<String, RoomFurnitureAsset> furnitureById;
+  final Map<String, RoomAsset> furnitureById;
+  final Map<String, RoomAsset> accessoryById;
 }
 
 class RoomAssetManifestLoader {
@@ -34,20 +38,31 @@ class RoomAssetManifestLoader {
     final json =
         jsonDecode(await _bundle.loadString('assets/room/manifest.json'))
             as Map<String, Object?>;
-    final furniture = <String, RoomFurnitureAsset>{};
+    final furniture = <String, RoomAsset>{};
     for (final raw in json['furniture']! as List<Object?>) {
-      final item = raw! as Map<String, Object?>;
-      final asset = RoomFurnitureAsset(
-        id: item['id']! as String,
-        assetPath: item['asset']! as String,
-        pixelWidth: item['pixel_width']! as int,
-        pixelHeight: item['pixel_height']! as int,
-        placeholderHex: item['placeholder']! as String,
-      );
+      final asset = _parseAsset(raw);
       furniture[asset.id] = asset;
     }
+    final accessories = <String, RoomAsset>{};
+    for (final raw
+        in json['accessories'] as List<Object?>? ?? const <Object?>[]) {
+      final asset = _parseAsset(raw);
+      accessories[asset.id] = asset;
+    }
     return RoomAssetManifest(
-      Map<String, RoomFurnitureAsset>.unmodifiable(furniture),
+      Map<String, RoomAsset>.unmodifiable(furniture),
+      Map<String, RoomAsset>.unmodifiable(accessories),
     );
   }
+}
+
+RoomAsset _parseAsset(Object? raw) {
+  final item = raw! as Map<String, Object?>;
+  return RoomAsset(
+    id: item['id']! as String,
+    assetPath: item['asset']! as String,
+    pixelWidth: item['pixel_width']! as int,
+    pixelHeight: item['pixel_height']! as int,
+    placeholderHex: item['placeholder']! as String,
+  );
 }

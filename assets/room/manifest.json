@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "furniture": [
     {"id": "rug", "asset": "assets/room/rug.png", "pixel_width": 48, "pixel_height": 24, "placeholder": "#D9A66F"},
     {"id": "plant", "asset": "assets/room/plant.png", "pixel_width": 24, "pixel_height": 40, "placeholder": "#79A86B"},
@@ -13,5 +13,13 @@
     {"id": "wall_clock", "asset": "assets/room/wall_clock.png", "pixel_width": 24, "pixel_height": 24, "placeholder": "#8D7B72"},
     {"id": "storage_cabinet", "asset": "assets/room/storage_cabinet.png", "pixel_width": 32, "pixel_height": 48, "placeholder": "#A77954"},
     {"id": "star_string_lights", "asset": "assets/room/star_string_lights.png", "pixel_width": 56, "pixel_height": 24, "placeholder": "#E4B84F"}
+  ],
+  "accessories": [
+    {"id": "wool_hat", "asset": "assets/room/wool_hat.png", "pixel_width": 52, "pixel_height": 28, "placeholder": "#B96D75"},
+    {"id": "straw_hat", "asset": "assets/room/straw_hat.png", "pixel_width": 58, "pixel_height": 26, "placeholder": "#D2A85A"},
+    {"id": "party_hat", "asset": "assets/room/party_hat.png", "pixel_width": 38, "pixel_height": 42, "placeholder": "#7A8FC4"},
+    {"id": "red_scarf", "asset": "assets/room/red_scarf.png", "pixel_width": 48, "pixel_height": 30, "placeholder": "#BD5956"},
+    {"id": "plaid_scarf", "asset": "assets/room/plaid_scarf.png", "pixel_width": 50, "pixel_height": 30, "placeholder": "#9A735C"},
+    {"id": "bell_collar", "asset": "assets/room/bell_collar.png", "pixel_width": 44, "pixel_height": 18, "placeholder": "#D6A942"}
   ]
 }

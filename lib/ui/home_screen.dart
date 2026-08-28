@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
+import '../domain/accessory.dart';
 import '../domain/app_state.dart';
 import '../domain/furniture.dart';
 import '../domain/furniture_migration.dart';
@@ -27,6 +28,7 @@ import 'theme/stair_border.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
 import 'widgets/furniture_item_view.dart';
+import 'widgets/accessory_item_view.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -459,22 +461,23 @@ class _BreathingSpriteState extends State<_BreathingSprite>
     super.dispose();
   }
 
+  Future<void> _showAccessories() => showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: PetColors.screenBottom,
+    builder: (context) => _AccessorySheet(controller: widget.controller),
+  );
+
   @override
   Widget build(BuildContext context) {
     final treatment = PetStageTheme.treatment(widget.controller.growthStage);
     return Semantics(
       container: true,
       button: true,
-      label: 'Touch ${widget.controller.state.petName}',
+      label: 'Touch ${widget.controller.state.petName}, accessories',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: (details) => _lastTapPosition = details.localPosition,
-        onTap: () {
-          widget.controller.touchPet(
-            dx: _lastTapPosition.dx - PetSpacing.s192 / 2,
-            dy: _lastTapPosition.dy - PetSpacing.s208 / 2,
-          );
-        },
+        onTap: _showAccessories,
         onLongPressStart: (details) {
           _lastTapPosition = details.localPosition;
           widget.controller.nuzzlePet(
@@ -534,6 +537,8 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                             fixedElapsed: widget.visualTestMode
                                 ? Duration.zero
                                 : null,
+                            accessories: widget.controller.equippedAccessories,
+                            accessoryManifest: widget.controller.roomAssets,
                           )
                         : PetSprite(
                             atlas: widget.controller.spriteAtlas,
@@ -543,6 +548,8 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                             fixedFrame: widget.visualTestMode
                                 ? 0
                                 : widget.controller.petAnimationFrame,
+                            accessories: widget.controller.equippedAccessories,
+                            accessoryManifest: widget.controller.roomAssets,
                           ),
                   ),
                 ),
@@ -565,6 +572,105 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccessorySheet extends StatelessWidget {
+  const _AccessorySheet({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: controller,
+    builder: (context, _) {
+      final owned = accessoryCatalog
+          .where((item) => controller.state.ownedAccessoryIds.contains(item.id))
+          .toList(growable: false);
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            PetSpacing.s20,
+            PetSpacing.s18,
+            PetSpacing.s20,
+            PetSpacing.s24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                '${controller.state.petName}\'s accessories',
+                style: PetTextStyles.display24,
+              ),
+              const SizedBox(height: PetSpacing.s14),
+              if (owned.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: PetSpacing.s20),
+                  child: Text('Nothing worn', style: PetTextStyles.body15),
+                )
+              else
+                for (final item in owned) ...<Widget>[
+                  _AccessoryChoice(controller: controller, item: item),
+                  const SizedBox(height: PetSpacing.s10),
+                ],
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _AccessoryChoice extends StatelessWidget {
+  const _AccessoryChoice({required this.controller, required this.item});
+
+  final AppController controller;
+  final AccessoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final equipped =
+        controller.state.equippedAccessoryByAnchor[item.anchor.name] == item.id;
+    return DecoratedBox(
+      decoration: const ShapeDecoration(
+        color: PetColors.white,
+        shape: StairBorder.large(),
+        shadows: PetShadows.panel,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(PetSpacing.s12),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: PetSpacing.s64,
+              height: PetSpacing.s48,
+              child: Center(
+                child: AccessoryItemView(
+                  item: item,
+                  manifest: controller.roomAssets,
+                ),
+              ),
+            ),
+            const SizedBox(width: PetSpacing.s12),
+            Expanded(child: Text(item.name, style: PetTextStyles.body15Strong)),
+            PxButton(
+              compact: true,
+              height: PetSpacing.s44,
+              style: equipped ? PxButtonStyle.outline : PxButtonStyle.primary,
+              onPressed: () async {
+                if (equipped) {
+                  await controller.unequipAccessory(item.anchor);
+                } else {
+                  await controller.equipAccessory(item.id);
+                }
+              },
+              label: Text(equipped ? 'Remove' : 'Wear'),
+            ),
+          ],
         ),
       ),
     );
