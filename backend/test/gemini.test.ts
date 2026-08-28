@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GeminiClient } from '../src/gemini.js';
+import { isValidFrontHeadBox } from '../src/rig.js';
 
 function geminiJson(value: unknown): Response {
   return Response.json({
@@ -40,5 +41,34 @@ describe('Gemini species gate', () => {
       data: Buffer.from('photo'),
       mimeType: 'image/png',
     })).rejects.toThrow('invalid species');
+  });
+});
+
+describe('front head-box geometry gate', () => {
+  const content = {
+    width: 768,
+    height: 1152,
+    bounds: [123, 315, 720, 1068] as const,
+    topRows: [123, 315, 654, 338] as const,
+  };
+
+  it('accepts a box that includes the face and the complete topmost ear rows', () => {
+    expect(isValidFrontHeadBox([112, 300, 670, 620], content)).toBe(true);
+  });
+
+  it('retries an ears-only result once, then returns an absent head box', async () => {
+    const earsOnly = {
+      head: [182, 230, 609, 460],
+      tail: [550, 650, 720, 1000],
+      leftFrontLeg: [280, 650, 390, 1068],
+      rightFrontLeg: [430, 650, 540, 1068],
+    };
+    const fetchMock = vi.fn(async () => geminiJson(earsOnly));
+    const client = new GeminiClient('test-key', fetchMock);
+
+    await expect(
+      client.detectFrontBoxes(Buffer.from('front-pose'), 768, 1152, content),
+    ).resolves.toEqual({ ...earsOnly, head: null });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

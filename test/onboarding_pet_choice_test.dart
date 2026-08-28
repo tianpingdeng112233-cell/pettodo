@@ -102,14 +102,14 @@ class _FakeNotifications extends NotificationService {
   }
 
   @override
-  Future<void> scheduleWindow({
+  Future<List<ScheduledPetNotification>> scheduleWindow({
     required String petName,
     required bool includeDailyInvitation,
     required int invitationHour,
     required int invitationMinute,
     required List<TaskReminderSchedule> taskReminders,
     DateTime? now,
-  }) async {}
+  }) async => const <ScheduledPetNotification>[];
 }
 
 Future<ui.Image> _makeImage() {

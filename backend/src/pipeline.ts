@@ -31,7 +31,12 @@ export class GeminiRigPackPipeline implements RigPackPipeline {
     }
     void sleepGeometry;
     const [frontBoxes, sideBoxes] = await Promise.all([
-      this.gemini.detectFrontBoxes(frontOpen, frontGeometry.width, frontGeometry.height),
+      this.gemini.detectFrontBoxes(
+        frontOpen,
+        frontGeometry.width,
+        frontGeometry.height,
+        frontGeometry.content,
+      ),
       this.gemini.detectSideBoxes(side, sideGeometry.width, sideGeometry.height),
     ]);
     const rig = buildRig({

@@ -1,7 +1,44 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../sprite/overlay_frame_baker.dart';
+import 'notification_service.dart';
+
 const String overlayChannelName = 'com.davidshi.pettodo/overlay';
+
+Map<String, Object?> buildOverlayChannelPayload({
+  required String petName,
+  required BakedOverlayFrames? frames,
+  required List<OverlayBubbleInvitation> bubbles,
+  bool includeFrameFiles = true,
+}) {
+  final hasCompleteFrames =
+      frames != null &&
+      frames.idleFiles.isNotEmpty &&
+      frames.jumpingFiles.isNotEmpty;
+  return <String, Object?>{
+    'petName': petName,
+    'frameFilesChanged': includeFrameFiles,
+    'frameFiles': includeFrameFiles && hasCompleteFrames
+        ? <String, Object?>{
+            'idle': frames.idleFiles
+                .map((file) => file.absolute.path)
+                .toList(growable: false),
+            'jumping': frames.jumpingFiles
+                .map((file) => file.absolute.path)
+                .toList(growable: false),
+          }
+        : null,
+    'bubbles': bubbles
+        .map(
+          (bubble) => <String, Object?>{
+            'scheduledAtEpochMillis': bubble.scheduledAt.millisecondsSinceEpoch,
+            'copy': bubble.copy,
+          },
+        )
+        .toList(growable: false),
+  };
+}
 
 /// Owns the small Dart/native contract for Android's floating pet.
 ///
@@ -16,16 +53,25 @@ class OverlayService extends ChangeNotifier {
   bool supported = false;
   bool enabled = false;
   bool busy = false;
+  String? _lastFrameSignature;
+  bool _hasSentFrameConfiguration = false;
 
-  Future<void> initialize({required String petName}) async {
+  Future<void> initialize({
+    required String petName,
+    BakedOverlayFrames? frames,
+    List<OverlayBubbleInvitation> bubbles = const <OverlayBubbleInvitation>[],
+  }) async {
     try {
       supported = await _channel.invokeMethod<bool>('isSupported') ?? false;
       if (!supported) return;
       enabled = await _channel.invokeMethod<bool>('isEnabled') ?? false;
       if (enabled) {
-        await _channel.invokeMethod<void>('enable', <String, Object?>{
-          'petName': petName,
-        });
+        await _sendConfiguration(
+          petName: petName,
+          frames: frames,
+          bubbles: bubbles,
+          forceFrameFiles: true,
+        );
       }
     } on MissingPluginException {
       supported = false;
@@ -43,7 +89,12 @@ class OverlayService extends ChangeNotifier {
   }
 
   /// Returns the final toggle value. A denial always resolves to `false`.
-  Future<bool> setEnabled(bool value, {required String petName}) async {
+  Future<bool> setEnabled(
+    bool value, {
+    required String petName,
+    BakedOverlayFrames? frames,
+    List<OverlayBubbleInvitation> bubbles = const <OverlayBubbleInvitation>[],
+  }) async {
     if (!supported || busy) return enabled;
     busy = true;
     notifyListeners();
@@ -51,6 +102,7 @@ class OverlayService extends ChangeNotifier {
       if (!value) {
         await _channel.invokeMethod<void>('disable');
         enabled = false;
+        _hasSentFrameConfiguration = false;
         return false;
       }
 
@@ -64,9 +116,12 @@ class OverlayService extends ChangeNotifier {
         return false;
       }
 
-      await _channel.invokeMethod<void>('enable', <String, Object?>{
-        'petName': petName,
-      });
+      await _sendConfiguration(
+        petName: petName,
+        frames: frames,
+        bubbles: bubbles,
+        forceFrameFiles: true,
+      );
       enabled = true;
       return true;
     } on MissingPluginException {
@@ -93,14 +148,20 @@ class OverlayService extends ChangeNotifier {
     }
   }
 
-  Future<void> refresh({required String petName}) async {
+  Future<void> refresh({
+    required String petName,
+    BakedOverlayFrames? frames,
+    List<OverlayBubbleInvitation> bubbles = const <OverlayBubbleInvitation>[],
+  }) async {
     if (!supported) return;
     try {
       enabled = await _channel.invokeMethod<bool>('isEnabled') ?? false;
       if (enabled) {
-        await _channel.invokeMethod<void>('enable', <String, Object?>{
-          'petName': petName,
-        });
+        await _sendConfiguration(
+          petName: petName,
+          frames: frames,
+          bubbles: bubbles,
+        );
       }
       notifyListeners();
     } on MissingPluginException {
@@ -114,12 +175,24 @@ class OverlayService extends ChangeNotifier {
     }
   }
 
-  Future<void> updatePetName(String petName) async {
+  Future<void> updatePetName(
+    String petName, {
+    BakedOverlayFrames? frames,
+    List<OverlayBubbleInvitation> bubbles = const <OverlayBubbleInvitation>[],
+  }) => updateConfiguration(petName: petName, frames: frames, bubbles: bubbles);
+
+  Future<void> updateConfiguration({
+    required String petName,
+    BakedOverlayFrames? frames,
+    List<OverlayBubbleInvitation> bubbles = const <OverlayBubbleInvitation>[],
+  }) async {
     if (!supported || !enabled) return;
     try {
-      await _channel.invokeMethod<void>('enable', <String, Object?>{
-        'petName': petName,
-      });
+      await _sendConfiguration(
+        petName: petName,
+        frames: frames,
+        bubbles: bubbles,
+      );
     } on PlatformException {
       // The companion layer must never make an in-app edit fail.
     } on MissingPluginException {
@@ -129,6 +202,45 @@ class OverlayService extends ChangeNotifier {
     } on Object {
       // Renaming the pet remains successful if the service disappeared.
     }
+  }
+
+  Future<void> _sendConfiguration({
+    required String petName,
+    required BakedOverlayFrames? frames,
+    required List<OverlayBubbleInvitation> bubbles,
+    bool forceFrameFiles = false,
+  }) async {
+    final signature = _frameSignature(frames);
+    final includeFrameFiles =
+        forceFrameFiles ||
+        !_hasSentFrameConfiguration ||
+        signature != _lastFrameSignature;
+    await _channel.invokeMethod<void>(
+      'enable',
+      buildOverlayChannelPayload(
+        petName: petName,
+        frames: frames,
+        bubbles: bubbles,
+        includeFrameFiles: includeFrameFiles,
+      ),
+    );
+    if (includeFrameFiles) {
+      _lastFrameSignature = signature;
+      _hasSentFrameConfiguration = true;
+    }
+  }
+
+  String _frameSignature(BakedOverlayFrames? frames) {
+    if (frames == null ||
+        frames.idleFiles.isEmpty ||
+        frames.jumpingFiles.isEmpty) {
+      return 'fallback';
+    }
+    return <String>[
+      ...frames.idleFiles.map((file) => file.absolute.path),
+      '--jumping--',
+      ...frames.jumpingFiles.map((file) => file.absolute.path),
+    ].join('\n');
   }
 
   Future<void> celebrate() async {

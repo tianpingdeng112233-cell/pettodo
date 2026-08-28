@@ -3,11 +3,23 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'device_id_store.dart';
 
-const String defaultHatchApiBaseUrl = 'https://hatch-api.pawside.example';
+const String _configuredHatchApiBaseUrl = String.fromEnvironment(
+  'HATCH_API_BASE_URL',
+  defaultValue: '',
+);
+
+String get defaultHatchApiBaseUrl {
+  if (_configuredHatchApiBaseUrl.isNotEmpty) return _configuredHatchApiBaseUrl;
+  if (!kReleaseMode && defaultTargetPlatform == TargetPlatform.android) {
+    return 'http://10.0.2.2:3000';
+  }
+  return 'https://hatch-api.pawside.example';
+}
 
 enum HatchRemoteStatus { incubating, ready, failed }
 

@@ -74,6 +74,8 @@ class _BlockingRigLoader extends RigPetLoader {
       frontHeight: 4,
       sideWidth: 4,
       sideHeight: 4,
+      sleepWidth: 4,
+      sleepHeight: 4,
       frontLayers: RigLayerSet(
         body: await makeImage(),
         head: await makeImage(),

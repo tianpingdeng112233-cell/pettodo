@@ -1,11 +1,24 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/data/hatch_api_client.dart';
 
 void main() {
   const deviceId = '123e4567-e89b-42d3-a456-426614174000';
+
+  test('debug builds default hatch requests to the Android host bridge', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    expect(defaultHatchApiBaseUrl, 'http://10.0.2.2:3000');
+  });
+
+  test('non-Android debug builds keep the placeholder hatch endpoint', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    expect(defaultHatchApiBaseUrl, 'https://hatch-api.pawside.example');
+  });
 
   test('submit sends the v1 multipart contract and reads 201', () async {
     final photo = await _temporaryPhoto('front.jpg');

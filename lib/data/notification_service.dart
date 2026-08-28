@@ -42,6 +42,51 @@ class ScheduledPetNotification {
   final String? taskId;
 }
 
+class OverlayBubbleInvitation {
+  const OverlayBubbleInvitation({
+    required this.scheduledAt,
+    required this.copy,
+  });
+
+  final DateTime scheduledAt;
+  final String copy;
+}
+
+const String overlayInvitationCopy = "Want to look at today's little things?";
+
+List<OverlayBubbleInvitation> buildOverlayBubbleSchedule(
+  List<ScheduledPetNotification> notificationWindow, {
+  required DateTime now,
+  int dailyCap = 1,
+}) {
+  if (dailyCap <= 0) return const <OverlayBubbleInvitation>[];
+  final invitations =
+      notificationWindow
+          .where(
+            (item) =>
+                item.kind == PetNotificationKind.dailyInvitation &&
+                item.scheduledAt.isAfter(now),
+          )
+          .toList(growable: false)
+        ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+  final countsByDay = <(int, int, int), int>{};
+  final result = <OverlayBubbleInvitation>[];
+  for (final invitation in invitations) {
+    final at = invitation.scheduledAt;
+    final day = (at.year, at.month, at.day);
+    final count = countsByDay[day] ?? 0;
+    if (count >= dailyCap) continue;
+    countsByDay[day] = count + 1;
+    result.add(
+      OverlayBubbleInvitation(
+        scheduledAt: invitation.scheduledAt,
+        copy: overlayInvitationCopy,
+      ),
+    );
+  }
+  return List<OverlayBubbleInvitation>.unmodifiable(result);
+}
+
 const int notificationWindowSize = 32;
 
 /// Minutes of random spread applied either side of the chosen invitation time.
@@ -102,7 +147,8 @@ List<ScheduledPetNotification> buildNotificationWindow({
 
       final day = DateTime(now.year, now.month, now.day + dayOffset);
       final jitter =
-          rng.nextInt(invitationJitterMinutes * 2 + 1) - invitationJitterMinutes;
+          rng.nextInt(invitationJitterMinutes * 2 + 1) -
+          invitationJitterMinutes;
       final at = _clampToInvitationHours(
         DateTime(
           day.year,
@@ -119,7 +165,8 @@ List<ScheduledPetNotification> buildNotificationWindow({
       // learns to filter out, which is how these become invisible.
       var pick = rng.nextInt(_invitationTemplates.length);
       if (pick == previousTemplate) {
-        pick = (pick + 1 + rng.nextInt(_invitationTemplates.length - 1)) %
+        pick =
+            (pick + 1 + rng.nextInt(_invitationTemplates.length - 1)) %
             _invitationTemplates.length;
       }
       previousTemplate = pick;
@@ -254,7 +301,7 @@ class NotificationService {
     return false;
   }
 
-  Future<void> scheduleWindow({
+  Future<List<ScheduledPetNotification>> scheduleWindow({
     required String petName,
     required bool includeDailyInvitation,
     required int invitationHour,
@@ -296,6 +343,7 @@ class NotificationService {
         payload: _payload,
       );
     }
+    return window;
   }
 
   Future<void> cancelScheduled() async {

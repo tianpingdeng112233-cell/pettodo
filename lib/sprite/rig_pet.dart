@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
@@ -12,24 +13,27 @@ import 'sprite_atlas.dart';
 class RigLayerSet {
   const RigLayerSet({
     required this.body,
-    required this.head,
-    required this.tail,
+    this.head,
+    this.tail,
+    this.closedBody,
     this.closedHead,
     this.frontLeg,
     this.hindLeg,
   });
 
   final ui.Image body;
-  final ui.Image head;
-  final ui.Image tail;
+  final ui.Image? head;
+  final ui.Image? tail;
+  final ui.Image? closedBody;
   final ui.Image? closedHead;
   final ui.Image? frontLeg;
   final ui.Image? hindLeg;
 
   void dispose() {
     body.dispose();
-    head.dispose();
-    tail.dispose();
+    head?.dispose();
+    tail?.dispose();
+    closedBody?.dispose();
     closedHead?.dispose();
     frontLeg?.dispose();
     hindLeg?.dispose();
@@ -44,6 +48,8 @@ class LoadedRigPet {
     required this.frontHeight,
     required this.sideWidth,
     required this.sideHeight,
+    required this.sleepWidth,
+    required this.sleepHeight,
     required this.frontLayers,
     required this.sideLayers,
     required this.sleepImage,
@@ -55,6 +61,8 @@ class LoadedRigPet {
   final int frontHeight;
   final int sideWidth;
   final int sideHeight;
+  final int sleepWidth;
+  final int sleepHeight;
   final RigLayerSet frontLayers;
   final RigLayerSet sideLayers;
   final ui.Image sleepImage;
@@ -76,7 +84,7 @@ class RigPetLoader {
     if (!descriptor.isRig || assets == null) {
       throw ArgumentError.value(descriptor.id, 'descriptor', 'Not a rig pet');
     }
-    final definition = RigDefinition.fromJson(
+    var definition = RigDefinition.fromJson(
       jsonDecode(await _readString(assets.rigAsset)),
     );
     // decode results are collected so a partial failure can dispose the
@@ -104,6 +112,7 @@ class RigPetLoader {
     ui.Image? sleep = decoded[2];
     final side = decoded[3]!;
     RigLayerSet? frontLayers;
+    RigLayerSet? sideLayers;
     try {
       if (frontOpen.width != frontClosed.width ||
           frontOpen.height != frontClosed.height) {
@@ -113,12 +122,48 @@ class RigPetLoader {
       }
       definition.front.validateForImage(frontOpen.width, frontOpen.height);
       definition.side.validateForImage(side.width, side.height);
+      final frontHead = definition.front.head;
+      final frontPivot = definition.front.headPivot;
+      final saneFrontHead =
+          frontHead != null &&
+          frontPivot != null &&
+          frontHead.fits(frontOpen.width, frontOpen.height) &&
+          frontPivot.x >= 0 &&
+          frontPivot.y >= 0 &&
+          frontPivot.x <= frontOpen.width &&
+          frontPivot.y <= frontOpen.height &&
+          await isSaneFrontHeadBox(frontOpen, frontHead);
+      if (!saneFrontHead) {
+        definition = RigDefinition(
+          rigVersion: definition.rigVersion,
+          front: definition.front.withoutHead(),
+          side: definition.side,
+        );
+      }
       frontLayers = await _composeFront(
         frontOpen,
         frontClosed,
         definition.front,
       );
-      final sideLayers = await _composeSide(side, definition.side);
+      sideLayers = await _composeSide(side, definition.side);
+      frontLayers = await _downscaleLayerSet(
+        frontLayers,
+        _fitScale(frontOpen.width, frontOpen.height),
+      );
+      sideLayers = await _downscaleLayerSet(
+        sideLayers,
+        _fitScale(side.width, side.height),
+      );
+      final sleepWidth = sleep!.width;
+      final sleepHeight = sleep.height;
+      final scaledSleep = await _downscaleImage(
+        sleep,
+        _fitScale(sleepWidth, sleepHeight),
+      );
+      if (!identical(scaledSleep, sleep)) {
+        sleep.dispose();
+        sleep = scaledSleep;
+      }
       final pet = LoadedRigPet(
         descriptor: descriptor,
         definition: definition,
@@ -126,16 +171,20 @@ class RigPetLoader {
         frontHeight: frontOpen.height,
         sideWidth: side.width,
         sideHeight: side.height,
+        sleepWidth: sleepWidth,
+        sleepHeight: sleepHeight,
         frontLayers: frontLayers,
         sideLayers: sideLayers,
-        sleepImage: sleep!,
+        sleepImage: sleep,
       );
       // ownership transferred to LoadedRigPet
       frontLayers = null;
+      sideLayers = null;
       sleep = null;
       return pet;
     } catch (_) {
       frontLayers?.dispose();
+      sideLayers?.dispose();
       sleep?.dispose();
       rethrow;
     } finally {
@@ -167,19 +216,75 @@ class RigPetLoader {
   }
 }
 
+double _fitScale(int width, int height) =>
+    math.min(192 / width, 208 / height).clamp(0.0, 1.0);
+
+Future<RigLayerSet> _downscaleLayerSet(RigLayerSet source, double scale) async {
+  if (scale >= 0.5) return source;
+  final created = <ui.Image>[];
+  Future<ui.Image?> scaled(ui.Image? image) async {
+    if (image == null) return null;
+    final result = await _downscaleImage(image, scale);
+    created.add(result);
+    return result;
+  }
+
+  try {
+    final result = RigLayerSet(
+      body: (await scaled(source.body))!,
+      head: await scaled(source.head),
+      tail: await scaled(source.tail),
+      closedBody: await scaled(source.closedBody),
+      closedHead: await scaled(source.closedHead),
+      frontLeg: await scaled(source.frontLeg),
+      hindLeg: await scaled(source.hindLeg),
+    );
+    source.dispose();
+    return result;
+  } catch (_) {
+    for (final image in created) {
+      image.dispose();
+    }
+    rethrow;
+  }
+}
+
+Future<ui.Image> _downscaleImage(ui.Image source, double scale) async {
+  if (scale >= 0.5) return source;
+  final width = math.max(1, (source.width * scale).round());
+  final height = math.max(1, (source.height * scale).round());
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder).drawImageRect(
+    source,
+    ui.Rect.fromLTWH(0, 0, source.width.toDouble(), source.height.toDouble()),
+    ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    ui.Paint()
+      ..isAntiAlias = false
+      ..filterQuality = ui.FilterQuality.high,
+  );
+  final picture = recorder.endRecording();
+  try {
+    return await picture.toImage(width, height);
+  } finally {
+    picture.dispose();
+  }
+}
+
 Future<RigLayerSet> _composeFront(
   ui.Image open,
   ui.Image closed,
   FrontRigDefinition rig,
 ) async {
-  final body = await _bodyLayer(
-    open,
-    head: rig.head,
-    detached: <RigBox>[rig.tail],
-  );
+  final head = rig.head;
+  if (head == null) {
+    final body = await _fullImageLayer(open);
+    final closedBody = await _fullImageLayer(closed);
+    return RigLayerSet(body: body, closedBody: closedBody);
+  }
+  final body = await _bodyLayer(open, head: head, detached: <RigBox>[rig.tail]);
   final layers = await _partLayers(<Future<ui.Image>>[
-    _partLayer(open, rig.head, expandTop: true),
-    _partLayer(closed, rig.head, expandTop: true),
+    _partLayer(open, head, expandTop: true),
+    _partLayer(closed, head, expandTop: true),
     _partLayer(open, rig.tail),
   ], onFailure: body.dispose);
   return RigLayerSet(
@@ -188,6 +293,68 @@ Future<RigLayerSet> _composeFront(
     closedHead: layers[1],
     tail: layers[2],
   );
+}
+
+Future<ui.Image> _fullImageLayer(ui.Image source) async {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder).drawImage(source, ui.Offset.zero, ui.Paint());
+  final picture = recorder.endRecording();
+  try {
+    return await picture.toImage(source.width, source.height);
+  } finally {
+    picture.dispose();
+  }
+}
+
+Future<bool> isSaneFrontHeadBox(ui.Image image, RigBox? head) async {
+  if (head == null || !head.fits(image.width, image.height)) return false;
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (bytes == null) return false;
+  var left = image.width;
+  var top = image.height;
+  var right = -1;
+  var bottom = -1;
+  for (var y = 0; y < image.height; y++) {
+    for (var x = 0; x < image.width; x++) {
+      if (bytes.getUint8((y * image.width + x) * 4 + 3) > 16) {
+        left = left < x ? left : x;
+        top = top < y ? top : y;
+        right = right > x ? right : x;
+        bottom = bottom > y ? bottom : y;
+      }
+    }
+  }
+  if (bottom < 0) return false;
+  final contentWidth = right + 1 - left;
+  final contentHeight = bottom + 1 - top;
+  final topBandBottom =
+      (top + (contentHeight * 0.03).ceil().clamp(3, contentHeight)).clamp(
+        top + 1,
+        bottom + 1,
+      );
+  var topLeft = image.width;
+  var topRight = -1;
+  for (var y = top; y < topBandBottom; y++) {
+    for (var x = 0; x < image.width; x++) {
+      if (bytes.getUint8((y * image.width + x) * 4 + 3) > 16) {
+        topLeft = topLeft < x ? topLeft : x;
+        topRight = topRight > x ? topRight : x;
+      }
+    }
+  }
+  final margin = (contentWidth * 0.01).ceil().clamp(2, contentWidth);
+  final intersects =
+      head.x0 < right + 1 &&
+      head.x1 > left &&
+      head.y0 < bottom + 1 &&
+      head.y1 > top;
+  final includesFace = head.y1 >= top + contentHeight * 0.3;
+  final wideEnough = head.width >= contentWidth * 0.35;
+  final containsTopRows =
+      head.y0 <= (top + margin).clamp(0, image.height) &&
+      head.x0 <= (topLeft + margin).clamp(0, image.width) &&
+      head.x1 >= (topRight + 1 - margin).clamp(0, image.width);
+  return intersects && includesFace && wideEnough && containsTopRows;
 }
 
 /// Awaits all part layers; on any failure every layer that did compose (and
