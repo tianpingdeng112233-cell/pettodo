@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "furniture": [
+    {"id": "rug", "asset": "assets/room/rug.png", "pixel_width": 48, "pixel_height": 24, "placeholder": "#D9A66F"},
+    {"id": "plant", "asset": "assets/room/plant.png", "pixel_width": 24, "pixel_height": 40, "placeholder": "#79A86B"},
+    {"id": "bed", "asset": "assets/room/bed.png", "pixel_width": 48, "pixel_height": 32, "placeholder": "#C98977"},
+    {"id": "bookshelf", "asset": "assets/room/bookshelf.png", "pixel_width": 32, "pixel_height": 56, "placeholder": "#9B704E"},
+    {"id": "floor_lamp", "asset": "assets/room/floor_lamp.png", "pixel_width": 24, "pixel_height": 56, "placeholder": "#E7B85C"},
+    {"id": "curtain_window", "asset": "assets/room/curtain_window.png", "pixel_width": 48, "pixel_height": 48, "placeholder": "#91B8C7"},
+    {"id": "wall_art", "asset": "assets/room/wall_art.png", "pixel_width": 32, "pixel_height": 28, "placeholder": "#C77C82"},
+    {"id": "rocking_chair", "asset": "assets/room/rocking_chair.png", "pixel_width": 40, "pixel_height": 56, "placeholder": "#B9855C"},
+    {"id": "toy_basket", "asset": "assets/room/toy_basket.png", "pixel_width": 36, "pixel_height": 28, "placeholder": "#D59B56"},
+    {"id": "wall_clock", "asset": "assets/room/wall_clock.png", "pixel_width": 24, "pixel_height": 24, "placeholder": "#8D7B72"},
+    {"id": "storage_cabinet", "asset": "assets/room/storage_cabinet.png", "pixel_width": 32, "pixel_height": 48, "placeholder": "#A77954"},
+    {"id": "star_string_lights", "asset": "assets/room/star_string_lights.png", "pixel_width": 56, "pixel_height": 24, "placeholder": "#E4B84F"}
+  ]
+}

@@ -12,9 +12,13 @@ import '../data/hatch_request_store.dart';
 import '../data/notification_service.dart';
 import '../data/overlay_service.dart';
 import '../data/pet_pack_service.dart';
+import '../data/room_asset_manifest.dart';
 import '../domain/app_state.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
+import '../domain/furniture.dart';
+import '../domain/furniture_economy.dart' as furniture_economy;
+import '../domain/furniture_placement.dart' as furniture_placement;
 import '../domain/growth.dart';
 import '../domain/onboarding_flow.dart';
 import '../domain/pet_action.dart';
@@ -117,6 +121,7 @@ class AppController extends ChangeNotifier {
   late AppState state;
   late List<PetAssetDescriptor> pets;
   late List<DecorAssetDescriptor> decorations;
+  late RoomAssetManifest roomAssets;
   LoadedSpriteAtlas? _spriteAtlas;
   LoadedRigPet? rigPet;
   BakedOverlayFrames? _bakedOverlayFrames;
@@ -195,6 +200,7 @@ class AppController extends ChangeNotifier {
       state = state.copyWith(selectedPetId: pets.first.id);
     }
     decorations = await _spriteLoader.loadDecorManifest();
+    roomAssets = await RoomAssetManifestLoader().load();
     currentSchedule = petScheduleAt(now);
     await _loadSelectedPet(selectedPet);
     _applySchedule(now);
@@ -636,12 +642,13 @@ class AppController extends ChangeNotifier {
     if (!isDaily) {
       tasks = tasks.where((item) => item.id != taskId).toList(growable: false);
     }
+    final completedState = state.copyWith(
+      tasks: tasks,
+      lifetimeCompletions: after,
+      unlockedDecorIds: unlocked.toList(growable: false),
+    );
     state = awardTreats(
-      state.copyWith(
-        tasks: tasks,
-        lifetimeCompletions: after,
-        unlockedDecorIds: unlocked.toList(growable: false),
-      ),
+      furniture_economy.awardEarnedMilestoneFurniture(completedState),
       treatDrop,
     );
     lastTreatDrop = treatDrop;
@@ -717,6 +724,26 @@ class AppController extends ChangeNotifier {
           '${state.petName} savors the ${selectedPet.treatName.toLowerCase()}',
       particle: selectedPet.treatEmoji,
     );
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> buyFurniture(String furnitureId) async {
+    final item = furnitureById(furnitureId);
+    if (item == null || item.source != FurnitureSource.price) return false;
+    final next = furniture_economy.purchaseFurniture(state, item);
+    if (next == null) return false;
+    state = next;
+    await _stateStore.save(state);
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> placeFurniture(String furnitureId) async {
+    final next = furniture_placement.placeFurniture(state, furnitureId);
+    if (next == null) return false;
+    state = next;
+    await _stateStore.save(state);
     notifyListeners();
     return true;
   }

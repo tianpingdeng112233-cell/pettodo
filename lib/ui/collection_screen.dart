@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../application/app_controller.dart';
+import '../domain/furniture.dart';
 import '../sprite/sprite_atlas.dart';
 import '../sprite/pet_sprite.dart';
 import '../sprite/rig_pet.dart';
 import '../sprite/rig_pet_sprite.dart';
 import 'theme/pet_colors.dart';
-import 'theme/pet_effects.dart';
 import 'theme/pixel_background.dart';
 import 'theme/pet_shadows.dart';
 import 'theme/pet_spacing.dart';
@@ -15,6 +15,7 @@ import 'theme/pet_text_styles.dart';
 import 'theme/stair_border.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
+import 'widgets/furniture_item_view.dart';
 
 class CollectionScreen extends StatelessWidget {
   const CollectionScreen({super.key, required this.controller});
@@ -157,12 +158,12 @@ class CollectionScreen extends StatelessWidget {
                   const SizedBox(height: PetSpacing.s20),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: PetSpacing.s8),
-                    child: Text('Keepsakes', style: PetTextStyles.caption),
+                    child: Text('Furniture', style: PetTextStyles.caption),
                   ),
                   const SizedBox(height: PetSpacing.s8),
                   Expanded(
                     child: GridView.builder(
-                      itemCount: controller.decorations.length,
+                      itemCount: furnitureCatalog.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
@@ -171,14 +172,14 @@ class CollectionScreen extends StatelessWidget {
                             childAspectRatio: 1.05,
                           ),
                       itemBuilder: (context, index) {
-                        final decor = controller.decorations[index];
-                        final unlocked = controller.state.unlockedDecorIds
-                            .contains(decor.id);
+                        final furniture = furnitureCatalog[index];
+                        final unlocked = controller.state.ownedFurnitureIds
+                            .contains(furniture.id);
                         return Semantics(
                           container: true,
                           label: unlocked
-                              ? decor.displayName
-                              : 'A keepsake still tucked away',
+                              ? furniture.name
+                              : 'Furniture not owned',
                           child: DecoratedBox(
                             decoration: ShapeDecoration(
                               color: unlocked
@@ -191,17 +192,21 @@ class CollectionScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: <Widget>[
                                 ExcludeSemantics(
-                                  child: DecorItemView(
-                                    decor: decor,
-                                    unlocked: unlocked,
-                                    size: PetSpacing.s54,
-                                  ),
+                                  child: unlocked
+                                      ? FurnitureItemView(
+                                          item: furniture,
+                                          manifest: controller.roomAssets,
+                                          scale: 2,
+                                        )
+                                      : const PxIcon(
+                                          PxIconData.paw,
+                                          size: PetSpacing.s54,
+                                          color: PetColors.inactive,
+                                        ),
                                 ),
                                 const SizedBox(height: PetSpacing.s12),
                                 Text(
-                                  unlocked
-                                      ? decor.displayName
-                                      : 'A little mystery',
+                                  unlocked ? furniture.name : 'Not owned',
                                   style: unlocked
                                       ? PetTextStyles.body15Strong
                                       : PetTextStyles.body15Soft,
@@ -220,28 +225,5 @@ class CollectionScreen extends StatelessWidget {
         ),
       ),
     ),
-  );
-}
-
-class DecorItemView extends StatelessWidget {
-  const DecorItemView({
-    super.key,
-    required this.decor,
-    required this.unlocked,
-    this.size = PetSpacing.s36,
-  });
-
-  final DecorAssetDescriptor decor;
-  final bool unlocked;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) => Opacity(
-    opacity: unlocked
-        ? PetEffects.fullOpacity
-        : PetEffects.upcomingDecorOpacity,
-    child: unlocked
-        ? Text(decor.emoji, style: TextStyle(fontSize: size))
-        : PxIcon(PxIconData.paw, size: size, color: PetColors.inactive),
   );
 }
