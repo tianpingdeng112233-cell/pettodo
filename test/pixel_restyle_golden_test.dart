@@ -30,6 +30,18 @@ void main() {
     final fixture = await _createController(tester);
     final snapshotDate = DateTime(2026, 8, 24, 15);
 
+    // Warm every pet load before capturing pet-grid goldens: the tiles use
+    // FutureBuilders, and an unwarmed load resolves at nondeterministic times
+    // across full-suite runs (flaky golden).
+    await tester.runAsync(() async {
+      for (final pet in fixture.controller.pets) {
+        if (pet.isRig) {
+          await fixture.controller.petRig(pet);
+        } else {
+          await fixture.controller.petAtlas(pet);
+        }
+      }
+    });
     await _expectGolden(
       tester,
       HomeScreen(
@@ -129,6 +141,7 @@ Future<void> _expectGolden(
       ),
     ),
   );
+  await tester.pump();
   await tester.pump();
   expect(tester.takeException(), isNull);
   await expectLater(find.byKey(boundaryKey), matchesGoldenFile(path));
