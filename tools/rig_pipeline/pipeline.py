@@ -18,7 +18,7 @@ from .rig import build_rig
 
 
 POSES = {
-    "front-open.png": "front view, sitting upright, eyes open, both front legs visible and separated, looking directly at viewer; tail swept out to the side, fully visible and clearly separated from the body so background shows between tail and flank",
+    "front-open.png": "front view, sitting upright, eyes open, both front legs visible and separated, looking directly at viewer; tail curving naturally along the ground around one side of the body, tail tip resting level with the front paws, the whole tail visible and readable against the background",
     "front-closed.png": "the exact same front sitting pose, framing, silhouette, expression, and limb placement as the supplied front-open canonical image; change only the eyes from open to gently closed",
     "sleep.png": "curled sleeping pose, eyes closed, whole body and tail readable with minimal self-occlusion",
     "side.png": "strict side view standing on all four legs, facing right, head and full tail visible, front and hind legs readable with minimal overlap",
