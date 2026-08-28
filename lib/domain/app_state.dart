@@ -1,3 +1,4 @@
+import 'furniture_migration.dart';
 import 'local_day.dart';
 import 'unlocks.dart';
 
@@ -143,6 +144,8 @@ class AppState {
     required this.activeDay,
     required this.lifetimeCompletions,
     required List<String> unlockedDecorIds,
+    required Set<String> ownedFurnitureIds,
+    required Map<String, String> placedFurnitureBySlot,
     required this.treats,
     required this.fedToday,
     required this.notificationPermission,
@@ -152,7 +155,11 @@ class AppState {
     required this.onboardingRewardGranted,
     required this.eveningHelloPending,
   }) : tasks = List<TodoTask>.unmodifiable(tasks),
-       unlockedDecorIds = List<String>.unmodifiable(unlockedDecorIds) {
+       unlockedDecorIds = List<String>.unmodifiable(unlockedDecorIds),
+       ownedFurnitureIds = Set<String>.unmodifiable(ownedFurnitureIds),
+       placedFurnitureBySlot = Map<String, String>.unmodifiable(
+         placedFurnitureBySlot,
+       ) {
     if (this.tasks.length < minimumTaskCount ||
         this.tasks.length > maximumTaskCount) {
       throw ArgumentError('Pawside supports between 1 and 7 active tasks.');
@@ -173,6 +180,8 @@ class AppState {
     activeDay: localDayKey(now),
     lifetimeCompletions: 0,
     unlockedDecorIds: const <String>[],
+    ownedFurnitureIds: const <String>{},
+    placedFurnitureBySlot: const <String, String>{},
     treats: 0,
     fedToday: null,
     notificationPermission: NotificationPermissionState.notRequested,
@@ -194,6 +203,21 @@ class AppState {
           .whereType<String>(),
       ...unlocksEarnedAt(lifetimeCompletions).map((unlock) => unlock.id),
     }.toList(growable: false);
+    final ownedFurnitureIds = migrateLegacyDecorToFurniture(
+      unlockedDecorIds: unlockedDecorIds,
+      lifetimeCompletions: lifetimeCompletions,
+      ownedFurnitureIds:
+          (json['ownedFurnitureIds'] as List<Object?>? ?? const <Object?>[])
+              .whereType<String>(),
+    );
+    final rawPlacements = json['placedFurnitureBySlot'];
+    final persistedPlacements = rawPlacements is Map<Object?, Object?>
+        ? <String, String>{
+            for (final entry in rawPlacements.entries)
+              if (entry.key is String && entry.value is String)
+                entry.key! as String: entry.value! as String,
+          }
+        : const <String, String>{};
     return AppState(
       onboardingComplete: json['onboardingComplete'] as bool? ?? false,
       selectedPetId: json['selectedPetId'] as String? ?? 'choco',
@@ -202,6 +226,11 @@ class AppState {
       activeDay: json['activeDay'] as String? ?? localDayKey(now),
       lifetimeCompletions: lifetimeCompletions,
       unlockedDecorIds: unlockedDecorIds,
+      ownedFurnitureIds: ownedFurnitureIds,
+      placedFurnitureBySlot: migrateFurniturePlacements(
+        ownedFurnitureIds: ownedFurnitureIds,
+        placedFurnitureBySlot: persistedPlacements,
+      ),
       treats: persistedTreats < 0 ? 0 : persistedTreats,
       fedToday: json['fedToday'] as String?,
       notificationPermission: permission,
@@ -228,6 +257,8 @@ class AppState {
   final String activeDay;
   final int lifetimeCompletions;
   final List<String> unlockedDecorIds;
+  final Set<String> ownedFurnitureIds;
+  final Map<String, String> placedFurnitureBySlot;
   final int treats;
   final String? fedToday;
   final NotificationPermissionState notificationPermission;
@@ -267,6 +298,8 @@ class AppState {
     String? activeDay,
     int? lifetimeCompletions,
     List<String>? unlockedDecorIds,
+    Set<String>? ownedFurnitureIds,
+    Map<String, String>? placedFurnitureBySlot,
     int? treats,
     Object? fedToday = _notProvided,
     NotificationPermissionState? notificationPermission,
@@ -283,6 +316,8 @@ class AppState {
     activeDay: activeDay ?? this.activeDay,
     lifetimeCompletions: lifetimeCompletions ?? this.lifetimeCompletions,
     unlockedDecorIds: unlockedDecorIds ?? this.unlockedDecorIds,
+    ownedFurnitureIds: ownedFurnitureIds ?? this.ownedFurnitureIds,
+    placedFurnitureBySlot: placedFurnitureBySlot ?? this.placedFurnitureBySlot,
     treats: treats ?? this.treats,
     fedToday: identical(fedToday, _notProvided)
         ? this.fedToday
@@ -298,7 +333,7 @@ class AppState {
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'schemaVersion': 3,
+    'schemaVersion': 4,
     'onboardingComplete': onboardingComplete,
     'selectedPetId': selectedPetId,
     'petName': petName,
@@ -306,6 +341,8 @@ class AppState {
     'activeDay': activeDay,
     'lifetimeCompletions': lifetimeCompletions,
     'unlockedDecorIds': unlockedDecorIds,
+    'ownedFurnitureIds': ownedFurnitureIds.toList(growable: false),
+    'placedFurnitureBySlot': placedFurnitureBySlot,
     'treats': treats,
     'fedToday': fedToday,
     'notificationPermission': notificationPermission.name,

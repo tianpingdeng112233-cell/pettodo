@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -86,6 +87,53 @@ class _FakeNotifications extends NotificationService {
 }
 
 void main() {
+  testWidgets('crossing a milestone awards and places its furniture', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync('pettodo-milestone');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    File('${directory.path}/pettodo-state.json').writeAsStringSync(
+      jsonEncode(<String, Object?>{
+        'schemaVersion': 4,
+        'onboardingComplete': true,
+        'selectedPetId': 'choco',
+        'petName': 'Choco',
+        'tasks': <Object?>[
+          <String, Object?>{
+            'id': 'daily-water',
+            'title': 'Water',
+            'kind': 'daily',
+          },
+        ],
+        'activeDay': '2026-08-28',
+        'lifetimeCompletions': 4,
+        'unlockedDecorIds': const <String>[],
+        'ownedFurnitureIds': const <String>[],
+        'placedFurnitureBySlot': const <String, String>{},
+        'treats': 0,
+      }),
+    );
+    late AppController controller;
+
+    await tester.runAsync(() async {
+      controller = AppController(
+        stateStore: AppStateStore(() async => directory),
+        eventLog: EventLogStore(() async => directory),
+        notifications: _FakeNotifications(grant: false),
+        spriteLoader: _LifecycleSpriteLoader(await _image()),
+      );
+      await controller.initialize();
+      expect(await controller.completeTask('daily-water'), isTrue);
+    });
+    addTearDown(controller.dispose);
+
+    expect(controller.state.lifetimeCompletions, 5);
+    expect(controller.state.ownedFurnitureIds, <String>{'rug'});
+    expect(controller.state.placedFurnitureBySlot, <String, String>{
+      'rug': 'rug',
+    });
+  });
+
   testWidgets(
     'one-off completion drops a treat, archives the task, and logs history data',
     (tester) async {
