@@ -14,6 +14,7 @@ import 'widgets/accessory_item_view.dart';
 import 'widgets/furniture_item_view.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
+import 'widgets/room_asset_item_preview.dart';
 
 class StoreScreen extends StatelessWidget {
   const StoreScreen({super.key, required this.controller});
@@ -142,7 +143,11 @@ class _FurnitureStoreCard extends StatelessWidget {
       price: item.price!,
       owned: owned,
       enabled: enabled,
-      preview: FurnitureItemView(item: item, manifest: controller.roomAssets),
+      preview: FurnitureItemView(
+        item: item,
+        manifest: controller.roomAssets,
+        scaleMode: RoomAssetScaleMode.maxIntegerFit,
+      ),
       onBuy: () => controller.buyFurniture(item.id),
     );
   }
@@ -163,11 +168,7 @@ class _AccessoryStoreCard extends StatelessWidget {
       price: item.price,
       owned: owned,
       enabled: enabled,
-      preview: AccessoryItemView(
-        item: item,
-        manifest: controller.roomAssets,
-        scale: 1.6,
-      ),
+      preview: AccessoryItemView(item: item, manifest: controller.roomAssets),
       onBuy: () => controller.buyAccessory(item.id),
     );
   }

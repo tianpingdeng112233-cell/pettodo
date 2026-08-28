@@ -10,11 +10,13 @@ class FurnitureItemView extends StatelessWidget {
     required this.item,
     required this.manifest,
     this.scale = 1,
+    this.scaleMode = RoomAssetScaleMode.fixed,
   });
 
   final FurnitureItem item;
   final RoomAssetManifest manifest;
   final int scale;
+  final RoomAssetScaleMode scaleMode;
 
   @override
   Widget build(BuildContext context) => RoomAssetItemPreview(
@@ -27,5 +29,6 @@ class FurnitureItemView extends StatelessWidget {
     placeholderMaxLines: 3,
     placeholderFontSize: 8,
     placeholderPadding: const EdgeInsets.all(2),
+    scaleMode: scaleMode,
   );
 }

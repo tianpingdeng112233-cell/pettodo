@@ -13,11 +13,13 @@ class AccessoryItemView extends StatelessWidget {
     required this.item,
     required this.manifest,
     this.scale = 1,
+    this.scaleMode = RoomAssetScaleMode.maxIntegerFit,
   });
 
   final AccessoryItem item;
   final RoomAssetManifest manifest;
   final double scale;
+  final RoomAssetScaleMode scaleMode;
 
   RoomAssetItemPreview get _preview => RoomAssetItemPreview(
     itemId: item.id,
@@ -28,6 +30,7 @@ class AccessoryItemView extends StatelessWidget {
     missingSize: Size(40 * scale, 24 * scale),
     placeholderMaxLines: 2,
     placeholderFontSize: (7 * scale).clamp(5, 9),
+    scaleMode: scaleMode,
   );
 
   Size get displaySize => _preview.displaySize!;
@@ -58,6 +61,7 @@ class AnchoredAccessoryItemView extends StatelessWidget {
       item: item,
       manifest: manifest,
       scale: scale,
+      scaleMode: RoomAssetScaleMode.fixed,
     );
     final size = view.displaySize;
     final alignment = item.anchor == AccessoryAnchor.head

@@ -119,7 +119,11 @@ class PxButton extends StatelessWidget {
                       ],
                       if (compact)
                         DefaultTextStyle(
-                          style: PetTextStyles.button,
+                          style: primary
+                              ? PetTextStyles.button
+                              : PetTextStyles.button.copyWith(
+                                  color: PetColors.bodyStrong,
+                                ),
                           textAlign: TextAlign.center,
                           child: label,
                         )

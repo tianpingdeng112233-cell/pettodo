@@ -646,8 +646,8 @@ class _AccessoryChoice extends StatelessWidget {
         child: Row(
           children: <Widget>[
             SizedBox(
-              width: PetSpacing.s64,
-              height: PetSpacing.s48,
+              width: 112,
+              height: 84,
               child: Center(
                 child: AccessoryItemView(
                   item: item,

@@ -4,6 +4,10 @@ import '../domain/accessory.dart';
 import 'rig_definition.dart';
 import 'rig_driver.dart';
 
+const double v2AccessoryDesignWidthInPixels = 96;
+const double _v2HeadContactOffsetYInPixels = 27;
+const double _v2NeckContactOffsetYInPixels = 21;
+
 class AccessoryPose {
   const AccessoryPose({
     required this.x,
@@ -122,7 +126,19 @@ AccessoryPose? resolveV2AccessoryPose({
 }) {
   final frames = v2AccessoryAnchorTable[stateName];
   if (frames == null || frame < 0 || frame >= frames.length) return null;
-  return frames[frame].forAnchor(anchor);
+  final pose = frames[frame].forAnchor(anchor);
+  // The frozen v2 table follows the pet feature points. Move those points to
+  // the actual accessory contact lines: the hat brim overlaps the hairline,
+  // while neckwear sits around the neck rather than under the chin.
+  final contactOffsetY = switch (anchor) {
+    AccessoryAnchor.head => _v2HeadContactOffsetYInPixels,
+    AccessoryAnchor.neck => _v2NeckContactOffsetYInPixels,
+  };
+  return AccessoryPose(
+    x: pose.x,
+    y: pose.y + contactOffsetY,
+    rotationDegrees: pose.rotationDegrees,
+  );
 }
 
 final Map<String, List<AccessoryFrameAnchors>> v2AccessoryAnchorTable =

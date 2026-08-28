@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../data/room_asset_manifest.dart';
@@ -5,6 +7,8 @@ import '../theme/pet_colors.dart';
 import '../theme/pet_text_styles.dart';
 
 enum RoomAssetCollection { accessory, furniture }
+
+enum RoomAssetScaleMode { maxIntegerFit, fixed }
 
 class RoomAssetItemPreview extends StatelessWidget {
   const RoomAssetItemPreview({
@@ -18,6 +22,7 @@ class RoomAssetItemPreview extends StatelessWidget {
     required this.placeholderMaxLines,
     required this.placeholderFontSize,
     this.placeholderPadding = EdgeInsets.zero,
+    this.scaleMode = RoomAssetScaleMode.maxIntegerFit,
   });
 
   final String itemId;
@@ -29,6 +34,7 @@ class RoomAssetItemPreview extends StatelessWidget {
   final int placeholderMaxLines;
   final double placeholderFontSize;
   final EdgeInsets placeholderPadding;
+  final RoomAssetScaleMode scaleMode;
 
   RoomAsset? get _asset => switch (collection) {
     RoomAssetCollection.accessory => manifest.accessoryById[itemId],
@@ -42,8 +48,24 @@ class RoomAssetItemPreview extends StatelessWidget {
     final asset = _asset;
     final size = _displaySize(asset);
     if (asset == null) return _constrain(_placeholder(null), size);
+    if (scaleMode == RoomAssetScaleMode.maxIntegerFit) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final integerScale = _largestIntegerScale(asset, constraints);
+          return Center(child: _assetImage(asset, integerScale.toDouble()));
+        },
+      );
+    }
+    return _assetImage(asset, scale);
+  }
+
+  Widget _assetImage(RoomAsset asset, double imageScale) {
+    final size = Size(
+      asset.pixelWidth * imageScale,
+      asset.pixelHeight * imageScale,
+    );
     return SizedBox(
-      width: size!.width,
+      width: size.width,
       height: size.height,
       child: Image.asset(
         asset.assetPath,
@@ -52,6 +74,18 @@ class RoomAssetItemPreview extends StatelessWidget {
         errorBuilder: (_, _, _) => _placeholder(asset.placeholderHex),
       ),
     );
+  }
+
+  int _largestIntegerScale(RoomAsset asset, BoxConstraints constraints) {
+    final maxWidthScale = constraints.maxWidth.isFinite
+        ? constraints.maxWidth / asset.pixelWidth
+        : double.infinity;
+    final maxHeightScale = constraints.maxHeight.isFinite
+        ? constraints.maxHeight / asset.pixelHeight
+        : double.infinity;
+    final availableScale = math.min(maxWidthScale, maxHeightScale);
+    if (!availableScale.isFinite) return math.max(1, scale.floor());
+    return math.max(1, availableScale.floor());
   }
 
   Size? _displaySize(RoomAsset? asset) {

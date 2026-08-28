@@ -114,7 +114,14 @@ class _PetSpriteState extends State<PetSprite>
                       poseScaleX: poseScaleX,
                       poseScaleY: poseScaleY,
                     ),
-                    scale: fitted.scale * poseScaleX,
+                    // v2 accessory art uses a 96px design width while its
+                    // anchor table uses the full 192px sprite coordinate
+                    // system. Keep positions in sprite pixels, but size the
+                    // art from its own design grid.
+                    scale:
+                        fitted.scale *
+                        source.width /
+                        v2AccessoryDesignWidthInPixels,
                   ),
           ],
         );
