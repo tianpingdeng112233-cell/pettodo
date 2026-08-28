@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 4,
+  "onboardingComplete": true,
+  "selectedPetId": "choco",
+  "petName": "Cocoa",
+  "tasks": [
+    {
+      "id": "daily-water",
+      "title": "Water",
+      "kind": "daily",
+      "completedToday": true
+    },
+    {
+      "id": "call-vet",
+      "title": "Call the vet",
+      "kind": "oneOff",
+      "note": "Ask about Pip",
+      "completedToday": false
+    }
+  ],
+  "activeDay": "2026-08-28",
+  "lifetimeCompletions": 128,
+  "unlockedDecorIds": [
+    "soft_ball",
+    "flower",
+    "home",
+    "blanket",
+    "lamp",
+    "window"
+  ],
+  "ownedFurnitureIds": [
+    "rug",
+    "plant",
+    "bed",
+    "bookshelf",
+    "floor_lamp",
+    "curtain_window",
+    "wall_art",
+    "storage_cabinet"
+  ],
+  "placedFurnitureBySlot": {
+    "rug": "rug",
+    "plant": "plant",
+    "bed": "bed",
+    "bookshelf": "storage_cabinet",
+    "floorLamp": "floor_lamp",
+    "window": "curtain_window",
+    "wallArt": "wall_art"
+  },
+  "treats": 37,
+  "fedToday": "2026-08-28",
+  "notificationPermission": "granted",
+  "notificationEnabled": true,
+  "notificationHour": 19,
+  "notificationMinute": 45,
+  "onboardingRewardGranted": true,
+  "eveningHelloPending": false
+}

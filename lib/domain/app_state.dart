@@ -1,3 +1,4 @@
+import 'accessory.dart';
 import 'furniture_migration.dart';
 import 'local_day.dart';
 import 'unlocks.dart';
@@ -146,6 +147,8 @@ class AppState {
     required List<String> unlockedDecorIds,
     required Set<String> ownedFurnitureIds,
     required Map<String, String> placedFurnitureBySlot,
+    required Set<String> ownedAccessoryIds,
+    required Map<String, String> equippedAccessoryByAnchor,
     required this.treats,
     required this.fedToday,
     required this.notificationPermission,
@@ -159,6 +162,10 @@ class AppState {
        ownedFurnitureIds = Set<String>.unmodifiable(ownedFurnitureIds),
        placedFurnitureBySlot = Map<String, String>.unmodifiable(
          placedFurnitureBySlot,
+       ),
+       ownedAccessoryIds = Set<String>.unmodifiable(ownedAccessoryIds),
+       equippedAccessoryByAnchor = Map<String, String>.unmodifiable(
+         equippedAccessoryByAnchor,
        ) {
     if (this.tasks.length < minimumTaskCount ||
         this.tasks.length > maximumTaskCount) {
@@ -182,6 +189,8 @@ class AppState {
     unlockedDecorIds: const <String>[],
     ownedFurnitureIds: const <String>{},
     placedFurnitureBySlot: const <String, String>{},
+    ownedAccessoryIds: const <String>{},
+    equippedAccessoryByAnchor: const <String, String>{},
     treats: 0,
     fedToday: null,
     notificationPermission: NotificationPermissionState.notRequested,
@@ -218,6 +227,25 @@ class AppState {
                 entry.key! as String: entry.value! as String,
           }
         : const <String, String>{};
+    final ownedAccessoryIds = <String>{
+      ...(json['ownedAccessoryIds'] as List<Object?>? ?? const <Object?>[])
+          .whereType<String>()
+          .where((id) => accessoryById(id) != null),
+    };
+    final rawEquippedAccessories = json['equippedAccessoryByAnchor'];
+    final equippedAccessoryByAnchor =
+        rawEquippedAccessories is Map<Object?, Object?>
+        ? <String, String>{
+            for (final entry in rawEquippedAccessories.entries)
+              if (entry.key is String &&
+                  entry.value is String &&
+                  AccessoryAnchor.fromName(entry.key! as String) != null &&
+                  ownedAccessoryIds.contains(entry.value) &&
+                  accessoryById(entry.value! as String)?.anchor.name ==
+                      entry.key)
+                entry.key! as String: entry.value! as String,
+          }
+        : const <String, String>{};
     return AppState(
       onboardingComplete: json['onboardingComplete'] as bool? ?? false,
       selectedPetId: json['selectedPetId'] as String? ?? 'choco',
@@ -231,6 +259,8 @@ class AppState {
         ownedFurnitureIds: ownedFurnitureIds,
         placedFurnitureBySlot: persistedPlacements,
       ),
+      ownedAccessoryIds: ownedAccessoryIds,
+      equippedAccessoryByAnchor: equippedAccessoryByAnchor,
       treats: persistedTreats < 0 ? 0 : persistedTreats,
       fedToday: json['fedToday'] as String?,
       notificationPermission: permission,
@@ -259,6 +289,8 @@ class AppState {
   final List<String> unlockedDecorIds;
   final Set<String> ownedFurnitureIds;
   final Map<String, String> placedFurnitureBySlot;
+  final Set<String> ownedAccessoryIds;
+  final Map<String, String> equippedAccessoryByAnchor;
   final int treats;
   final String? fedToday;
   final NotificationPermissionState notificationPermission;
@@ -300,6 +332,8 @@ class AppState {
     List<String>? unlockedDecorIds,
     Set<String>? ownedFurnitureIds,
     Map<String, String>? placedFurnitureBySlot,
+    Set<String>? ownedAccessoryIds,
+    Map<String, String>? equippedAccessoryByAnchor,
     int? treats,
     Object? fedToday = _notProvided,
     NotificationPermissionState? notificationPermission,
@@ -318,6 +352,9 @@ class AppState {
     unlockedDecorIds: unlockedDecorIds ?? this.unlockedDecorIds,
     ownedFurnitureIds: ownedFurnitureIds ?? this.ownedFurnitureIds,
     placedFurnitureBySlot: placedFurnitureBySlot ?? this.placedFurnitureBySlot,
+    ownedAccessoryIds: ownedAccessoryIds ?? this.ownedAccessoryIds,
+    equippedAccessoryByAnchor:
+        equippedAccessoryByAnchor ?? this.equippedAccessoryByAnchor,
     treats: treats ?? this.treats,
     fedToday: identical(fedToday, _notProvided)
         ? this.fedToday
@@ -333,7 +370,7 @@ class AppState {
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'schemaVersion': 4,
+    'schemaVersion': 5,
     'onboardingComplete': onboardingComplete,
     'selectedPetId': selectedPetId,
     'petName': petName,
@@ -343,6 +380,8 @@ class AppState {
     'unlockedDecorIds': unlockedDecorIds,
     'ownedFurnitureIds': ownedFurnitureIds.toList(growable: false),
     'placedFurnitureBySlot': placedFurnitureBySlot,
+    'ownedAccessoryIds': ownedAccessoryIds.toList(growable: false),
+    'equippedAccessoryByAnchor': equippedAccessoryByAnchor,
     'treats': treats,
     'fedToday': fedToday,
     'notificationPermission': notificationPermission.name,

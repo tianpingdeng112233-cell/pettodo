@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/domain/app_state.dart';
 
@@ -41,7 +44,9 @@ void main() {
     expect(state.unlockedDecorIds, <String>['soft_ball', 'flower', 'home']);
     expect(state.treats, 4);
     expect(state.fedToday, '2026-07-20');
-    expect(state.toJson()['schemaVersion'], 4);
+    expect(state.ownedAccessoryIds, isEmpty);
+    expect(state.equippedAccessoryByAnchor, isEmpty);
+    expect(state.toJson()['schemaVersion'], 5);
     expect(state.toJson(), isNot(contains('taskTitles')));
   });
 
@@ -69,7 +74,7 @@ void main() {
     expect(result.tasks.last.reminder?.minute, 15);
   });
 
-  test('v3 keeps choco and all progress while upgrading to v4', () {
+  test('v3 keeps choco and all progress while upgrading to v5', () {
     final result = AppState.fromJson(<String, Object?>{
       'schemaVersion': 3,
       'onboardingComplete': true,
@@ -113,13 +118,56 @@ void main() {
     expect(result.treats, 12);
     expect(result.fedToday, '2026-08-12');
     expect(result.notificationEnabled, isTrue);
-    expect(result.toJson()['schemaVersion'], 4);
+    expect(result.toJson()['schemaVersion'], 5);
   });
 
-  test('v4 round-trips furniture ownership and slot placements', () {
+  test('v4 fixture upgrades to v5 without losing room state', () {
+    final fixture =
+        jsonDecode(File('test/fixtures/app_state_v4.json').readAsStringSync())
+            as Map<String, Object?>;
+
+    final result = AppState.fromJson(fixture, DateTime(2026, 8, 28));
+
+    expect(result.toJson()['schemaVersion'], 5);
+    expect(result.lifetimeCompletions, 128);
+    expect(result.unlockedDecorIds, <String>[
+      'soft_ball',
+      'flower',
+      'home',
+      'blanket',
+      'lamp',
+      'window',
+    ]);
+    expect(result.ownedFurnitureIds, <String>{
+      'rug',
+      'plant',
+      'bed',
+      'bookshelf',
+      'floor_lamp',
+      'curtain_window',
+      'wall_art',
+      'storage_cabinet',
+    });
+    expect(result.placedFurnitureBySlot, <String, String>{
+      'rug': 'rug',
+      'plant': 'plant',
+      'bed': 'bed',
+      'bookshelf': 'storage_cabinet',
+      'floorLamp': 'floor_lamp',
+      'window': 'curtain_window',
+      'wallArt': 'wall_art',
+    });
+  });
+
+  test('v5 round-trips furniture and accessory state', () {
     final source = AppState.initial(DateTime(2026, 8, 28)).copyWith(
       ownedFurnitureIds: <String>{'bookshelf', 'storage_cabinet'},
       placedFurnitureBySlot: <String, String>{'bookshelf': 'storage_cabinet'},
+      ownedAccessoryIds: <String>{'wool_hat', 'red_scarf'},
+      equippedAccessoryByAnchor: <String, String>{
+        'head': 'wool_hat',
+        'neck': 'red_scarf',
+      },
     );
 
     final result = AppState.fromJson(source.toJson(), DateTime(2026, 8, 28));
@@ -127,6 +175,11 @@ void main() {
     expect(result.ownedFurnitureIds, <String>{'bookshelf', 'storage_cabinet'});
     expect(result.placedFurnitureBySlot, <String, String>{
       'bookshelf': 'storage_cabinet',
+    });
+    expect(result.ownedAccessoryIds, <String>{'wool_hat', 'red_scarf'});
+    expect(result.equippedAccessoryByAnchor, <String, String>{
+      'head': 'wool_hat',
+      'neck': 'red_scarf',
     });
   });
 }
