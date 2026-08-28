@@ -28,7 +28,7 @@ void main() {
           'pettodo-overlay-bake',
         );
         addTearDown(() => support.deleteSync(recursive: true));
-        final descriptor = (await SpriteAtlasLoader().loadManifest()).single;
+        final descriptor = (await SpriteAtlasLoader().loadManifest()).firstWhere((d) => !d.isRig);
         final atlas = await SpriteAtlasLoader().loadPet(descriptor);
         addTearDown(atlas.image.dispose);
         final baker = OverlayFrameBaker(() async => support);

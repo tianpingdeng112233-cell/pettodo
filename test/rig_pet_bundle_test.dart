@@ -100,9 +100,9 @@ void main() {
     addTearDown(source.dispose);
     final sourcePx = await _rawRgba(source);
     final layers = await Future.wait(<Future<Uint8List>>[
-      _rawRgba(pet.frontLayers.tail),
+      _rawRgba(pet.frontLayers.tail!),
       _rawRgba(pet.frontLayers.body),
-      _rawRgba(pet.frontLayers.head),
+      _rawRgba(pet.frontLayers.head!),
     ]);
 
     // painter order at rest: tail, body, head — alpha-over per pixel must
@@ -152,7 +152,7 @@ Map<String, Object?> _rigJson() => <String, Object?>{
   'front': <String, Object?>{
     'groundY': 60,
     'boxes': <String, Object?>{
-      'head': <int>[16, 4, 48, 28],
+      'head': <int>[8, 4, 56, 28],
       'tail': <int>[4, 30, 16, 52],
       'leftFrontLeg': <int>[20, 28, 28, 60],
       'rightFrontLeg': <int>[36, 28, 44, 60],
