@@ -251,23 +251,47 @@ Future<RigLayerSet> _downscaleLayerSet(RigLayerSet source, double scale) async {
 
 Future<ui.Image> _downscaleImage(ui.Image source, double scale) async {
   if (scale >= 0.5) return source;
-  final width = math.max(1, (source.width * scale).round());
-  final height = math.max(1, (source.height * scale).round());
-  final recorder = ui.PictureRecorder();
-  ui.Canvas(recorder).drawImageRect(
-    source,
-    ui.Rect.fromLTWH(0, 0, source.width.toDouble(), source.height.toDouble()),
-    ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-    ui.Paint()
-      ..isAntiAlias = false
-      ..filterQuality = ui.FilterQuality.high,
-  );
-  final picture = recorder.endRecording();
-  try {
-    return await picture.toImage(width, height);
-  } finally {
-    picture.dispose();
+  // CPU premultiplied box filter: the previous drawImageRect+toImage path
+  // rasterizes on the device GPU backend, whose filtering of transparent
+  // pixels shifted layer colours (see the note on CPU-side layer baking)
+  final srcWidth = source.width;
+  final srcHeight = source.height;
+  final width = math.max(1, (srcWidth * scale).round());
+  final height = math.max(1, (srcHeight * scale).round());
+  final src = await _mutablePixels(source);
+  final dst = Uint8List(width * height * 4);
+  for (var dy = 0; dy < height; dy++) {
+    final y0 = dy * srcHeight ~/ height;
+    var y1 = ((dy + 1) * srcHeight / height).ceil();
+    if (y1 > srcHeight) y1 = srcHeight;
+    for (var dx = 0; dx < width; dx++) {
+      final x0 = dx * srcWidth ~/ width;
+      var x1 = ((dx + 1) * srcWidth / width).ceil();
+      if (x1 > srcWidth) x1 = srcWidth;
+      var r = 0.0, g = 0.0, b = 0.0, a = 0.0;
+      var count = 0;
+      for (var sy = y0; sy < y1; sy++) {
+        var i = (sy * srcWidth + x0) * 4;
+        for (var sx = x0; sx < x1; sx++) {
+          final pa = src[i + 3] / 255;
+          r += src[i] * pa;
+          g += src[i + 1] * pa;
+          b += src[i + 2] * pa;
+          a += pa;
+          count++;
+          i += 4;
+        }
+      }
+      if (a > 0) {
+        final o = (dy * width + dx) * 4;
+        dst[o] = (r / a).round().clamp(0, 255);
+        dst[o + 1] = (g / a).round().clamp(0, 255);
+        dst[o + 2] = (b / a).round().clamp(0, 255);
+        dst[o + 3] = (a * 255 / count).round().clamp(0, 255);
+      }
+    }
   }
+  return _imageFromPixels(dst, width, height);
 }
 
 Future<RigLayerSet> _composeFront(
@@ -432,26 +456,57 @@ Future<ui.Image> _imageFromPixels(Uint8List pixels, int width, int height) {
   return completer.future;
 }
 
-bool _insideRoundedRect(
-  double x,
-  double y,
-  double left,
-  double top,
-  double right,
-  double bottom,
-  double radius,
-) {
-  if (x < left || x > right || y < top || y > bottom) return false;
-  final nearLeft = x < left + radius;
-  final nearRight = x > right - radius;
-  final nearTop = y < top + radius;
-  final nearBottom = y > bottom - radius;
-  if (!(nearLeft || nearRight) || !(nearTop || nearBottom)) return true;
-  final cx = nearLeft ? left + radius : right - radius;
-  final cy = nearTop ? top + radius : bottom - radius;
-  final dx = x - cx;
-  final dy = y - cy;
-  return dx * dx + dy * dy <= radius * radius;
+/// Zeroes the alpha of every pixel whose centre lies OUTSIDE the rounded
+/// rect (keep=false) or INSIDE it (keep=true), using per-row span arithmetic —
+/// no per-pixel calls, so debug-mode baking stays fast.
+void _applyRoundedRect(
+  Uint8List pixels,
+  int width,
+  int height, {
+  required double left,
+  required double top,
+  required double right,
+  required double bottom,
+  required double radius,
+  required bool keep,
+}) {
+  void zero(int row, int fromX, int toX) {
+    final lo = fromX < 0 ? 0 : fromX;
+    final hi = toX >= width ? width - 1 : toX;
+    for (var x = lo; x <= hi; x++) {
+      pixels[(row * width + x) * 4 + 3] = 0;
+    }
+  }
+
+  for (var y = 0; y < height; y++) {
+    final cy = y + 0.5;
+    if (cy < top || cy > bottom) {
+      if (keep) zero(y, 0, width - 1);
+      continue;
+    }
+    var rowLeft = left;
+    var rowRight = right;
+    final dy = cy < top + radius
+        ? (top + radius) - cy
+        : cy > bottom - radius
+        ? cy - (bottom - radius)
+        : 0.0;
+    if (dy > 0) {
+      final span = radius * radius - dy * dy;
+      final dx = span > 0 ? math.sqrt(span) : 0.0;
+      rowLeft = left + radius - dx;
+      rowRight = right - radius + dx;
+    }
+    // pixel centres in [rowLeft, rowRight] are inside the shape
+    final firstInside = (rowLeft - 0.5).ceil();
+    final lastInside = (rowRight - 0.5).floor();
+    if (keep) {
+      zero(y, 0, firstInside - 1);
+      zero(y, lastInside + 1, width - 1);
+    } else {
+      zero(y, firstInside, lastInside);
+    }
+  }
 }
 
 Future<ui.Image> _partLayer(
@@ -469,30 +524,19 @@ Future<ui.Image> _partLayer(
       (expandTop
           ? RigComposeTuning.partHeadTopExpansion
           : RigComposeTuning.partTopExpansion);
-  final left = box.x0 - horizontalExpansion;
-  final top = box.y0 - topExpansion;
-  final right = box.x1 + horizontalExpansion;
-  final bottom = box.y1 + box.height * RigComposeTuning.partBottomExpansion;
-  final radius = box.width * RigComposeTuning.partCornerRadiusFraction;
   final pixels = await _mutablePixels(source);
-  final width = source.width;
-  for (var y = 0; y < source.height; y++) {
-    final rowStart = y * width;
-    for (var x = 0; x < width; x++) {
-      if (!_insideRoundedRect(
-        x + 0.5,
-        y + 0.5,
-        left,
-        top,
-        right,
-        bottom,
-        radius,
-      )) {
-        pixels[(rowStart + x) * 4 + 3] = 0;
-      }
-    }
-  }
-  return _imageFromPixels(pixels, width, source.height);
+  _applyRoundedRect(
+    pixels,
+    source.width,
+    source.height,
+    left: box.x0 - horizontalExpansion,
+    top: box.y0 - topExpansion,
+    right: box.x1 + horizontalExpansion,
+    bottom: box.y1 + box.height * RigComposeTuning.partBottomExpansion,
+    radius: box.width * RigComposeTuning.partCornerRadiusFraction,
+    keep: true,
+  );
+  return _imageFromPixels(pixels, source.width, source.height);
 }
 
 Future<ui.Image> _bodyLayer(
@@ -510,58 +554,46 @@ Future<ui.Image> _bodyLayer(
       head.y0 - head.height * RigComposeTuning.topExpansionFraction;
   final cutoutRight = head.x1 + headExpansion;
 
+  final pixels = await _mutablePixels(source);
+  final width = source.width;
+  void zero(int row, double fromX, double toX) {
+    var lo = (fromX - 0.5).ceil();
+    var hi = (toX - 0.5).floor();
+    if (lo < 0) lo = 0;
+    if (hi >= width) hi = width - 1;
+    for (var x = lo; x <= hi; x++) {
+      pixels[(row * width + x) * 4 + 3] = 0;
+    }
+  }
+
   // full-width erase all the way down to the chin line (kills ear remnants at
   // the sides), with a protected chest notch in the middle that stops above
   // the chin so the moving head always covers the hole
-  bool insideCutout(double x, double y) {
-    if (x < cutoutLeft || x > cutoutRight || y < cutoutTop || y > chinY) {
-      return false;
-    }
-    final insideNotch =
-        x >= centerX - neckHalfWidth && x <= centerX + neckHalfWidth &&
-        y >= notchY;
-    return !insideNotch;
-  }
-
-  final pixels = await _mutablePixels(source);
-  final width = source.width;
   for (var y = 0; y < source.height; y++) {
-    final rowStart = y * width;
-    for (var x = 0; x < width; x++) {
-      if (insideCutout(x + 0.5, y + 0.5)) {
-        pixels[(rowStart + x) * 4 + 3] = 0;
-      }
+    final cy = y + 0.5;
+    if (cy < cutoutTop || cy > chinY) continue;
+    if (cy >= notchY) {
+      zero(y, cutoutLeft, centerX - neckHalfWidth - 1);
+      zero(y, centerX + neckHalfWidth + 1, cutoutRight);
+    } else {
+      zero(y, cutoutLeft, cutoutRight);
     }
   }
   for (final box in detached) {
     final inflate =
         (box.width < box.height ? box.width : box.height) *
         RigComposeTuning.detachedInflateFraction;
-    final radius = box.width * RigComposeTuning.detachedCornerRadiusFraction;
-    final left = box.x0 - inflate;
-    final top = box.y0 - inflate;
-    final right = box.x1 + inflate;
-    final bottom = box.y1 + inflate;
-    final y0 = top.floor().clamp(0, source.height);
-    final y1 = bottom.ceil().clamp(0, source.height);
-    final x0 = left.floor().clamp(0, width);
-    final x1 = right.ceil().clamp(0, width);
-    for (var y = y0; y < y1; y++) {
-      final rowStart = y * width;
-      for (var x = x0; x < x1; x++) {
-        if (_insideRoundedRect(
-          x + 0.5,
-          y + 0.5,
-          left,
-          top,
-          right,
-          bottom,
-          radius,
-        )) {
-          pixels[(rowStart + x) * 4 + 3] = 0;
-        }
-      }
-    }
+    _applyRoundedRect(
+      pixels,
+      width,
+      source.height,
+      left: box.x0 - inflate,
+      top: box.y0 - inflate,
+      right: box.x1 + inflate,
+      bottom: box.y1 + inflate,
+      radius: box.width * RigComposeTuning.detachedCornerRadiusFraction,
+      keep: false,
+    );
   }
   return _imageFromPixels(pixels, width, source.height);
 }
