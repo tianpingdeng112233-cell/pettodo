@@ -14,6 +14,90 @@
       "treat": {"name": "Little Bone", "emoji": "🦴"},
       "metadata": "assets/pets/choco/pet_request.json",
       "spritesheet": "assets/pets/choco/spritesheet-extended.webp"
+    },
+    {
+      "id": "shiba",
+      "display_name": "Shiba",
+      "format": "rig",
+      "species": "dog",
+      "treat": {"name": "Little Bone", "emoji": "🦴"},
+      "rig": "assets/pets/shiba/rig.json",
+      "front_open": "assets/pets/shiba/front-open.png",
+      "front_closed": "assets/pets/shiba/front-closed.png",
+      "sleep": "assets/pets/shiba/sleep.png",
+      "side": "assets/pets/shiba/side.png"
+    },
+    {
+      "id": "golden",
+      "display_name": "Goldie",
+      "format": "rig",
+      "species": "dog",
+      "treat": {"name": "Little Bone", "emoji": "🦴"},
+      "rig": "assets/pets/golden/rig.json",
+      "front_open": "assets/pets/golden/front-open.png",
+      "front_closed": "assets/pets/golden/front-closed.png",
+      "sleep": "assets/pets/golden/sleep.png",
+      "side": "assets/pets/golden/side.png"
+    },
+    {
+      "id": "corgi",
+      "display_name": "Corgi",
+      "format": "rig",
+      "species": "dog",
+      "treat": {"name": "Little Bone", "emoji": "🦴"},
+      "rig": "assets/pets/corgi/rig.json",
+      "front_open": "assets/pets/corgi/front-open.png",
+      "front_closed": "assets/pets/corgi/front-closed.png",
+      "sleep": "assets/pets/corgi/sleep.png",
+      "side": "assets/pets/corgi/side.png"
+    },
+    {
+      "id": "husky",
+      "display_name": "Husky",
+      "format": "rig",
+      "species": "dog",
+      "treat": {"name": "Little Bone", "emoji": "🦴"},
+      "rig": "assets/pets/husky/rig.json",
+      "front_open": "assets/pets/husky/front-open.png",
+      "front_closed": "assets/pets/husky/front-closed.png",
+      "sleep": "assets/pets/husky/sleep.png",
+      "side": "assets/pets/husky/side.png"
+    },
+    {
+      "id": "tabby",
+      "display_name": "Tangerine",
+      "format": "rig",
+      "species": "cat",
+      "treat": {"name": "Little Fish", "emoji": "🐟"},
+      "rig": "assets/pets/tabby/rig.json",
+      "front_open": "assets/pets/tabby/front-open.png",
+      "front_closed": "assets/pets/tabby/front-closed.png",
+      "sleep": "assets/pets/tabby/sleep.png",
+      "side": "assets/pets/tabby/side.png"
+    },
+    {
+      "id": "blackcat",
+      "display_name": "Ink",
+      "format": "rig",
+      "species": "cat",
+      "treat": {"name": "Little Fish", "emoji": "🐟"},
+      "rig": "assets/pets/blackcat/rig.json",
+      "front_open": "assets/pets/blackcat/front-open.png",
+      "front_closed": "assets/pets/blackcat/front-closed.png",
+      "sleep": "assets/pets/blackcat/sleep.png",
+      "side": "assets/pets/blackcat/side.png"
+    },
+    {
+      "id": "ragdoll",
+      "display_name": "Mochi",
+      "format": "rig",
+      "species": "cat",
+      "treat": {"name": "Little Fish", "emoji": "🐟"},
+      "rig": "assets/pets/ragdoll/rig.json",
+      "front_open": "assets/pets/ragdoll/front-open.png",
+      "front_closed": "assets/pets/ragdoll/front-closed.png",
+      "sleep": "assets/pets/ragdoll/sleep.png",
+      "side": "assets/pets/ragdoll/side.png"
     }
   ]
 }

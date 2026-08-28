@@ -263,6 +263,27 @@ class SpriteAtlasLoader {
         .map((entry) {
           final pet = entry! as Map<String, Object?>;
           final treat = pet['treat'] as Map<String, Object?>?;
+          if (pet['format'] == 'rig') {
+            final rig = RigAssetDescriptor(
+              species: _requiredRigField(pet, 'species'),
+              rigAsset: _requiredRigField(pet, 'rig'),
+              frontOpenAsset: _requiredRigField(pet, 'front_open'),
+              frontClosedAsset: _requiredRigField(pet, 'front_closed'),
+              sleepAsset: _requiredRigField(pet, 'sleep'),
+              sideAsset: _requiredRigField(pet, 'side'),
+            );
+            return PetAssetDescriptor(
+              id: pet['id']! as String,
+              displayName: pet['display_name']! as String,
+              metadataAsset: rig.rigAsset,
+              spritesheetAsset: rig.frontOpenAsset,
+              treatName: treat?['name'] as String? ?? 'Treat',
+              treatEmoji: treat?['emoji'] as String? ?? '🦴',
+              source: PetAssetSource.bundled,
+              format: PetAssetFormat.rigV3,
+              rig: rig,
+            );
+          }
           final rawStages = pet['stages'] as Map<String, Object?>?;
           return PetAssetDescriptor(
             id: pet['id']! as String,
@@ -343,4 +364,11 @@ class SpriteAtlasLoader {
     final data = await _bundle.load(path);
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
+}
+
+String _requiredRigField(Map<String, Object?> pet, String field) {
+  final value = pet[field];
+  if (value is String && value.isNotEmpty) return value;
+  final id = pet['id'] is String ? pet['id'] as String : '<unknown>';
+  throw FormatException('Rig pet $id is missing $field.');
 }

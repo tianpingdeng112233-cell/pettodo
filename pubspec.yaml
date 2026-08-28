@@ -66,6 +66,41 @@ flutter:
     - assets/pets/manifest.json
     - assets/pets/choco/pet_request.json
     - assets/pets/choco/spritesheet-extended.webp
+    - assets/pets/shiba/rig.json
+    - assets/pets/shiba/front-open.png
+    - assets/pets/shiba/front-closed.png
+    - assets/pets/shiba/sleep.png
+    - assets/pets/shiba/side.png
+    - assets/pets/golden/rig.json
+    - assets/pets/golden/front-open.png
+    - assets/pets/golden/front-closed.png
+    - assets/pets/golden/sleep.png
+    - assets/pets/golden/side.png
+    - assets/pets/corgi/rig.json
+    - assets/pets/corgi/front-open.png
+    - assets/pets/corgi/front-closed.png
+    - assets/pets/corgi/sleep.png
+    - assets/pets/corgi/side.png
+    - assets/pets/husky/rig.json
+    - assets/pets/husky/front-open.png
+    - assets/pets/husky/front-closed.png
+    - assets/pets/husky/sleep.png
+    - assets/pets/husky/side.png
+    - assets/pets/tabby/rig.json
+    - assets/pets/tabby/front-open.png
+    - assets/pets/tabby/front-closed.png
+    - assets/pets/tabby/sleep.png
+    - assets/pets/tabby/side.png
+    - assets/pets/blackcat/rig.json
+    - assets/pets/blackcat/front-open.png
+    - assets/pets/blackcat/front-closed.png
+    - assets/pets/blackcat/sleep.png
+    - assets/pets/blackcat/side.png
+    - assets/pets/ragdoll/rig.json
+    - assets/pets/ragdoll/front-open.png
+    - assets/pets/ragdoll/front-closed.png
+    - assets/pets/ragdoll/sleep.png
+    - assets/pets/ragdoll/side.png
 
   fonts:
     - family: Baloo 2
