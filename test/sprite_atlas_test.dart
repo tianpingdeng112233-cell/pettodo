@@ -31,9 +31,11 @@ void main() {
 
   test('frame rectangles come from bundled pet_request metadata', () async {
     final loader = SpriteAtlasLoader(bundle: rootBundle);
-    final pets = await loader.loadManifest();
-    final choco = pets.singleWhere((pet) => pet.id == 'choco');
-    final atlas = await loader.loadDefinition(choco.metadataAsset);
+    // choco ships as a rig pet since 015-E; its retained v2 atlas metadata
+    // still exercises the atlas definition parser
+    final atlas = await loader.loadDefinition(
+      'assets/pets/choco/pet_request.json',
+    );
 
     expect(atlas.columns, 8);
     expect(atlas.rows, 11);

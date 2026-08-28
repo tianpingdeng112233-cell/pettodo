@@ -22,8 +22,18 @@ class _BlockingRigLoader extends RigPetLoader {
 
   @override
   Future<LoadedRigPet> load(PetAssetDescriptor descriptor) async {
+    // the bundled roster (choco included, a rig pet since 015-E) loads during
+    // initialize(); gate only this test's own descriptors or initialize()
+    // deadlocks against the never-completed gate
+    if (descriptor.id != 'ghost' && descriptor.id != 'repl') {
+      return _fakePet(descriptor);
+    }
     loads++;
     await gate.future;
+    return _fakePet(descriptor);
+  }
+
+  Future<LoadedRigPet> _fakePet(PetAssetDescriptor descriptor) async {
     Future<ui.Image> makeImage() async {
       final recorder = ui.PictureRecorder();
       ui.Canvas(recorder).drawRect(

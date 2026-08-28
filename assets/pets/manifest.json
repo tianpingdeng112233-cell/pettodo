@@ -11,9 +11,14 @@
     {
       "id": "choco",
       "display_name": "Choco",
+      "format": "rig",
+      "species": "dog",
       "treat": {"name": "Little Bone", "emoji": "🦴"},
-      "metadata": "assets/pets/choco/pet_request.json",
-      "spritesheet": "assets/pets/choco/spritesheet-extended.webp"
+      "rig": "assets/pets/choco/rig.json",
+      "front_open": "assets/pets/choco/front-open.png",
+      "front_closed": "assets/pets/choco/front-closed.png",
+      "sleep": "assets/pets/choco/sleep.png",
+      "side": "assets/pets/choco/side.png"
     },
     {
       "id": "shiba",

@@ -28,7 +28,14 @@ void main() {
           'pettodo-overlay-bake',
         );
         addTearDown(() => support.deleteSync(recursive: true));
-        final descriptor = (await SpriteAtlasLoader().loadManifest()).firstWhere((d) => !d.isRig);
+        // choco ships as a rig pet since 015-E; its retained v2 atlas assets
+        // still exercise the atlas bake path
+        const descriptor = PetAssetDescriptor(
+          id: 'choco',
+          displayName: 'Choco',
+          metadataAsset: 'assets/pets/choco/pet_request.json',
+          spritesheetAsset: 'assets/pets/choco/spritesheet-extended.webp',
+        );
         final atlas = await SpriteAtlasLoader().loadPet(descriptor);
         addTearDown(atlas.image.dispose);
         final baker = OverlayFrameBaker(() async => support);
