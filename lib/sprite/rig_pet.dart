@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -233,54 +234,98 @@ Future<RigLayerSet> _composeSide(ui.Image image, SideRigDefinition rig) async {
   );
 }
 
+/// CPU-side layer baking.
+///
+/// Earlier versions baked layers with canvas blend modes
+/// (BlendMode.clear / dstIn, MaskFilter feathering) rasterized through
+/// Picture.toImage. That rasterization runs on the device's GPU backend, and
+/// Impeller does not honour those erase paths the way the software Skia used
+/// by tests does — the head cutout silently no-ops and the moving head ghosts
+/// over its baked-in twin. Layers are therefore composed with plain pixel
+/// arithmetic: deterministic, identical across backends and tests.
+Future<Uint8List> _mutablePixels(ui.Image source) async {
+  final data = await source.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (data == null) {
+    throw const FormatException('A rig layer failed to compose.');
+  }
+  return Uint8List.fromList(
+    data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+  );
+}
+
+Future<ui.Image> _imageFromPixels(Uint8List pixels, int width, int height) {
+  final completer = Completer<ui.Image>();
+  ui.decodeImageFromPixels(
+    pixels,
+    width,
+    height,
+    ui.PixelFormat.rgba8888,
+    completer.complete,
+  );
+  return completer.future;
+}
+
+bool _insideRoundedRect(
+  double x,
+  double y,
+  double left,
+  double top,
+  double right,
+  double bottom,
+  double radius,
+) {
+  if (x < left || x > right || y < top || y > bottom) return false;
+  final nearLeft = x < left + radius;
+  final nearRight = x > right - radius;
+  final nearTop = y < top + radius;
+  final nearBottom = y > bottom - radius;
+  if (!(nearLeft || nearRight) || !(nearTop || nearBottom)) return true;
+  final cx = nearLeft ? left + radius : right - radius;
+  final cy = nearTop ? top + radius : bottom - radius;
+  final dx = x - cx;
+  final dy = y - cy;
+  return dx * dx + dy * dy <= radius * radius;
+}
+
 Future<ui.Image> _partLayer(
   ui.Image source,
   RigBox box, {
   bool expandTop = false,
 }) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = ui.Canvas(recorder);
-  final bounds = ui.Rect.fromLTWH(
-    0,
-    0,
-    source.width.toDouble(),
-    source.height.toDouble(),
-  );
-  canvas.saveLayer(bounds, ui.Paint());
-  canvas.drawImage(source, ui.Offset.zero, ui.Paint());
-  final feather =
-      (box.width < box.height ? box.width : box.height) *
-      RigComposeTuning.featherFraction;
   final horizontalExpansion =
-      box.width * RigComposeTuning.partHorizontalExpansion;
+      box.width *
+      (expandTop
+          ? RigComposeTuning.headMaskHorizontalExpansion
+          : RigComposeTuning.partHorizontalExpansion);
   final topExpansion =
       box.height *
       (expandTop
           ? RigComposeTuning.partHeadTopExpansion
           : RigComposeTuning.partTopExpansion);
-  final mask = ui.RRect.fromRectAndRadius(
-    ui.Rect.fromLTRB(
-      box.x0 - horizontalExpansion,
-      box.y0 - topExpansion,
-      box.x1 + horizontalExpansion,
-      box.y1 + box.height * RigComposeTuning.partBottomExpansion,
-    ),
-    ui.Radius.circular(box.width * RigComposeTuning.partCornerRadiusFraction),
-  );
-  canvas.drawRRect(
-    mask,
-    ui.Paint()
-      ..color = const ui.Color(0xffffffff)
-      ..blendMode = ui.BlendMode.dstIn
-      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, feather),
-  );
-  canvas.restore();
-  final picture = recorder.endRecording();
-  try {
-    return await picture.toImage(source.width, source.height);
-  } finally {
-    picture.dispose();
+  final left = box.x0 - horizontalExpansion;
+  final top = box.y0 - topExpansion;
+  final right = box.x1 + horizontalExpansion;
+  final bottom = box.y1 + box.height * RigComposeTuning.partBottomExpansion;
+  final radius = box.width * RigComposeTuning.partCornerRadiusFraction;
+  final pixels = await _mutablePixels(source);
+  final width = source.width;
+  for (var y = 0; y < source.height; y++) {
+    final rowStart = y * width;
+    for (var x = 0; x < width; x++) {
+      if (!_insideRoundedRect(
+        x + 0.5,
+        y + 0.5,
+        left,
+        top,
+        right,
+        bottom,
+        radius,
+      )) {
+        pixels[(rowStart + x) * 4 + 3] = 0;
+      }
+    }
   }
+  return _imageFromPixels(pixels, width, source.height);
 }
 
 Future<ui.Image> _bodyLayer(
@@ -288,64 +333,68 @@ Future<ui.Image> _bodyLayer(
   required RigBox head,
   required List<RigBox> detached,
 }) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = ui.Canvas(recorder)
-    ..drawImage(source, ui.Offset.zero, ui.Paint());
-  final clear = ui.Paint()
-    ..blendMode = ui.BlendMode.clear
-    ..maskFilter = ui.MaskFilter.blur(
-      ui.BlurStyle.normal,
-      (head.width < head.height ? head.width : head.height) *
-          RigComposeTuning.cutoutFeatherFraction,
-    );
   final headExpansion = head.width * RigComposeTuning.headExpansionFraction;
   final chinY = head.y1.toDouble();
   final notchY = head.y1 - head.height * RigComposeTuning.neckOverlapFraction;
   final neckHalfWidth = head.width * RigComposeTuning.neckHalfWidthFraction;
   final centerX = (head.x0 + head.x1) / 2;
+  final cutoutLeft = head.x0 - headExpansion;
+  final cutoutTop =
+      head.y0 - head.height * RigComposeTuning.topExpansionFraction;
+  final cutoutRight = head.x1 + headExpansion;
+
   // full-width erase all the way down to the chin line (kills ear remnants at
   // the sides), with a protected chest notch in the middle that stops above
   // the chin so the moving head always covers the hole
-  final cutout = ui.Path()
-    ..moveTo(
-      head.x0 - headExpansion,
-      head.y0 - head.height * RigComposeTuning.topExpansionFraction,
-    )
-    ..lineTo(
-      head.x1 + headExpansion,
-      head.y0 - head.height * RigComposeTuning.topExpansionFraction,
-    )
-    ..lineTo(head.x1 + headExpansion, chinY)
-    ..lineTo(centerX + neckHalfWidth, chinY)
-    ..lineTo(centerX + neckHalfWidth, notchY)
-    ..lineTo(centerX - neckHalfWidth, notchY)
-    ..lineTo(centerX - neckHalfWidth, chinY)
-    ..lineTo(head.x0 - headExpansion, chinY)
-    ..close();
-  canvas.drawPath(cutout, clear);
+  bool insideCutout(double x, double y) {
+    if (x < cutoutLeft || x > cutoutRight || y < cutoutTop || y > chinY) {
+      return false;
+    }
+    final insideNotch =
+        x >= centerX - neckHalfWidth && x <= centerX + neckHalfWidth &&
+        y >= notchY;
+    return !insideNotch;
+  }
+
+  final pixels = await _mutablePixels(source);
+  final width = source.width;
+  for (var y = 0; y < source.height; y++) {
+    final rowStart = y * width;
+    for (var x = 0; x < width; x++) {
+      if (insideCutout(x + 0.5, y + 0.5)) {
+        pixels[(rowStart + x) * 4 + 3] = 0;
+      }
+    }
+  }
   for (final box in detached) {
-    canvas.drawRRect(
-      ui.RRect.fromRectAndRadius(
-        ui.Rect.fromLTRB(
-          box.x0.toDouble(),
-          box.y0.toDouble(),
-          box.x1.toDouble(),
-          box.y1.toDouble(),
-        ).inflate(
-          (box.width < box.height ? box.width : box.height) *
-              RigComposeTuning.detachedInflateFraction,
-        ),
-        ui.Radius.circular(
-          box.width * RigComposeTuning.detachedCornerRadiusFraction,
-        ),
-      ),
-      clear,
-    );
+    final inflate =
+        (box.width < box.height ? box.width : box.height) *
+        RigComposeTuning.detachedInflateFraction;
+    final radius = box.width * RigComposeTuning.detachedCornerRadiusFraction;
+    final left = box.x0 - inflate;
+    final top = box.y0 - inflate;
+    final right = box.x1 + inflate;
+    final bottom = box.y1 + inflate;
+    final y0 = top.floor().clamp(0, source.height);
+    final y1 = bottom.ceil().clamp(0, source.height);
+    final x0 = left.floor().clamp(0, width);
+    final x1 = right.ceil().clamp(0, width);
+    for (var y = y0; y < y1; y++) {
+      final rowStart = y * width;
+      for (var x = x0; x < x1; x++) {
+        if (_insideRoundedRect(
+          x + 0.5,
+          y + 0.5,
+          left,
+          top,
+          right,
+          bottom,
+          radius,
+        )) {
+          pixels[(rowStart + x) * 4 + 3] = 0;
+        }
+      }
+    }
   }
-  final picture = recorder.endRecording();
-  try {
-    return await picture.toImage(source.width, source.height);
-  } finally {
-    picture.dispose();
-  }
+  return _imageFromPixels(pixels, width, source.height);
 }

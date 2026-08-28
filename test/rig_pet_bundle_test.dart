@@ -65,6 +65,70 @@ void main() {
     expect(pet.sideLayers.frontLeg, isNotNull);
     expect(pet.sideLayers.hindLeg, isNotNull);
   });
+
+  test('front layers at rest reconstruct every opaque source pixel', () async {
+    final poseBytes = await _makePosePng();
+    final bundle = _MemoryAssetBundle(<String, List<int>>{
+      'assets/pets/shiba/rig.json': utf8.encode(jsonEncode(_rigJson())),
+      'assets/pets/shiba/front-open.png': poseBytes,
+      'assets/pets/shiba/front-closed.png': poseBytes,
+      'assets/pets/shiba/sleep.png': poseBytes,
+      'assets/pets/shiba/side.png': poseBytes,
+    });
+    const descriptor = PetAssetDescriptor(
+      id: 'shiba',
+      displayName: 'Shiba',
+      metadataAsset: 'assets/pets/shiba/rig.json',
+      spritesheetAsset: 'assets/pets/shiba/front-open.png',
+      source: PetAssetSource.bundled,
+      format: PetAssetFormat.rigV3,
+      rig: RigAssetDescriptor(
+        species: 'dog',
+        rigAsset: 'assets/pets/shiba/rig.json',
+        frontOpenAsset: 'assets/pets/shiba/front-open.png',
+        frontClosedAsset: 'assets/pets/shiba/front-closed.png',
+        sleepAsset: 'assets/pets/shiba/sleep.png',
+        sideAsset: 'assets/pets/shiba/side.png',
+      ),
+    );
+    final pet = await RigPetLoader(bundle: bundle).load(descriptor);
+    addTearDown(pet.dispose);
+
+    final codec = await ui.instantiateImageCodec(poseBytes);
+    final source = (await codec.getNextFrame()).image;
+    codec.dispose();
+    addTearDown(source.dispose);
+    final sourcePx = await _rawRgba(source);
+    final layers = await Future.wait(<Future<Uint8List>>[
+      _rawRgba(pet.frontLayers.tail),
+      _rawRgba(pet.frontLayers.body),
+      _rawRgba(pet.frontLayers.head),
+    ]);
+
+    // painter order at rest: tail, body, head — alpha-over per pixel must
+    // give back the full sprite, or motion exposes the deficit as a hole
+    var worst = 255;
+    var worstAt = -1;
+    for (var i = 3; i < sourcePx.length; i += 4) {
+      if (sourcePx[i] < 250) continue;
+      var alpha = 0.0;
+      for (final layer in layers) {
+        alpha = alpha + (layer[i] / 255) * (1 - alpha);
+      }
+      final combined = (alpha * 255).round();
+      if (combined < worst) {
+        worst = combined;
+        worstAt = i ~/ 4;
+      }
+    }
+    expect(
+      worst,
+      greaterThanOrEqualTo(242),
+      reason:
+          'opaque source pixel ${worstAt % 64},${worstAt ~/ 64} '
+          'reconstructs to alpha $worst',
+    );
+  });
 }
 
 Future<Uint8List> _makePosePng() async {
@@ -115,3 +179,8 @@ Map<String, Object?> _rigJson() => <String, Object?>{
     },
   },
 };
+
+Future<Uint8List> _rawRgba(ui.Image image) async {
+  final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  return data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+}
