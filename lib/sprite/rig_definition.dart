@@ -46,6 +46,24 @@ class RigBox {
       x0 >= 0 && y0 >= 0 && x1 <= imageWidth && y1 <= imageHeight;
 }
 
+RigBox? _optionalBox(Object? value, String field) {
+  if (value == null) return null;
+  try {
+    return RigBox.fromJson(value, field);
+  } on FormatException {
+    return null;
+  }
+}
+
+RigPoint? _optionalPoint(Object? value, String field) {
+  if (value == null) return null;
+  try {
+    return RigPoint.fromJson(value, field);
+  } on FormatException {
+    return null;
+  }
+}
+
 class FrontRigDefinition {
   const FrontRigDefinition({
     required this.groundY,
@@ -63,7 +81,7 @@ class FrontRigDefinition {
     final pivots = _object(map['pivots'], 'front.pivots');
     return FrontRigDefinition(
       groundY: _coordinate(map['groundY'], 'front.groundY'),
-      head: RigBox.fromJson(boxes['head'], 'front.boxes.head'),
+      head: _optionalBox(boxes['head'], 'front.boxes.head'),
       tail: RigBox.fromJson(boxes['tail'], 'front.boxes.tail'),
       leftFrontLeg: RigBox.fromJson(
         boxes['leftFrontLeg'],
@@ -73,17 +91,19 @@ class FrontRigDefinition {
         boxes['rightFrontLeg'],
         'front.boxes.rightFrontLeg',
       ),
-      headPivot: RigPoint.fromJson(pivots['head'], 'front.pivots.head'),
+      headPivot: _optionalPoint(pivots['head'], 'front.pivots.head'),
       tailPivot: RigPoint.fromJson(pivots['tail'], 'front.pivots.tail'),
     );
   }
 
   final int groundY;
-  final RigBox head;
+
+  /// Null means the producer rejected head detection; render full front poses.
+  final RigBox? head;
   final RigBox tail;
   final RigBox leftFrontLeg;
   final RigBox rightFrontLeg;
-  final RigPoint headPivot;
+  final RigPoint? headPivot;
   final RigPoint tailPivot;
 
   void validateForImage(int width, int height) {
@@ -91,7 +111,6 @@ class FrontRigDefinition {
       throw const FormatException('front.groundY is outside the image.');
     }
     for (final entry in <(String, RigBox)>[
-      ('head', head),
       ('tail', tail),
       ('leftFrontLeg', leftFrontLeg),
       ('rightFrontLeg', rightFrontLeg),
@@ -100,9 +119,18 @@ class FrontRigDefinition {
         throw FormatException('front.boxes.${entry.$1} is outside the image.');
       }
     }
-    _validatePivot(headPivot, width, height, 'front.pivots.head');
     _validatePivot(tailPivot, width, height, 'front.pivots.tail');
   }
+
+  FrontRigDefinition withoutHead() => FrontRigDefinition(
+    groundY: groundY,
+    head: null,
+    tail: tail,
+    leftFrontLeg: leftFrontLeg,
+    rightFrontLeg: rightFrontLeg,
+    headPivot: null,
+    tailPivot: tailPivot,
+  );
 }
 
 class SideRigDefinition {

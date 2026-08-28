@@ -230,7 +230,7 @@ void main() {
       final invalidRig = _rigJson();
       final front = invalidRig['front']! as Map<String, Object?>;
       final boxes = front['boxes']! as Map<String, Object?>;
-      boxes['head'] = <int>[16, 4, 80, 28];
+      boxes['tail'] = <int>[62, 24, 50, 50];
       final invalid = _writeRigPack(
         temporary,
         poseBytes: poseBytes,
@@ -277,11 +277,77 @@ void main() {
       addTearDown(pet.dispose);
       expect(pet.frontLayers.body.width, 64);
       expect(pet.frontLayers.closedHead, isNotNull);
-      expect(pet.frontLayers.tail.height, 64);
+      expect(pet.frontLayers.tail?.height, 64);
       expect(pet.sideLayers.frontLeg, isNotNull);
       expect(pet.sideLayers.hindLeg, isNotNull);
     },
   );
+
+  test(
+    'rig loader degrades an ears-only front head box to full-pose blinking',
+    () async {
+      final rig = _rigJson();
+      final front = rig['front']! as Map<String, Object?>;
+      final boxes = front['boxes']! as Map<String, Object?>;
+      boxes['head'] = <int>[18, 0, 46, 12];
+      final service = PetPackService(() async => temporary);
+      final installed = await service.install(
+        _writeRigPack(temporary, poseBytes: poseBytes, rig: rig),
+      );
+
+      final pet = await RigPetLoader().load(installed.descriptor);
+      addTearDown(pet.dispose);
+      expect(pet.definition.front.head, isNull);
+      expect(pet.frontLayers.head, isNull);
+      expect(pet.frontLayers.tail, isNull);
+      expect(pet.frontLayers.closedBody, isNotNull);
+      expect(pet.frontLayers.body.width, 64);
+    },
+  );
+
+  test('rig loader accepts a producer-null front head box', () async {
+    final rig = _rigJson();
+    final front = rig['front']! as Map<String, Object?>;
+    final boxes = front['boxes']! as Map<String, Object?>;
+    final pivots = front['pivots']! as Map<String, Object?>;
+    boxes['head'] = null;
+    pivots['head'] = null;
+    final service = PetPackService(() async => temporary);
+    final installed = await service.install(
+      _writeRigPack(
+        temporary,
+        poseBytes: poseBytes,
+        rig: rig,
+        fileName: 'headless-rig',
+      ),
+    );
+
+    final pet = await RigPetLoader().load(installed.descriptor);
+    addTearDown(pet.dispose);
+    expect(pet.definition.front.head, isNull);
+    expect(pet.frontLayers.closedBody, isNotNull);
+  });
+
+  test('rig loader pre-downscales large composed layers once', () async {
+    final largePose = await _makeLargePosePng();
+    final service = PetPackService(() async => temporary);
+    final installed = await service.install(
+      _writeRigPack(
+        temporary,
+        poseBytes: largePose,
+        rig: _largeRigJson(),
+        fileName: 'large-rig',
+      ),
+    );
+
+    final pet = await RigPetLoader().load(installed.descriptor);
+    addTearDown(pet.dispose);
+    expect(pet.frontWidth, 768);
+    expect(pet.frontHeight, 1152);
+    expect(pet.frontLayers.body.width, lessThanOrEqualTo(192));
+    expect(pet.frontLayers.body.height, lessThanOrEqualTo(208));
+    expect(pet.frontLayers.body.width, lessThan(pet.frontWidth));
+  });
 
   test(
     'v2 and rig pets load together and registry replacement stays last-wins',
@@ -438,7 +504,7 @@ void main() {
       final data = (await pet.frontLayers.body.toByteData())!;
       int alpha(int x, int y) =>
           data.getUint8((y * pet.frontWidth + x) * 4 + 3);
-      // head box is [16,4,48,28]: full-width erase above the neck notch,
+      // head box is [8,4,56,28]: full-width erase above the neck notch,
       // sides erased down to the chin line, protected neck strip kept
       expect(alpha(32, 20), 0);
       expect(alpha(18, 27), lessThan(40));
@@ -485,12 +551,68 @@ Future<Uint8List> _makePosePng() async {
   return data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
 }
 
+Future<Uint8List> _makeLargePosePng() async {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder)
+    ..drawColor(const ui.Color(0x00000000), ui.BlendMode.src)
+    ..drawOval(
+      const ui.Rect.fromLTWH(190, 140, 388, 400),
+      ui.Paint()..color = const ui.Color(0xff70452f),
+    )
+    ..drawRRect(
+      ui.RRect.fromRectAndRadius(
+        const ui.Rect.fromLTWH(100, 450, 568, 600),
+        const ui.Radius.circular(80),
+      ),
+      ui.Paint()..color = const ui.Color(0xff70452f),
+    );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(768, 1152);
+  picture.dispose();
+  final data = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  return data!.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+}
+
+Map<String, Object?> _largeRigJson() => <String, Object?>{
+  'rigVersion': 1,
+  'front': <String, Object?>{
+    'groundY': 1050,
+    'boxes': <String, Object?>{
+      'head': <int>[180, 130, 588, 560],
+      'tail': <int>[600, 560, 700, 900],
+      'leftFrontLeg': <int>[250, 650, 350, 1050],
+      'rightFrontLeg': <int>[420, 650, 520, 1050],
+    },
+    'pivots': <String, Object?>{
+      'head': <int>[384, 540],
+      'tail': <int>[600, 730],
+    },
+  },
+  'side': <String, Object?>{
+    'groundY': 1050,
+    'facing': 'right',
+    'boxes': <String, Object?>{
+      'head': <int>[430, 140, 680, 560],
+      'tail': <int>[70, 500, 220, 850],
+      'frontLeg': <int>[500, 650, 580, 1050],
+      'hindLeg': <int>[220, 650, 300, 1050],
+    },
+    'pivots': <String, Object?>{
+      'head': <int>[555, 540],
+      'tail': <int>[220, 675],
+      'frontLeg': <int>[540, 650],
+      'hindLeg': <int>[260, 650],
+    },
+  },
+};
+
 Map<String, Object?> _rigJson() => <String, Object?>{
   'rigVersion': 1,
   'front': <String, Object?>{
     'groundY': 60,
     'boxes': <String, Object?>{
-      'head': <int>[16, 4, 48, 28],
+      'head': <int>[8, 4, 56, 28],
       'tail': <int>[50, 24, 62, 50],
       'leftFrontLeg': <int>[18, 34, 28, 60],
       'rightFrontLeg': <int>[36, 34, 46, 60],

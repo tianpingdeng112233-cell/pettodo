@@ -5,6 +5,7 @@ import type {
   SpeciesResult,
   SupportedSpecies,
 } from './types.js';
+import { isValidFrontHeadBox, type ContentGeometry } from './rig.js';
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const CLASSIFICATION_MODEL = 'gemini-3.5-flash';
@@ -26,7 +27,7 @@ type RequestPart = InlinePart | TextPart;
 export type Box = [number, number, number, number];
 
 export interface FrontBoxes {
-  head: Box;
+  head: Box | null;
   tail: Box;
   leftFrontLeg: Box;
   rightFrontLeg: Box;
@@ -143,13 +144,25 @@ export class GeminiClient implements SpeciesClassifier {
     return { frontOpen, frontClosed, sleep, side };
   }
 
-  async detectFrontBoxes(image: Buffer, width: number, height: number): Promise<FrontBoxes> {
-    return this.detectBoxes<FrontBoxes>(image, width, height, [
-      'head',
-      'tail',
-      'leftFrontLeg',
-      'rightFrontLeg',
-    ], 'front-facing seated pet. The head box must include both ears. Left/right are from the viewer perspective');
+  async detectFrontBoxes(
+    image: Buffer,
+    width: number,
+    height: number,
+    content?: ContentGeometry,
+  ): Promise<FrontBoxes> {
+    let boxes: FrontBoxes;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      boxes = await this.detectBoxes<FrontBoxes>(image, width, height, [
+        'head',
+        'tail',
+        'leftFrontLeg',
+        'rightFrontLeg',
+      ], 'front-facing seated pet. The head box must include both ears and the complete face. Left/right are from the viewer perspective');
+      if (content === undefined || (boxes.head !== null && isValidFrontHeadBox(boxes.head, content))) {
+        return boxes;
+      }
+    }
+    return { ...boxes!, head: null };
   }
 
   async detectSideBoxes(image: Buffer, width: number, height: number): Promise<SideBoxes> {

@@ -93,6 +93,41 @@ describe('rig pack v3 contract', () => {
       hindLeg: [450, 500],
     });
   });
+
+  it('ships a rig pack with a nullable front head after detection gives up', async () => {
+    const image = await rgbaFixture();
+    const rig = buildRig({
+      frontGroundY: 7,
+      frontBoxes: {
+        head: null,
+        tail: [6, 3, 8, 7],
+        leftFrontLeg: [2, 3, 3, 7],
+        rightFrontLeg: [5, 3, 6, 7],
+      },
+      sideGroundY: 7,
+      sideBoxes: {
+        head: [5, 0, 8, 3],
+        tail: [0, 2, 2, 6],
+        frontLeg: [5, 3, 6, 7],
+        hindLeg: [2, 3, 3, 7],
+      },
+    });
+    const buffer = await buildRigPack({
+      hatchId: '12345678-1234-4123-8123-123456789abc',
+      species: 'cat',
+      images: {
+        'front-open.png': image,
+        'front-closed.png': image,
+        'sleep.png': image,
+        'side.png': image,
+      },
+      rig,
+    });
+
+    const storedRig = JSON.parse(readStoredZip(buffer).get('rig.json')!.toString());
+    expect(storedRig.front.boxes.head).toBeNull();
+    expect(storedRig.front.pivots.head).toBeNull();
+  });
 });
 
 function readStoredZip(zip: Buffer): Map<string, Buffer> {

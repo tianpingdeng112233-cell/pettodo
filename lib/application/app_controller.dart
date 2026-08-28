@@ -21,9 +21,10 @@ import '../domain/pet_action.dart';
 import '../domain/pet_schedule.dart';
 import '../domain/treat_economy.dart';
 import '../domain/unlocks.dart';
-import '../sprite/sprite_atlas.dart';
+import '../sprite/overlay_frame_baker.dart';
 import '../sprite/rig_driver.dart';
 import '../sprite/rig_pet.dart';
+import '../sprite/sprite_atlas.dart';
 import 'hatch_flow.dart';
 
 class AppController extends ChangeNotifier {
@@ -34,6 +35,7 @@ class AppController extends ChangeNotifier {
     OverlayService? overlayService,
     SpriteAtlasLoader? spriteLoader,
     RigPetLoader? rigLoader,
+    OverlayFrameBaker? overlayFrameBaker,
     HatchRequestStore? hatchRequestStore,
     PetPackService? petPackService,
     DateTime Function()? now,
@@ -47,6 +49,8 @@ class AppController extends ChangeNotifier {
     overlayService ?? OverlayService(),
     spriteLoader ?? SpriteAtlasLoader(),
     rigLoader ?? RigPetLoader(),
+    overlayFrameBaker ??
+        (Platform.isAndroid ? OverlayFrameBaker.onDevice() : null),
     hatchRequestStore ?? HatchRequestStore.onDevice(),
     petPackService ?? PetPackService.onDevice(),
     now ?? DateTime.now,
@@ -62,6 +66,7 @@ class AppController extends ChangeNotifier {
     this._overlayService,
     this._spriteLoader,
     this._rigLoader,
+    this._overlayFrameBaker,
     this._hatchRequestStore,
     this._petPackService,
     this._now,
@@ -86,6 +91,7 @@ class AppController extends ChangeNotifier {
   final OverlayService _overlayService;
   final SpriteAtlasLoader _spriteLoader;
   final RigPetLoader _rigLoader;
+  final OverlayFrameBaker? _overlayFrameBaker;
   final HatchRequestStore _hatchRequestStore;
   final PetPackService _petPackService;
   final DateTime Function() _now;
@@ -113,6 +119,10 @@ class AppController extends ChangeNotifier {
   late List<DecorAssetDescriptor> decorations;
   LoadedSpriteAtlas? _spriteAtlas;
   LoadedRigPet? rigPet;
+  BakedOverlayFrames? _bakedOverlayFrames;
+  final OverlayBakeGeneration _overlayBakeGeneration = OverlayBakeGeneration();
+  List<OverlayBubbleInvitation> _overlayBubbles =
+      const <OverlayBubbleInvitation>[];
   late PetScheduleEntry currentSchedule;
   String petAnimation = 'idle';
   int? petAnimationFrame;
@@ -191,7 +201,19 @@ class AppController extends ChangeNotifier {
     await _stateStore.save(state);
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
-    await _overlayService.initialize(petName: state.petName);
+    await _overlayService.initialize(
+      petName: state.petName,
+      frames: null,
+      bubbles: _overlayBubbles,
+    );
+    if (_overlayService.enabled) {
+      await _bakeSelectedOverlayFrames();
+      await _overlayService.updateConfiguration(
+        petName: state.petName,
+        frames: _bakedOverlayFrames,
+        bubbles: _overlayBubbles,
+      );
+    }
     _refreshEveningHelloOffer();
     _scheduleDayBoundary();
     _scheduleScheduleBoundary();
@@ -293,8 +315,9 @@ class AppController extends ChangeNotifier {
       selectedPetId: descriptor.id,
       petName: descriptor.displayName,
     );
+    _overlayBakeGeneration.invalidate();
+    await _bakeSelectedOverlayFrames();
     await _stateStore.save(state);
-    await _overlayService.updatePetName(state.petName);
     if (await _hatchRequestStore.clearIfMatchingPack(
       requestId: installed.requestId,
       displayName: descriptor.displayName,
@@ -397,6 +420,45 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  Future<void> _bakeSelectedOverlayFrames() async {
+    final generation = _overlayBakeGeneration.begin();
+    final baker = _overlayFrameBaker;
+    if (baker == null ||
+        !_overlayService.supported ||
+        !_overlayService.enabled) {
+      if (_overlayBakeGeneration.isCurrent(generation)) {
+        _bakedOverlayFrames = null;
+      }
+      return;
+    }
+    final descriptor = selectedPet;
+    try {
+      final BakedOverlayFrames baked;
+      if (descriptor.isRig) {
+        final pet = rigPet;
+        if (pet == null || pet.descriptor.id != descriptor.id) {
+          throw StateError('The selected rig pet is not loaded.');
+        }
+        baked = await baker.bakeRig(pet);
+      } else {
+        final atlas = _spriteAtlas;
+        if (atlas == null || atlas.descriptor.id != descriptor.id) {
+          throw StateError('The selected atlas pet is not loaded.');
+        }
+        baked = await baker.bakeAtlas(atlas);
+      }
+      if (_overlayBakeGeneration.isCurrent(generation) &&
+          state.selectedPetId == descriptor.id) {
+        _bakedOverlayFrames = baked;
+      }
+    } catch (error, stackTrace) {
+      if (!_overlayBakeGeneration.isCurrent(generation)) return;
+      _bakedOverlayFrames = null;
+      debugPrint('Overlay frame baking failed; using Choco fallback: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
   Future<void> _replaceLoadedPet(PetAssetDescriptor descriptor) async {
     _rigEpoch++;
     if (descriptor.isRig) {
@@ -442,6 +504,7 @@ class AppController extends ChangeNotifier {
       selectedPetId: descriptor.id,
       petName: descriptor.displayName,
     );
+    _overlayBakeGeneration.invalidate();
     notifyListeners();
     if (descriptor.isRig) {
       final loaded = await petRig(descriptor);
@@ -454,8 +517,8 @@ class AppController extends ChangeNotifier {
       _spriteAtlas = loaded;
       rigPet = null;
     }
+    await _bakeSelectedOverlayFrames();
     await _stateStore.save(state);
-    await _overlayService.updatePetName(state.petName);
     await _refreshNotificationSchedule();
     _applySchedule(DateTime.now());
     notifyListeners();
@@ -475,7 +538,11 @@ class AppController extends ChangeNotifier {
     }
     await _log(PetEventType.appOpen);
     await _refreshNotificationSchedule();
-    await _overlayService.refresh(petName: state.petName);
+    await _overlayService.refresh(
+      petName: state.petName,
+      frames: _bakedOverlayFrames,
+      bubbles: _overlayBubbles,
+    );
     _refreshEveningHelloOffer();
     _scheduleDayBoundary();
     _applySchedule(DateTime.now());
@@ -507,10 +574,12 @@ class AppController extends ChangeNotifier {
       treats: state.treats + reward,
       onboardingRewardGranted: true,
     );
+    _overlayBakeGeneration.invalidate();
     if ((_spriteAtlas?.descriptor.id ?? rigPet?.descriptor.id) !=
         selectedPetId) {
       final descriptor = pets.firstWhere((pet) => pet.id == selectedPetId);
       await _loadSelectedPet(descriptor);
+      await _bakeSelectedOverlayFrames();
     }
     await _stateStore.save(state);
     notifyListeners();
@@ -698,7 +767,6 @@ class AppController extends ChangeNotifier {
   Future<void> updatePetName(String value) async {
     state = state.copyWith(petName: _normalized(value, state.petName));
     await _stateStore.save(state);
-    await _overlayService.updatePetName(state.petName);
     await _refreshNotificationSchedule();
     notifyListeners();
   }
@@ -707,7 +775,20 @@ class AppController extends ChangeNotifier {
     final result = await _overlayService.setEnabled(
       enabled,
       petName: state.petName,
+      frames: enabled ? null : _bakedOverlayFrames,
+      bubbles: _overlayBubbles,
     );
+    if (result && enabled) {
+      await _bakeSelectedOverlayFrames();
+      await _overlayService.updateConfiguration(
+        petName: state.petName,
+        frames: _bakedOverlayFrames,
+        bubbles: _overlayBubbles,
+      );
+    } else if (!result) {
+      _overlayBakeGeneration.invalidate();
+      _bakedOverlayFrames = null;
+    }
     notifyListeners();
     return result;
   }
@@ -1039,32 +1120,40 @@ class AppController extends ChangeNotifier {
   /// must never break completing a task or opening the app, so failures are
   /// swallowed deliberately — the pet and the list always keep working.
   Future<void> _refreshNotificationSchedule() async {
-    if (state.notificationPermission != NotificationPermissionState.granted) {
-      return;
-    }
+    final now = _now();
+    var window = const <ScheduledPetNotification>[];
     try {
-      await _notifications.scheduleWindow(
-        petName: state.petName,
-        includeDailyInvitation: state.notificationEnabled,
-        invitationHour: state.notificationHour,
-        invitationMinute: state.notificationMinute,
-        taskReminders: state.tasks
-            .where((task) => task.reminder?.enabled ?? false)
-            .map(
-              (task) => TaskReminderSchedule(
-                taskId: task.id,
-                title: task.title,
-                hour: task.reminder!.hour,
-                minute: task.reminder!.minute,
-                skipToday: task.kind == TaskKind.daily && task.completedToday,
-              ),
-            )
-            .toList(growable: false),
-      );
+      if (state.notificationPermission == NotificationPermissionState.granted) {
+        window = await _notifications.scheduleWindow(
+          petName: state.petName,
+          includeDailyInvitation: state.notificationEnabled,
+          invitationHour: state.notificationHour,
+          invitationMinute: state.notificationMinute,
+          taskReminders: state.tasks
+              .where((task) => task.reminder?.enabled ?? false)
+              .map(
+                (task) => TaskReminderSchedule(
+                  taskId: task.id,
+                  title: task.title,
+                  hour: task.reminder!.hour,
+                  minute: task.reminder!.minute,
+                  skipToday: task.kind == TaskKind.daily && task.completedToday,
+                ),
+              )
+              .toList(growable: false),
+          now: now,
+        );
+      }
     } catch (error, stackTrace) {
       debugPrint('Reminder scheduling failed (continuing): $error');
       debugPrintStack(stackTrace: stackTrace);
     }
+    _overlayBubbles = buildOverlayBubbleSchedule(window, now: now);
+    await _overlayService.updateConfiguration(
+      petName: state.petName,
+      frames: _bakedOverlayFrames,
+      bubbles: _overlayBubbles,
+    );
   }
 
   Future<void> _log(PetEventType type, [Map<String, Object?>? data]) =>
@@ -1094,6 +1183,7 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _overlayBakeGeneration.invalidate();
     _hatchFlow.pause();
     _cancelMomentTimers();
     _dayBoundaryTimer?.cancel();

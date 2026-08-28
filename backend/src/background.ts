@@ -1,9 +1,11 @@
 import sharp from 'sharp';
+import type { ContentGeometry } from './rig.js';
 
 export interface ImageGeometry {
   width: number;
   height: number;
   groundY: number;
+  content: ContentGeometry;
 }
 
 export async function removeSolidBackground(input: Buffer, threshold = 34): Promise<Buffer> {
@@ -71,11 +73,41 @@ export async function imageGeometry(image: Buffer): Promise<ImageGeometry> {
     .raw()
     .toBuffer({ resolveWithObject: true });
   let groundY = -1;
+  let left = info.width;
+  let top = info.height;
+  let right = -1;
   for (let y = 0; y < info.height; y += 1) {
     for (let x = 0; x < info.width; x += 1) {
-      if ((data[(y * info.width + x) * info.channels + 3] ?? 0) > 16) groundY = y;
+      if ((data[(y * info.width + x) * info.channels + 3] ?? 0) > 16) {
+        groundY = y;
+        left = Math.min(left, x);
+        top = Math.min(top, y);
+        right = Math.max(right, x);
+      }
     }
   }
   if (groundY < 0) throw new Error('Background removal produced an empty image');
-  return { width: info.width, height: info.height, groundY };
+  const contentHeight = groundY + 1 - top;
+  const topBandBottom = Math.min(groundY + 1, top + Math.max(3, Math.ceil(contentHeight * 0.03)));
+  let topLeft = info.width;
+  let topRight = -1;
+  for (let y = top; y < topBandBottom; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      if ((data[(y * info.width + x) * info.channels + 3] ?? 0) > 16) {
+        topLeft = Math.min(topLeft, x);
+        topRight = Math.max(topRight, x);
+      }
+    }
+  }
+  return {
+    width: info.width,
+    height: info.height,
+    groundY,
+    content: {
+      width: info.width,
+      height: info.height,
+      bounds: [left, top, right + 1, groundY + 1],
+      topRows: [topLeft, top, topRight + 1, topBandBottom],
+    },
+  };
 }

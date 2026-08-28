@@ -108,9 +108,11 @@ void main() {
       taskReminders: const <TaskReminderSchedule>[],
       random: _SeqRandom(const <int>[5]),
     );
-    final offsets = _invitations(
-      window,
-    ).map((item) => item.scheduledAt.difference(DateTime(2026, 7, 20)).inDays).toList();
+    final offsets = _invitations(window)
+        .map(
+          (item) => item.scheduledAt.difference(DateTime(2026, 7, 20)).inDays,
+        )
+        .toList();
 
     // Daily for the first three days, then every 2nd, 4th and finally weekly.
     expect(offsets.take(3), <int>[0, 1, 2]);
@@ -142,42 +144,53 @@ void main() {
       ],
     );
     final lastDay = window
-        .map((item) => item.scheduledAt.difference(DateTime(2026, 7, 20)).inDays)
+        .map(
+          (item) => item.scheduledAt.difference(DateTime(2026, 7, 20)).inDays,
+        )
         .reduce(math.max);
     expect(lastDay, taskReminderAbsenceCutoff - 1);
   });
 
-  test('invitation times jitter within ten minutes and stay in waking hours', () {
-    // Values chosen to exercise both extremes of the jitter range.
-    final window = buildNotificationWindow(
-      petName: 'Choco',
-      now: DateTime(2026, 7, 20, 0, 1),
-      includeDailyInvitation: true,
-      invitationHour: 20,
-      invitationMinute: 0,
-      taskReminders: const <TaskReminderSchedule>[],
-      random: _SeqRandom(const <int>[0, 20, 7, 13, 3]),
-    );
-    for (final item in _invitations(window)) {
-      final minutes = item.scheduledAt.hour * 60 + item.scheduledAt.minute;
-      expect((minutes - 20 * 60).abs(), lessThanOrEqualTo(invitationJitterMinutes));
-    }
+  test(
+    'invitation times jitter within ten minutes and stay in waking hours',
+    () {
+      // Values chosen to exercise both extremes of the jitter range.
+      final window = buildNotificationWindow(
+        petName: 'Choco',
+        now: DateTime(2026, 7, 20, 0, 1),
+        includeDailyInvitation: true,
+        invitationHour: 20,
+        invitationMinute: 0,
+        taskReminders: const <TaskReminderSchedule>[],
+        random: _SeqRandom(const <int>[0, 20, 7, 13, 3]),
+      );
+      for (final item in _invitations(window)) {
+        final minutes = item.scheduledAt.hour * 60 + item.scheduledAt.minute;
+        expect(
+          (minutes - 20 * 60).abs(),
+          lessThanOrEqualTo(invitationJitterMinutes),
+        );
+      }
 
-    // A late slot must not be pushed past the cutoff by jitter.
-    final late = buildNotificationWindow(
-      petName: 'Choco',
-      now: DateTime(2026, 7, 20, 0, 1),
-      includeDailyInvitation: true,
-      invitationHour: invitationLatestHour,
-      invitationMinute: 55,
-      taskReminders: const <TaskReminderSchedule>[],
-      random: _SeqRandom(const <int>[20]),
-    );
-    for (final item in _invitations(late)) {
-      expect(item.scheduledAt.hour, lessThanOrEqualTo(invitationLatestHour));
-      expect(item.scheduledAt.hour, greaterThanOrEqualTo(invitationEarliestHour));
-    }
-  });
+      // A late slot must not be pushed past the cutoff by jitter.
+      final late = buildNotificationWindow(
+        petName: 'Choco',
+        now: DateTime(2026, 7, 20, 0, 1),
+        includeDailyInvitation: true,
+        invitationHour: invitationLatestHour,
+        invitationMinute: 55,
+        taskReminders: const <TaskReminderSchedule>[],
+        random: _SeqRandom(const <int>[20]),
+      );
+      for (final item in _invitations(late)) {
+        expect(item.scheduledAt.hour, lessThanOrEqualTo(invitationLatestHour));
+        expect(
+          item.scheduledAt.hour,
+          greaterThanOrEqualTo(invitationEarliestHour),
+        );
+      }
+    },
+  );
 
   test('the same invitation never lands two scheduled days in a row', () {
     final window = buildNotificationWindow(
@@ -231,5 +244,59 @@ void main() {
         );
       }
     }
+  });
+
+  test('overlay bubble schedule prunes past times and caps each local day', () {
+    final now = DateTime(2026, 7, 20, 10);
+    final window = <ScheduledPetNotification>[
+      ScheduledPetNotification(
+        id: 1,
+        scheduledAt: DateTime(2026, 7, 20, 9),
+        title: 'Past invitation',
+        body: 'Past',
+        kind: PetNotificationKind.dailyInvitation,
+      ),
+      ScheduledPetNotification(
+        id: 2,
+        scheduledAt: DateTime(2026, 7, 20, 18),
+        title: 'First invitation',
+        body: 'First',
+        kind: PetNotificationKind.dailyInvitation,
+      ),
+      ScheduledPetNotification(
+        id: 3,
+        scheduledAt: DateTime(2026, 7, 20, 20),
+        title: 'Second same-day invitation',
+        body: 'Second',
+        kind: PetNotificationKind.dailyInvitation,
+      ),
+      ScheduledPetNotification(
+        id: 4,
+        scheduledAt: DateTime(2026, 7, 21, 9),
+        title: 'Task reminder',
+        body: 'Task copy must not enter the overlay',
+        kind: PetNotificationKind.taskReminder,
+        taskId: 'water',
+      ),
+      ScheduledPetNotification(
+        id: 5,
+        scheduledAt: DateTime(2026, 7, 21, 18),
+        title: 'Tomorrow invitation',
+        body: 'Tomorrow',
+        kind: PetNotificationKind.dailyInvitation,
+      ),
+    ];
+
+    final result = buildOverlayBubbleSchedule(window, now: now);
+
+    expect(result.map((item) => item.scheduledAt), <DateTime>[
+      DateTime(2026, 7, 20, 18),
+      DateTime(2026, 7, 21, 18),
+    ]);
+    expect(
+      result.map((item) => item.copy),
+      everyElement(overlayInvitationCopy),
+    );
+    expect(result, hasLength(2));
   });
 }

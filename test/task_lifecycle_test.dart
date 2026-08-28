@@ -72,7 +72,7 @@ class _FakeNotifications extends NotificationService {
   }
 
   @override
-  Future<void> scheduleWindow({
+  Future<List<ScheduledPetNotification>> scheduleWindow({
     required String petName,
     required bool includeDailyInvitation,
     required int invitationHour,
@@ -81,6 +81,7 @@ class _FakeNotifications extends NotificationService {
     DateTime? now,
   }) async {
     scheduleRefreshes++;
+    return const <ScheduledPetNotification>[];
   }
 }
 

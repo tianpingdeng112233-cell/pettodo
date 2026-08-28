@@ -37,7 +37,26 @@ class MainActivity : FlutterActivity() {
                     }
                     val petName = call.argument<String>("petName")?.trim()
                         ?.takeIf(String::isNotEmpty) ?: "Choco"
-                    OverlayPetService.start(this, petName)
+                    val frameFiles = call.argument<Map<*, *>>("frameFiles")
+                    val frameFilesChanged =
+                        call.argument<Boolean>("frameFilesChanged") ?: true
+                    val idlePaths = stringList(frameFiles?.get("idle"))
+                    val jumpingPaths = stringList(frameFiles?.get("jumping"))
+                    val completeFramePaths = idlePaths?.takeIf { it.isNotEmpty() }
+                        ?.let { idle ->
+                            jumpingPaths?.takeIf { it.isNotEmpty() }
+                                ?.let { jumping -> idle to jumping }
+                        }
+                    val bubbles = (call.argument<List<*>>("bubbles") ?: emptyList<Any>())
+                        .mapNotNull(::bubbleInvitation)
+                    OverlayPetService.start(
+                        this,
+                        petName,
+                        completeFramePaths?.first,
+                        completeFramePaths?.second,
+                        bubbles,
+                        frameFilesChanged,
+                    )
                     result.success(null)
                 }
                 "disable" -> {
@@ -89,6 +108,18 @@ class MainActivity : FlutterActivity() {
         pendingPermissionResult?.success(false)
         pendingPermissionResult = null
         super.onDestroy()
+    }
+
+    private fun stringList(value: Any?): List<String>? = (value as? List<*>)
+        ?.mapNotNull { (it as? String)?.trim()?.takeIf(String::isNotEmpty) }
+
+    private fun bubbleInvitation(value: Any?): OverlayBubbleInvitation? {
+        val map = value as? Map<*, *> ?: return null
+        val scheduledAt = (map["scheduledAtEpochMillis"] as? Number)?.toLong()
+            ?: return null
+        val copy = (map["copy"] as? String)?.trim()?.takeIf(String::isNotEmpty)
+            ?: return null
+        return OverlayBubbleInvitation(scheduledAt, copy)
     }
 
     private companion object {

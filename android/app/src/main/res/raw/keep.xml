@@ -5,8 +5,10 @@
   shrinking cannot see the reference and strips it. Stripping it made
   flutter_local_notifications throw invalid_icon during startup, which — before
   main() learned to tolerate it — meant runApp() never ran and the app opened
-  to a black screen on every Android device.
+  to a black screen on every Android device. The bundled overlay frames are
+  also statically referenced from Kotlin; the explicit wildcard keeps the
+  release fallback contract visible and resilient to future refactors.
 -->
 <resources
     xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_notification" />
+    tools:keep="@drawable/ic_notification,@drawable/overlay_*" />
