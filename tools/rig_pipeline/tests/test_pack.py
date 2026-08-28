@@ -36,7 +36,7 @@ def test_build_pack_is_flat_and_contract_compliant(tmp_path):
                 "leftFrontLeg": [10, 12, 15, 23],
                 "rightFrontLeg": [17, 12, 22, 23],
             },
-            "pivots": {"head": [16, 12], "tail": [25, 15.5]},
+            "pivots": {"head": [16, 12], "tail": [25, 16]},
         },
         "side": {
             "groundY": 23,
@@ -48,10 +48,10 @@ def test_build_pack_is_flat_and_contract_compliant(tmp_path):
                 "hindLeg": [8, 12, 13, 23],
             },
             "pivots": {
-                "head": [25.5, 12],
+                "head": [26, 12],
                 "tail": [8, 13],
-                "frontLeg": [23.5, 12],
-                "hindLeg": [10.5, 12],
+                "frontLeg": [24, 12],
+                "hindLeg": [11, 12],
             },
         },
     }
@@ -130,7 +130,7 @@ def _rig():
                 "leftFrontLeg": [10, 12, 15, 23],
                 "rightFrontLeg": [17, 12, 22, 23],
             },
-            "pivots": {"head": [16, 12], "tail": [25, 15.5]},
+            "pivots": {"head": [16, 12], "tail": [25, 16]},
         },
         "side": {
             "groundY": 23,
@@ -142,10 +142,10 @@ def _rig():
                 "hindLeg": [8, 12, 13, 23],
             },
             "pivots": {
-                "head": [25.5, 12],
+                "head": [26, 12],
                 "tail": [8, 13],
-                "frontLeg": [23.5, 12],
-                "hindLeg": [10.5, 12],
+                "frontLeg": [24, 12],
+                "hindLeg": [11, 12],
             },
         },
     }

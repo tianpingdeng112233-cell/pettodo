@@ -30,7 +30,7 @@ def test_build_rig_derives_contract_pivots():
         "tail": [32, 23],
     }
     assert rig["side"]["pivots"] == {
-        "head": [33.5, 21],
+        "head": [34, 21],
         "tail": [12, 21],
         "frontLeg": [31, 21],
         "hindLeg": [15, 21],
@@ -125,3 +125,40 @@ def test_validate_rig_rejects_extra_fields_and_float_version():
     extra_front["front"] = dict(extra_front["front"], note="nope")
     with pytest.raises(ValueError):
         validate_rig(extra_front, sizes)
+
+
+def test_build_rig_emits_only_integer_coordinates():
+    # app-side RigDefinition.fromJson is strict: every pivot/box coordinate
+    # must be an integer, so odd-sum midpoints must round, never emit .5
+    rig = build_rig(
+        front_boxes={
+            "head": [10, 4, 31, 20],
+            "tail": [32, 15, 40, 32],
+            "leftFrontLeg": [12, 20, 18, 40],
+            "rightFrontLeg": [22, 20, 28, 40],
+        },
+        side_boxes={
+            "head": [25, 5, 42, 21],
+            "tail": [2, 12, 12, 31],
+            "frontLeg": [27, 21, 34, 40],
+            "hindLeg": [12, 21, 19, 40],
+        },
+        front_size=(48, 42),
+        side_size=(48, 42),
+        front_ground_y=40,
+        side_ground_y=40,
+        side_facing="right",
+    )
+
+    def walk(node):
+        if isinstance(node, dict):
+            for value in node.values():
+                yield from walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                yield from walk(value)
+        elif isinstance(node, (int, float)) and not isinstance(node, bool):
+            yield node
+
+    non_integers = [value for value in walk(rig) if not isinstance(value, int)]
+    assert non_integers == []

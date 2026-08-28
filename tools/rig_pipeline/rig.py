@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+import math
 from numbers import Real
 from typing import Any
 
@@ -11,9 +12,10 @@ FRONT_PARTS = ("head", "tail", "leftFrontLeg", "rightFrontLeg")
 SIDE_PARTS = ("head", "tail", "frontLeg", "hindLeg")
 
 
-def _clean_number(value: Real) -> int | float:
-    value = float(value)
-    return int(value) if value.is_integer() else value
+def _clean_number(value: Real) -> int:
+    # The app-side rig parser (RigDefinition.fromJson) requires every
+    # coordinate to be an integer; round half-up like the backend's builder.
+    return math.floor(float(value) + 0.5)
 
 
 def _validate_boxes(
@@ -21,11 +23,11 @@ def _validate_boxes(
     required_parts: tuple[str, ...],
     size: tuple[int, int],
     view: str,
-) -> dict[str, list[int | float]]:
+) -> dict[str, list[int]]:
     if set(boxes) != set(required_parts):
         raise ValueError(f"{view} boxes must contain exactly: {', '.join(required_parts)}")
     width, height = size
-    cleaned: dict[str, list[int | float]] = {}
+    cleaned: dict[str, list[int]] = {}
     for part in required_parts:
         box = boxes[part]
         if not isinstance(box, Sequence) or isinstance(box, (str, bytes)) or len(box) != 4:
@@ -39,11 +41,11 @@ def _validate_boxes(
     return cleaned
 
 
-def _midpoint(first: Real, second: Real) -> int | float:
+def _midpoint(first: Real, second: Real) -> int:
     return _clean_number((float(first) + float(second)) / 2)
 
 
-def _tail_pivot(box: Sequence[Real], body_centre_x: float) -> list[int | float]:
+def _tail_pivot(box: Sequence[Real], body_centre_x: float) -> list[int]:
     # The tail attaches on whichever tail-box edge is closer to the body mass.
     # Reference is the head-box centre, not the canvas centre — an off-centre
     # sprite must not flip the pivot side.
@@ -56,12 +58,12 @@ def _box_centre_x(box: Sequence[Real]) -> float:
     return (float(box[0]) + float(box[2])) / 2
 
 
-def _bottom_centre(box: Sequence[Real]) -> list[int | float]:
+def _bottom_centre(box: Sequence[Real]) -> list[int]:
     x0, _, x1, y1 = box
     return [_midpoint(x0, x1), _clean_number(y1)]
 
 
-def _top_centre(box: Sequence[Real]) -> list[int | float]:
+def _top_centre(box: Sequence[Real]) -> list[int]:
     x0, y0, x1, _ = box
     return [_midpoint(x0, x1), _clean_number(y0)]
 
