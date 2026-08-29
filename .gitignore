@@ -24,3 +24,4 @@ backend/.env
 artifacts/*
 !artifacts/screenshots/
 !artifacts/report/
+test/failures/
