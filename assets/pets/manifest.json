@@ -17,8 +17,7 @@
       "rig": "assets/pets/choco/rig.json",
       "front_open": "assets/pets/choco/front-open.png",
       "front_closed": "assets/pets/choco/front-closed.png",
-      "sleep": "assets/pets/choco/sleep.png",
-      "side": "assets/pets/choco/side.png"
+      "sleep": "assets/pets/choco/sleep.png"
     },
     {
       "id": "shiba",

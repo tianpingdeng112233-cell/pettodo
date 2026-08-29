@@ -72,6 +72,7 @@ class _RigPetSpriteState extends State<RigPetSprite>
       action: widget.action,
       elapsed: widget.fixedElapsed ?? _elapsed,
       target: widget.target,
+      hasSide: widget.pet.definition.side != null,
     );
     return CustomPaint(
       painter: _RigPainter(

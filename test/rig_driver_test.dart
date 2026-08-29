@@ -55,6 +55,7 @@ void main() {
           .sample(
             action: RigPetAction.running,
             elapsed: const Duration(milliseconds: 130),
+            hasSide: true,
           )
           .snapshot,
       <String, Object>{
@@ -66,6 +67,30 @@ void main() {
         'tailRotation': -7.0,
         'frontLegRotation': 18.0,
         'hindLegRotation': -18.0,
+        'sleepOpacity': 0.0,
+        'blinkClosed': false,
+      },
+    );
+  });
+
+  test('sideless running uses the deterministic front-pose fallback', () {
+    expect(
+      driver
+          .sample(
+            action: RigPetAction.running,
+            elapsed: const Duration(milliseconds: 90),
+            hasSide: false,
+          )
+          .snapshot,
+      <String, Object>{
+        'translation': <int>[8, -10],
+        'scale': <double>[1, 1],
+        'bodyRotation': 0.0,
+        'headTranslation': <int>[0, 0],
+        'headRotation': 0.0,
+        'tailRotation': 0.0,
+        'frontLegRotation': 0.0,
+        'hindLegRotation': 0.0,
         'sleepOpacity': 0.0,
         'blinkClosed': false,
       },

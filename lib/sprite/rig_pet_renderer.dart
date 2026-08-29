@@ -16,7 +16,7 @@ void paintRigPetFrame({
 }) {
   final frontOpacity = 1 - frame.sleepOpacity;
   if (frontOpacity > 0) {
-    if (action == RigPetAction.running) {
+    if (action == RigPetAction.running && pet.definition.side != null) {
       _paintSide(canvas, size, pet, frame, externalOffset, frontOpacity);
     } else {
       _paintFront(canvas, size, pet, frame, externalOffset, frontOpacity);
@@ -111,12 +111,12 @@ void _paintSide(
   ui.Offset externalOffset,
   double opacity,
 ) {
-  final rig = pet.definition.side;
+  final rig = pet.definition.side!;
   final scale = _prepareCanvas(
     canvas,
     size,
-    pet.sideWidth,
-    pet.sideHeight,
+    pet.sideWidth!,
+    pet.sideHeight!,
     rig.groundY,
     frame,
   );
@@ -127,47 +127,47 @@ void _paintSide(
   final paint = _opacityPaint(opacity);
   _drawAround(
     canvas,
-    pet.sideLayers.tail!,
+    pet.sideLayers!.tail!,
     rig.tailPivot,
     frame.tailRotationDegrees,
     ui.Offset.zero,
     paint,
-    pet.sideWidth,
-    pet.sideHeight,
+    pet.sideWidth!,
+    pet.sideHeight!,
   );
   _drawAround(
     canvas,
-    pet.sideLayers.frontLeg!,
+    pet.sideLayers!.frontLeg!,
     rig.frontLegPivot,
     frame.frontLegRotationDegrees,
     ui.Offset.zero,
     paint,
-    pet.sideWidth,
-    pet.sideHeight,
+    pet.sideWidth!,
+    pet.sideHeight!,
   );
   _drawAround(
     canvas,
-    pet.sideLayers.hindLeg!,
+    pet.sideLayers!.hindLeg!,
     rig.hindLegPivot,
     frame.hindLegRotationDegrees,
     ui.Offset.zero,
     paint,
-    pet.sideWidth,
-    pet.sideHeight,
+    pet.sideWidth!,
+    pet.sideHeight!,
   );
   _drawAround(
     canvas,
-    pet.sideLayers.body,
-    RigPoint(pet.sideWidth ~/ 2, rig.groundY),
+    pet.sideLayers!.body,
+    RigPoint(pet.sideWidth! ~/ 2, rig.groundY),
     frame.bodyRotationDegrees,
     ui.Offset.zero,
     paint,
-    pet.sideWidth,
-    pet.sideHeight,
+    pet.sideWidth!,
+    pet.sideHeight!,
   );
   _drawAround(
     canvas,
-    pet.sideLayers.head!,
+    pet.sideLayers!.head!,
     rig.headPivot,
     frame.bodyRotationDegrees + frame.headRotationDegrees,
     ui.Offset(
@@ -175,8 +175,8 @@ void _paintSide(
       frame.headTranslationY.toDouble(),
     ),
     paint,
-    pet.sideWidth,
-    pet.sideHeight,
+    pet.sideWidth!,
+    pet.sideHeight!,
   );
   canvas.restore();
 }

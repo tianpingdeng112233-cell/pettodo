@@ -219,13 +219,15 @@ class RigDefinition {
     return RigDefinition(
       rigVersion: 1,
       front: FrontRigDefinition.fromJson(map['front']),
-      side: SideRigDefinition.fromJson(map['side']),
+      side: map['side'] == null
+          ? null
+          : SideRigDefinition.fromJson(map['side']),
     );
   }
 
   final int rigVersion;
   final FrontRigDefinition front;
-  final SideRigDefinition side;
+  final SideRigDefinition? side;
 }
 
 Map<String, Object?> _object(Object? value, String field) {

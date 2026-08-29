@@ -59,17 +59,17 @@ class LoadedRigPet {
   final RigDefinition definition;
   final int frontWidth;
   final int frontHeight;
-  final int sideWidth;
-  final int sideHeight;
+  final int? sideWidth;
+  final int? sideHeight;
   final int sleepWidth;
   final int sleepHeight;
   final RigLayerSet frontLayers;
-  final RigLayerSet sideLayers;
+  final RigLayerSet? sideLayers;
   final ui.Image sleepImage;
 
   void dispose() {
     frontLayers.dispose();
-    sideLayers.dispose();
+    sideLayers?.dispose();
     sleepImage.dispose();
   }
 }
@@ -87,6 +87,12 @@ class RigPetLoader {
     var definition = RigDefinition.fromJson(
       jsonDecode(await _readString(assets.rigAsset)),
     );
+    final sideAsset = assets.sideAsset;
+    if ((sideAsset != null) != (definition.side != null)) {
+      throw const FormatException(
+        'The side pose image and rig section must be provided together.',
+      );
+    }
     // decode results are collected so a partial failure can dispose the
     // images that did decode
     final decoded = await Future.wait(
@@ -94,7 +100,7 @@ class RigPetLoader {
         _decode(assets.frontOpenAsset),
         _decode(assets.frontClosedAsset),
         _decode(assets.sleepAsset),
-        _decode(assets.sideAsset),
+        if (sideAsset != null) _decode(sideAsset),
       ].map(
         (future) => future
             .then<ui.Image?>((image) => image)
@@ -110,7 +116,7 @@ class RigPetLoader {
     final frontOpen = decoded[0]!;
     final frontClosed = decoded[1]!;
     ui.Image? sleep = decoded[2];
-    final side = decoded[3]!;
+    final side = sideAsset == null ? null : decoded[3]!;
     RigLayerSet? frontLayers;
     RigLayerSet? sideLayers;
     try {
@@ -121,7 +127,7 @@ class RigPetLoader {
         );
       }
       definition.front.validateForImage(frontOpen.width, frontOpen.height);
-      definition.side.validateForImage(side.width, side.height);
+      definition.side?.validateForImage(side!.width, side.height);
       final frontHead = definition.front.head;
       final frontPivot = definition.front.headPivot;
       final saneFrontHead =
@@ -145,15 +151,19 @@ class RigPetLoader {
         frontClosed,
         definition.front,
       );
-      sideLayers = await _composeSide(side, definition.side);
+      if (side != null) {
+        sideLayers = await _composeSide(side, definition.side!);
+      }
       frontLayers = await _downscaleLayerSet(
         frontLayers,
         _fitScale(frontOpen.width, frontOpen.height),
       );
-      sideLayers = await _downscaleLayerSet(
-        sideLayers,
-        _fitScale(side.width, side.height),
-      );
+      if (sideLayers != null) {
+        sideLayers = await _downscaleLayerSet(
+          sideLayers,
+          _fitScale(side!.width, side.height),
+        );
+      }
       final sleepWidth = sleep!.width;
       final sleepHeight = sleep.height;
       final scaledSleep = await _downscaleImage(
@@ -169,8 +179,8 @@ class RigPetLoader {
         definition: definition,
         frontWidth: frontOpen.width,
         frontHeight: frontOpen.height,
-        sideWidth: side.width,
-        sideHeight: side.height,
+        sideWidth: side?.width,
+        sideHeight: side?.height,
         sleepWidth: sleepWidth,
         sleepHeight: sleepHeight,
         frontLayers: frontLayers,
@@ -190,7 +200,7 @@ class RigPetLoader {
     } finally {
       frontOpen.dispose();
       frontClosed.dispose();
-      side.dispose();
+      side?.dispose();
     }
   }
 

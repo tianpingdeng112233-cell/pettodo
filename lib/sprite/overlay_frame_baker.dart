@@ -157,7 +157,7 @@ class OverlayFrameBaker {
             descriptor.rig!.frontOpenAsset,
             descriptor.rig!.frontClosedAsset,
             descriptor.rig!.sleepAsset,
-            descriptor.rig!.sideAsset,
+            ?descriptor.rig!.sideAsset,
           ]
         : <String>[descriptor.metadataAsset, descriptor.spritesheetAsset];
     final parts = <String>[_overlayBakeSchema, descriptor.id];

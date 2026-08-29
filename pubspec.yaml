@@ -71,7 +71,6 @@ flutter:
     - assets/pets/choco/front-open.png
     - assets/pets/choco/front-closed.png
     - assets/pets/choco/sleep.png
-    - assets/pets/choco/side.png
     - assets/pets/shiba/rig.json
     - assets/pets/shiba/front-open.png
     - assets/pets/shiba/front-closed.png

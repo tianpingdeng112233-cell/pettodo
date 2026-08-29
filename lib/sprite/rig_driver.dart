@@ -22,6 +22,9 @@ class RigDriverParameters {
   static const double runPeriodSeconds = 0.52;
   static const double runLegDegrees = 18;
   static const double runBodyLeanDegrees = 4;
+  static const double sidelessRunPeriodSeconds = 0.36;
+  static const int sidelessRunHorizontalPixels = 8;
+  static const int sidelessRunBobPixels = 10;
   static const double tailDegrees = 7;
   static const double sleepTransitionSeconds = 0.9;
   static const double stretchDurationSeconds = 1.8;
@@ -101,6 +104,7 @@ class RigDriver {
     required RigPetAction action,
     required Duration elapsed,
     RigTarget target = const RigTarget(0, 0),
+    bool hasSide = true,
   }) {
     final seconds = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
     var translationX = 0;
@@ -190,6 +194,21 @@ class RigDriver {
         );
         break;
       case RigPetAction.running:
+        if (!hasSide) {
+          final hop = math.sin(
+            seconds /
+                RigDriverParameters.sidelessRunPeriodSeconds *
+                math.pi *
+                2,
+          );
+          translationX = _pixel(
+            RigDriverParameters.sidelessRunHorizontalPixels * hop,
+          );
+          translationY = _pixel(
+            -RigDriverParameters.sidelessRunBobPixels * hop.abs(),
+          );
+          break;
+        }
         final stride = math.sin(
           seconds / RigDriverParameters.runPeriodSeconds * math.pi * 2,
         );

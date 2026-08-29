@@ -149,7 +149,7 @@ class RigAssetDescriptor {
   final String frontOpenAsset;
   final String frontClosedAsset;
   final String sleepAsset;
-  final String sideAsset;
+  final String? sideAsset;
 
   RigAssetDescriptor copyWithRoot(String root) => RigAssetDescriptor(
     species: species,
@@ -157,7 +157,7 @@ class RigAssetDescriptor {
     frontOpenAsset: '$root/front-open.png',
     frontClosedAsset: '$root/front-closed.png',
     sleepAsset: '$root/sleep.png',
-    sideAsset: '$root/side.png',
+    sideAsset: sideAsset == null ? null : '$root/side.png',
   );
 }
 
@@ -270,7 +270,7 @@ class SpriteAtlasLoader {
               frontOpenAsset: _requiredRigField(pet, 'front_open'),
               frontClosedAsset: _requiredRigField(pet, 'front_closed'),
               sleepAsset: _requiredRigField(pet, 'sleep'),
-              sideAsset: _requiredRigField(pet, 'side'),
+              sideAsset: _optionalRigField(pet, 'side'),
             );
             return PetAssetDescriptor(
               id: pet['id']! as String,
@@ -371,4 +371,12 @@ String _requiredRigField(Map<String, Object?> pet, String field) {
   if (value is String && value.isNotEmpty) return value;
   final id = pet['id'] is String ? pet['id'] as String : '<unknown>';
   throw FormatException('Rig pet $id is missing $field.');
+}
+
+String? _optionalRigField(Map<String, Object?> pet, String field) {
+  final value = pet[field];
+  if (value == null) return null;
+  if (value is String && value.isNotEmpty) return value;
+  final id = pet['id'] is String ? pet['id'] as String : '<unknown>';
+  throw FormatException('Rig pet $id has an invalid $field.');
 }

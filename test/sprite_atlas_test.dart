@@ -95,7 +95,11 @@ void main() {
         reason: entry.key,
       );
       expect(pet.rig?.sleepAsset, '$root/sleep.png', reason: entry.key);
-      expect(pet.rig?.sideAsset, '$root/side.png', reason: entry.key);
+      expect(
+        pet.rig?.sideAsset,
+        entry.key == 'choco' ? isNull : '$root/side.png',
+        reason: entry.key,
+      );
     }
   });
 
@@ -139,7 +143,30 @@ void main() {
     expect(shiba.rig?.sideAsset, 'assets/pets/shiba/side.png');
   });
 
-  test('manifest rejects a rig pet with a missing asset path', () async {
+  test('manifest parses a bundled rig pet without a side asset', () async {
+    final bundle = _MemoryAssetBundle.withStrings(<String, String>{
+      'assets/pets/manifest.json': jsonEncode(<String, Object?>{
+        'pets': <Object?>[
+          <String, Object?>{
+            'id': 'choco',
+            'display_name': 'Choco',
+            'format': 'rig',
+            'species': 'dog',
+            'rig': 'assets/pets/choco/rig.json',
+            'front_open': 'assets/pets/choco/front-open.png',
+            'front_closed': 'assets/pets/choco/front-closed.png',
+            'sleep': 'assets/pets/choco/sleep.png',
+          },
+        ],
+      }),
+    });
+
+    final pets = await SpriteAtlasLoader(bundle: bundle).loadManifest();
+
+    expect(pets.single.rig?.sideAsset, isNull);
+  });
+
+  test('manifest still rejects a rig pet missing a required asset', () async {
     final bundle = _MemoryAssetBundle.withStrings(<String, String>{
       'assets/pets/manifest.json': jsonEncode(<String, Object?>{
         'pets': <Object?>[
@@ -151,7 +178,6 @@ void main() {
             'rig': 'assets/pets/shiba/rig.json',
             'front_open': 'assets/pets/shiba/front-open.png',
             'front_closed': 'assets/pets/shiba/front-closed.png',
-            'sleep': 'assets/pets/shiba/sleep.png',
           },
         ],
       }),
@@ -163,7 +189,7 @@ void main() {
         isA<FormatException>().having(
           (error) => error.message,
           'message',
-          contains('side'),
+          contains('sleep'),
         ),
       ),
     );

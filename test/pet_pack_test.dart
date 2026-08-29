@@ -243,27 +243,71 @@ void main() {
     },
   );
 
-  test(
-    'rig pack rejects missing pose files and directory-prefixed entries',
-    () async {
-      final service = PetPackService(() async => temporary);
-      final missing = _writeRigPack(
-        temporary,
-        poseBytes: poseBytes,
-        includeSide: false,
-        fileName: 'missing-side',
-      );
-      final nested = _writeRigPack(
-        temporary,
-        poseBytes: poseBytes,
-        includeNestedEntry: true,
-        fileName: 'nested-entry',
-      );
+  test('rig pack accepts missing side image and rig section', () async {
+    final service = PetPackService(() async => temporary);
+    final sidelessRig = _rigJson()..remove('side');
+    final sideless = _writeRigPack(
+      temporary,
+      poseBytes: poseBytes,
+      rig: sidelessRig,
+      includeSide: false,
+      fileName: 'sideless',
+    );
 
-      expect(service.validate(missing), throwsA(isA<PetPackException>()));
-      expect(service.validate(nested), throwsA(isA<PetPackException>()));
-    },
-  );
+    final validated = await service.validate(sideless);
+
+    expect(validated.descriptor.rig?.sideAsset, isNull);
+    expect(validated.files, isNot(contains('side.png')));
+
+    final installed = await service.install(sideless);
+    expect(installed.descriptor.rig?.sideAsset, isNull);
+    final reloaded = await service.loadInstalledPets();
+    expect(reloaded.single.rig?.sideAsset, isNull);
+  });
+
+  test('rig pack rejects an unpaired side image or rig section', () async {
+    final service = PetPackService(() async => temporary);
+    final sidelessRig = _rigJson()..remove('side');
+    final imageOnly = _writeRigPack(
+      temporary,
+      poseBytes: poseBytes,
+      rig: sidelessRig,
+      fileName: 'image-only-side',
+    );
+    final rigOnly = _writeRigPack(
+      temporary,
+      poseBytes: poseBytes,
+      includeSide: false,
+      fileName: 'rig-only-side',
+    );
+
+    expect(service.validate(imageOnly), throwsA(isA<PetPackException>()));
+    expect(service.validate(rigOnly), throwsA(isA<PetPackException>()));
+  });
+
+  test('rig pack still rejects another missing required pose file', () async {
+    final service = PetPackService(() async => temporary);
+    final missingSleep = _writeRigPack(
+      temporary,
+      poseBytes: poseBytes,
+      includeSleep: false,
+      fileName: 'missing-sleep',
+    );
+
+    expect(service.validate(missingSleep), throwsA(isA<PetPackException>()));
+  });
+
+  test('rig pack rejects directory-prefixed entries', () async {
+    final service = PetPackService(() async => temporary);
+    final nested = _writeRigPack(
+      temporary,
+      poseBytes: poseBytes,
+      includeNestedEntry: true,
+      fileName: 'nested-entry',
+    );
+
+    expect(service.validate(nested), throwsA(isA<PetPackException>()));
+  });
 
   test(
     'rig loader precomposes front, closed-head, body, tail, and side legs',
@@ -278,8 +322,8 @@ void main() {
       expect(pet.frontLayers.body.width, 64);
       expect(pet.frontLayers.closedHead, isNotNull);
       expect(pet.frontLayers.tail?.height, 64);
-      expect(pet.sideLayers.frontLeg, isNotNull);
-      expect(pet.sideLayers.hindLeg, isNotNull);
+      expect(pet.sideLayers?.frontLeg, isNotNull);
+      expect(pet.sideLayers?.hindLeg, isNotNull);
     },
   );
 
@@ -649,6 +693,7 @@ File _writeRigPack(
   required Uint8List poseBytes,
   Map<String, Object?>? rig,
   bool includeSide = true,
+  bool includeSleep = true,
   bool includeNestedEntry = false,
 }) {
   final packBytes = utf8.encode(
@@ -671,6 +716,7 @@ File _writeRigPack(
     'side.png',
   ]) {
     if (name == 'side.png' && !includeSide) continue;
+    if (name == 'sleep.png' && !includeSleep) continue;
     archive.addFile(ArchiveFile(name, poseBytes.length, poseBytes));
   }
   if (includeNestedEntry) {

@@ -62,8 +62,43 @@ void main() {
     expect(pet.sideWidth, 64);
     expect(pet.sideHeight, 64);
     expect(pet.frontLayers.closedHead, isNotNull);
-    expect(pet.sideLayers.frontLeg, isNotNull);
-    expect(pet.sideLayers.hindLeg, isNotNull);
+    expect(pet.sideLayers?.frontLeg, isNotNull);
+    expect(pet.sideLayers?.hindLeg, isNotNull);
+  });
+
+  test('RigPetLoader loads a bundled rig pack without side layers', () async {
+    final poseBytes = await _makePosePng();
+    final sidelessRig = _rigJson()..remove('side');
+    final bundle = _MemoryAssetBundle(<String, List<int>>{
+      'assets/pets/choco/rig.json': utf8.encode(jsonEncode(sidelessRig)),
+      'assets/pets/choco/front-open.png': poseBytes,
+      'assets/pets/choco/front-closed.png': poseBytes,
+      'assets/pets/choco/sleep.png': poseBytes,
+    });
+    const descriptor = PetAssetDescriptor(
+      id: 'choco',
+      displayName: 'Choco',
+      metadataAsset: 'assets/pets/choco/rig.json',
+      spritesheetAsset: 'assets/pets/choco/front-open.png',
+      source: PetAssetSource.bundled,
+      format: PetAssetFormat.rigV3,
+      rig: RigAssetDescriptor(
+        species: 'dog',
+        rigAsset: 'assets/pets/choco/rig.json',
+        frontOpenAsset: 'assets/pets/choco/front-open.png',
+        frontClosedAsset: 'assets/pets/choco/front-closed.png',
+        sleepAsset: 'assets/pets/choco/sleep.png',
+        sideAsset: null,
+      ),
+    );
+
+    final pet = await RigPetLoader(bundle: bundle).load(descriptor);
+    addTearDown(pet.dispose);
+
+    expect(pet.definition.side, isNull);
+    expect(pet.sideWidth, isNull);
+    expect(pet.sideHeight, isNull);
+    expect(pet.sideLayers, isNull);
   });
 
   test('front layers at rest reconstruct every opaque source pixel', () async {

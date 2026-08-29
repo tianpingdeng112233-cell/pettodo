@@ -161,7 +161,6 @@ class PetPackService {
       'front-open.png',
       'front-closed.png',
       'sleep.png',
-      'side.png',
       'rig.json',
     };
     if (hasNestedFile || !files.keys.toSet().containsAll(required)) {
@@ -187,19 +186,26 @@ class PetPackService {
         (treat['emoji']! as String).trim().isEmpty) {
       throw const PetPackException('The pet treat is not valid.');
     }
-    for (final name in const <String>[
+    final rig = RigDefinition.fromJson(
+      jsonDecode(utf8.decode(files['rig.json']!)),
+    );
+    final hasSideImage = files.containsKey('side.png');
+    final hasSideRig = rig.side != null;
+    if (hasSideImage != hasSideRig) {
+      throw const PetPackException(
+        'The side pose image and rig section must be provided together.',
+      );
+    }
+    for (final name in <String>[
       'front-open.png',
       'front-closed.png',
       'sleep.png',
-      'side.png',
+      if (hasSideImage) 'side.png',
     ]) {
       if (!_isRgbaPng(files[name]!)) {
         throw const PetPackException('A pose image is not an RGBA PNG.');
       }
     }
-    final rig = RigDefinition.fromJson(
-      jsonDecode(utf8.decode(files['rig.json']!)),
-    );
     final frontOpenSize = await _validateSprite(files['front-open.png']!);
     final frontClosedSize = await _validateSprite(files['front-closed.png']!);
     if (frontOpenSize != frontClosedSize) {
@@ -207,10 +213,14 @@ class PetPackService {
         'The front pose images must use the same canvas.',
       );
     }
-    final sideSize = await _validateSprite(files['side.png']!);
+    final sideSize = hasSideImage
+        ? await _validateSprite(files['side.png']!)
+        : null;
     await _validateSprite(files['sleep.png']!);
     rig.front.validateForImage(frontOpenSize.$1, frontOpenSize.$2);
-    rig.side.validateForImage(sideSize.$1, sideSize.$2);
+    if (sideSize != null) {
+      rig.side!.validateForImage(sideSize.$1, sideSize.$2);
+    }
     return ValidatedPetPack(
       descriptor: PetAssetDescriptor(
         id: id,
@@ -227,11 +237,14 @@ class PetPackService {
           frontOpenAsset: 'front-open.png',
           frontClosedAsset: 'front-closed.png',
           sleepAsset: 'sleep.png',
-          sideAsset: 'side.png',
+          sideAsset: hasSideImage ? 'side.png' : null,
         ),
       ),
       requestId: null,
-      files: {for (final name in required) name: files[name]!},
+      files: {
+        for (final name in <String>[...required, if (hasSideImage) 'side.png'])
+          name: files[name]!,
+      },
     );
   }
 
@@ -390,14 +403,16 @@ class PetPackService {
               frontOpenAsset: '${entity.path}/front-open.png',
               frontClosedAsset: '${entity.path}/front-closed.png',
               sleepAsset: '${entity.path}/sleep.png',
-              sideAsset: '${entity.path}/side.png',
+              sideAsset: await File('${entity.path}/side.png').exists()
+                  ? '${entity.path}/side.png'
+                  : null,
             );
             final requiredFiles = <String>[
               rigAssets.rigAsset,
               rigAssets.frontOpenAsset,
               rigAssets.frontClosedAsset,
               rigAssets.sleepAsset,
-              rigAssets.sideAsset,
+              ?rigAssets.sideAsset,
             ];
             var allExist = true;
             for (final path in requiredFiles) {
@@ -407,9 +422,12 @@ class PetPackService {
               }
             }
             if (!allExist) continue;
-            RigDefinition.fromJson(
+            final definition = RigDefinition.fromJson(
               jsonDecode(await File(rigAssets.rigAsset).readAsString()),
             );
+            if ((rigAssets.sideAsset != null) != (definition.side != null)) {
+              continue;
+            }
             pets.add(
               PetAssetDescriptor(
                 id: id,
