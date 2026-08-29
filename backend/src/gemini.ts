@@ -50,9 +50,9 @@ const POSE_PROMPTS = {
   frontOpen:
     'Render this EXACT canonical rig pose: full body, front-facing, sitting upright and centered; ' +
     'eyes open; head straight and level; both ears fully visible with clear background around ' +
-    'them; tail curving naturally along the ground around one side of the body, tail tip resting ' +
-    'level with the front paws, the whole tail visible and readable against the background; front ' +
-    'legs straight and slightly apart.',
+    "them; the tail keeps this pet's own natural length and carriage, held low beside one side " +
+    'of the body, fully visible and readable against the background — never lengthen, shorten, ' +
+    'or restyle it; front legs straight and slightly apart.',
   frontClosed:
     'The final attached image is the canonical open-eye sprite. Re-render exactly that same pet, ' +
     'framing, silhouette, body pose, head angle, leg placement, tail placement, lighting, palette, ' +

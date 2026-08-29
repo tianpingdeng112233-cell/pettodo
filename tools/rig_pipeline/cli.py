@@ -35,6 +35,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--best-of", type=int, default=2, help="generated candidates scored per canonical pose")
     parser.add_argument("--retries", type=int, default=3, help="Gemini retries after the initial attempt")
     parser.add_argument(
+        "--pose-note",
+        default=None,
+        help="free-text pose emphasis appended to every pose prompt (e.g. a breed's true tail carriage)",
+    )
+    parser.add_argument(
         "--pose-ref",
         type=Path,
         default=None,
@@ -136,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         treat_emoji=args.treat_emoji,
         output=output,
         qa_output=qa_output,
+        pose_note=args.pose_note,
         pose_ref=args.pose_ref,
         style_ref=args.style_ref,
         best_of=args.best_of,

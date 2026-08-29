@@ -18,7 +18,7 @@ from .rig import build_rig
 
 
 POSES = {
-    "front-open.png": "front view, sitting upright, eyes open, both front legs visible and separated, looking directly at viewer; tail curving naturally along the ground around one side of the body, tail tip resting level with the front paws, the whole tail visible and readable against the background",
+    "front-open.png": "front view, sitting upright, eyes open, both front legs visible and separated, looking directly at viewer; the tail keeps this pet's own natural length and carriage, held low beside one side of the body, fully visible and readable against the background — never lengthen, shorten, or restyle it",
     "front-closed.png": "the exact same front sitting pose, framing, silhouette, expression, and limb placement as the supplied front-open canonical image; change only the eyes from open to gently closed",
     "sleep.png": "curled sleeping pose, eyes closed, whole body and tail readable with minimal self-occlusion",
     "side.png": "strict side view standing on all four legs, facing right, head and full tail visible, front and hind legs readable with minimal overlap",
@@ -44,6 +44,9 @@ class PipelineConfig:
     # optional anchors: pose_ref pins the canonical pose geometry, style_ref
     # pins the art style — both are essential for preset batches, where
     # per-animal drift would otherwise break the shared rig template
+    # free-text pose emphasis appended to every pose prompt (e.g. pinning a
+    # breed's true tail carriage when identity references alone drift)
+    pose_note: str | None = None
     pose_ref: Path | None = None
     style_ref: Path | None = None
     best_of: int = 2
@@ -70,6 +73,8 @@ def _select_candidate(
     silhouette_reference: Path | None = None,
 ) -> Image.Image:
     prompt = f"{STYLE_PROMPT}\n{_identity_prompt(config)}\nRequired pose: {POSES[name]}"
+    if config.pose_note:
+        prompt += f"\nPose emphasis: {config.pose_note.strip()}"
     anchors: list[Path] = []
     if config.pose_ref is not None and name == "front-open.png":
         anchors.append(config.pose_ref)
