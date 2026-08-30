@@ -13,6 +13,7 @@ AppState rollOverIfNeeded(AppState state, DateTime localNow) {
               : task,
         )
         .toList(growable: false),
+    feedingCountToday: 0,
     fedToday: null,
   );
 }
