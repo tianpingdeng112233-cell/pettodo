@@ -228,6 +228,19 @@ class AppState {
             persistedFeedingCount == 0
         ? 1
         : persistedFeedingCount;
+    final persistedFoodInventory = _foodInventoryFromJson(
+      json['foodInventory'],
+    );
+    // Any pre-v5 save with history gets the one-time greeting biscuit, so a
+    // migrated user with 1-4 treats can still feed on their first screen.
+    final foodInventory =
+        schemaVersion < currentAppStateSchemaVersion &&
+            (lifetimeCompletions > 0 ||
+                persistedTreats > 0 ||
+                json['fedToday'] != null) &&
+            persistedFoodInventory.isEmpty
+        ? const <String, int>{'biscuit': 1}
+        : persistedFoodInventory;
     final unlockedDecorIds = <String>{
       ...(json['unlockedDecorIds'] as List<Object?>? ?? const <Object?>[])
           .whereType<String>(),
@@ -262,7 +275,7 @@ class AppState {
         placedFurnitureBySlot: persistedPlacements,
       ),
       treats: persistedTreats < 0 ? 0 : persistedTreats,
-      foodInventory: _foodInventoryFromJson(json['foodInventory']),
+      foodInventory: foodInventory,
       bondXp: bondXp,
       feedingCountToday: feedingCountToday,
       lastCompanionDay: json['lastCompanionDay'] as String?,
