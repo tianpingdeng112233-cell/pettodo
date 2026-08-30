@@ -28,6 +28,20 @@ import '../sprite/sprite_atlas.dart';
 import 'focus_session_controller.dart';
 import 'hatch_flow.dart';
 
+class TaskReminderSelection {
+  const TaskReminderSelection({
+    required this.enabled,
+    required this.hour,
+    required this.minute,
+    this.scheduledAt,
+  });
+
+  final bool enabled;
+  final int hour;
+  final int minute;
+  final DateTime? scheduledAt;
+}
+
 class AppController extends ChangeNotifier {
   factory AppController({
     required AppStateStore stateStore,
@@ -873,6 +887,7 @@ class AppController extends ChangeNotifier {
     required String taskId,
     required String title,
     required TaskKind kind,
+    required TaskReminderSelection reminderSelection,
     String? note,
   }) async {
     final current = state.taskById(taskId);
@@ -885,7 +900,7 @@ class AppController extends ChangeNotifier {
     }
     final normalizedNote = note?.trim();
     final changedKind = current.kind != kind;
-    final replacement = current.copyWith(
+    var replacement = current.copyWith(
       title: normalizedTitle,
       kind: kind,
       note: normalizedNote == null || normalizedNote.isEmpty
@@ -894,7 +909,11 @@ class AppController extends ChangeNotifier {
       completedToday: changedKind ? false : current.completedToday,
       completedAt: changedKind ? null : current.completedAt,
     );
+    final resolved = await _resolveTaskReminder(replacement, reminderSelection);
+    if (resolved == null) return false;
+    replacement = replacement.copyWith(reminder: resolved.reminder);
     state = state.copyWith(
+      notificationPermission: resolved.permission,
       tasks: state.tasks
           .map((item) => item.id == taskId ? replacement : item)
           .toList(growable: false),
@@ -908,7 +927,7 @@ class AppController extends ChangeNotifier {
     });
     await _refreshNotificationSchedule();
     notifyListeners();
-    return true;
+    return resolved.succeeded;
   }
 
   Future<bool> setTaskReminder({
@@ -916,35 +935,26 @@ class AppController extends ChangeNotifier {
     required bool enabled,
     required int hour,
     required int minute,
+    DateTime? scheduledAt,
   }) async {
     final task = state.taskById(taskId);
     if (task == null) return false;
-    var permission = state.notificationPermission;
-    if (enabled && permission == NotificationPermissionState.denied) {
-      return false;
-    }
-    if (enabled && permission == NotificationPermissionState.notRequested) {
-      final granted = await _notifications.requestPermission();
-      permission = granted
-          ? NotificationPermissionState.granted
-          : NotificationPermissionState.denied;
-    }
-    final canEnable =
-        enabled && permission == NotificationPermissionState.granted;
-    final existing = task.reminder;
-    final reminder = TaskReminder(
-      hour: hour,
-      minute: minute,
-      enabled: canEnable,
+    final resolved = await _resolveTaskReminder(
+      task,
+      TaskReminderSelection(
+        enabled: enabled,
+        hour: hour,
+        minute: minute,
+        scheduledAt: scheduledAt,
+      ),
     );
+    if (resolved == null) return false;
     state = state.copyWith(
-      notificationPermission: permission,
+      notificationPermission: resolved.permission,
       tasks: state.tasks
           .map(
             (item) => item.id == taskId
-                ? item.copyWith(
-                    reminder: enabled || existing != null ? reminder : null,
-                  )
+                ? item.copyWith(reminder: resolved.reminder)
                 : item,
           )
           .toList(growable: false),
@@ -952,7 +962,52 @@ class AppController extends ChangeNotifier {
     await _stateStore.save(state);
     await _refreshNotificationSchedule();
     notifyListeners();
-    return canEnable || !enabled;
+    return resolved.succeeded;
+  }
+
+  Future<
+    ({
+      NotificationPermissionState permission,
+      TaskReminder? reminder,
+      bool succeeded,
+    })?
+  >
+  _resolveTaskReminder(TodoTask task, TaskReminderSelection selection) async {
+    if (selection.enabled &&
+        task.kind == TaskKind.oneOff &&
+        selection.scheduledAt != null &&
+        !selection.scheduledAt!.isAfter(_now())) {
+      return null;
+    }
+    var permission = state.notificationPermission;
+    if (selection.enabled && permission == NotificationPermissionState.denied) {
+      return null;
+    }
+    if (selection.enabled &&
+        permission == NotificationPermissionState.notRequested) {
+      final granted = await _notifications.requestPermission();
+      permission = granted
+          ? NotificationPermissionState.granted
+          : NotificationPermissionState.denied;
+    }
+    final canEnable =
+        selection.enabled && permission == NotificationPermissionState.granted;
+    final reminder =
+        task.kind == TaskKind.oneOff && selection.scheduledAt != null
+        ? TaskReminder.once(
+            scheduledAt: selection.scheduledAt!,
+            enabled: canEnable,
+          )
+        : TaskReminder(
+            hour: selection.hour,
+            minute: selection.minute,
+            enabled: canEnable,
+          );
+    return (
+      permission: permission,
+      reminder: selection.enabled || task.reminder != null ? reminder : null,
+      succeeded: canEnable || !selection.enabled,
+    );
   }
 
   Future<void> updateNotificationTime(int hour, int minute) async {
@@ -1158,15 +1213,23 @@ class AppController extends ChangeNotifier {
           invitationMinute: state.notificationMinute,
           taskReminders: state.tasks
               .where((task) => task.reminder?.enabled ?? false)
-              .map(
-                (task) => TaskReminderSchedule(
+              .map((task) {
+                final reminder = task.reminder!;
+                if (task.kind == TaskKind.oneOff && reminder.isTimed) {
+                  return TaskReminderSchedule.once(
+                    taskId: task.id,
+                    title: task.title,
+                    scheduledAt: reminder.scheduledAt!,
+                  );
+                }
+                return TaskReminderSchedule(
                   taskId: task.id,
                   title: task.title,
-                  hour: task.reminder!.hour,
-                  minute: task.reminder!.minute,
+                  hour: reminder.hour,
+                  minute: reminder.minute,
                   skipToday: task.kind == TaskKind.daily && task.completedToday,
-                ),
-              )
+                );
+              })
               .toList(growable: false),
           now: now,
         );

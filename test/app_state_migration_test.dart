@@ -69,6 +69,82 @@ void main() {
     expect(result.tasks.last.reminder?.minute, 15);
   });
 
+  test('legacy one-off reminder stays daily and round-trips unchanged', () {
+    final task = TodoTask.fromJson(<String, Object?>{
+      'id': 'legacy-once',
+      'title': 'Call Mum',
+      'kind': 'oneOff',
+      'reminder': <String, Object?>{'hour': 18, 'minute': 15},
+    });
+
+    expect(task.reminder?.isDaily, isTrue);
+    expect(task.reminder?.isTimed, isFalse);
+    expect(task.reminder?.hour, 18);
+    expect(task.reminder?.minute, 15);
+    expect(task.toJson()['reminder'], <String, Object?>{
+      'hour': 18,
+      'minute': 15,
+    });
+  });
+
+  test('timed reminder round-trips its one-off date without loss', () {
+    final scheduledAt = DateTime(2026, 8, 31, 15);
+    final task = TodoTask(
+      id: 'timed-once',
+      title: 'Meet Sam',
+      kind: TaskKind.oneOff,
+      reminder: TaskReminder.once(scheduledAt: scheduledAt),
+    );
+
+    final result = TodoTask.fromJson(task.toJson());
+
+    expect(result.reminder?.isTimed, isTrue);
+    expect(result.reminder?.isDaily, isFalse);
+    expect(result.reminder?.scheduledAt, scheduledAt);
+    expect(result.toJson(), task.toJson());
+  });
+
+  test(
+    'mixed legacy and timed reminders load with their original behavior',
+    () {
+      final result = AppState.fromJson(<String, Object?>{
+        ...AppState.initial(DateTime(2026, 8, 30)).toJson(),
+        'tasks': <Object?>[
+          <String, Object?>{
+            'id': 'daily',
+            'title': 'Water',
+            'kind': 'daily',
+            'reminder': <String, Object?>{
+              'hour': 9,
+              'minute': 0,
+              'enabled': true,
+            },
+          },
+          <String, Object?>{
+            'id': 'legacy-once',
+            'title': 'Old one-off',
+            'kind': 'oneOff',
+            'reminder': <String, Object?>{'hour': 10, 'minute': 30},
+          },
+          <String, Object?>{
+            'id': 'timed-once',
+            'title': 'New one-off',
+            'kind': 'oneOff',
+            'reminder': <String, Object?>{
+              'scheduledAt': '2026-08-31T15:00:00.000',
+              'enabled': true,
+            },
+          },
+        ],
+      }, DateTime(2026, 8, 30));
+
+      expect(result.tasks[0].reminder?.isDaily, isTrue);
+      expect(result.tasks[1].reminder?.isDaily, isTrue);
+      expect(result.tasks[2].reminder?.isTimed, isTrue);
+      expect(result.tasks[2].reminder?.scheduledAt, DateTime(2026, 8, 31, 15));
+    },
+  );
+
   test('v3 keeps choco and all progress without a task-008 schema bump', () {
     final result = AppState.fromJson(<String, Object?>{
       'schemaVersion': 3,

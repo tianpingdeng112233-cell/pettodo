@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,12 +7,14 @@ import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
 import '../domain/app_state.dart';
 import '../domain/onboarding_flow.dart';
+import '../domain/task_grouping.dart';
 import '../sprite/pet_sprite.dart';
 import '../sprite/rig_pet_sprite.dart';
 import 'collection_screen.dart';
 import 'focus_screen.dart';
 import 'history_screen.dart';
 import 'hatch_request_screen.dart';
+import 'pet_date_format.dart';
 import 'settings_screen.dart';
 import 'task_editor_sheet.dart';
 import 'theme/pet_colors.dart';
@@ -90,9 +94,55 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent> {
   bool _editing = false;
+  Timer? _comingUpBoundaryTimer;
 
   AppController get controller => widget.controller;
   EventLogStore get eventLog => widget.eventLog;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleComingUpBoundary();
+  }
+
+  @override
+  void didUpdateWidget(covariant _HomeContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleComingUpBoundary();
+  }
+
+  @override
+  void dispose() {
+    _comingUpBoundaryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleComingUpBoundary() {
+    _comingUpBoundaryTimer?.cancel();
+    if (widget.now != null) return;
+    final now = DateTime.now();
+    final futureTimes =
+        controller.state.tasks
+            .where(
+              (task) =>
+                  task.kind == TaskKind.oneOff &&
+                  task.reminder?.enabled == true &&
+                  task.reminder?.isTimed == true &&
+                  task.reminder!.scheduledAt!.isAfter(now),
+            )
+            .map((task) => task.reminder!.scheduledAt!)
+            .toList(growable: false)
+          ..sort();
+    if (futureTimes.isEmpty) return;
+    _comingUpBoundaryTimer = Timer(
+      futureTimes.first.difference(now) + const Duration(milliseconds: 1),
+      () {
+        if (!mounted) return;
+        setState(() {});
+        _scheduleComingUpBoundary();
+      },
+    );
+  }
 
   Future<void> _quickAdd() async {
     final title = await showDialog<String>(
@@ -125,6 +175,7 @@ class _HomeContentState extends State<_HomeContent> {
       enabled: draft.reminderEnabled,
       hour: draft.reminderTime.hour,
       minute: draft.reminderTime.minute,
+      scheduledAt: draft.reminderScheduledAt,
     );
   }
 
@@ -140,19 +191,19 @@ class _HomeContentState extends State<_HomeContent> {
           NotificationPermissionState.denied,
     );
     if (draft == null) return;
-    final edited = await controller.editTask(
+    final reminderSaved = await controller.editTask(
       taskId: task.id,
       title: draft.title,
       kind: draft.kind,
       note: draft.note,
+      reminderSelection: TaskReminderSelection(
+        enabled: draft.reminderEnabled,
+        hour: draft.reminderTime.hour,
+        minute: draft.reminderTime.minute,
+        scheduledAt: draft.reminderScheduledAt,
+      ),
     );
-    if (!edited || !mounted) return;
-    final reminderSaved = await controller.setTaskReminder(
-      taskId: task.id,
-      enabled: draft.reminderEnabled,
-      hour: draft.reminderTime.hour,
-      minute: draft.reminderTime.minute,
-    );
+    if (!mounted) return;
     if (!reminderSaved && draft.reminderEnabled && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -256,6 +307,7 @@ class _HomeContentState extends State<_HomeContent> {
         flex: 5,
         child: _TaskList(
           controller: controller,
+          now: widget.now ?? DateTime.now(),
           editing: _editing,
           onToggleEditing: () => setState(() => _editing = !_editing),
           onQuickAdd: controller.state.canAddTask
@@ -639,6 +691,7 @@ class _TreatBar extends StatelessWidget {
 class _TaskList extends StatelessWidget {
   const _TaskList({
     required this.controller,
+    required this.now,
     required this.editing,
     required this.onToggleEditing,
     required this.onQuickAdd,
@@ -648,6 +701,7 @@ class _TaskList extends StatelessWidget {
   });
 
   final AppController controller;
+  final DateTime now;
   final bool editing;
   final VoidCallback onToggleEditing;
   final VoidCallback? onQuickAdd;
@@ -656,81 +710,114 @@ class _TaskList extends StatelessWidget {
   final VoidCallback onHistory;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      PetSpacing.s20,
-      PetSpacing.zero,
-      PetSpacing.s20,
-      PetSpacing.s12,
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
+  Widget build(BuildContext context) {
+    final groups = groupTasksForHome(controller.state.tasks, now: now);
+    Widget taskCard(TodoTask task, {DateTime? scheduledAt}) => _TaskCard(
+      title: task.title,
+      note: task.note,
+      kind: task.kind,
+      firstWin: isFirstWinTask(task),
+      hasReminder:
+          task.reminder?.enabled == true && task.reminder?.isDaily == true,
+      scheduledAt: scheduledAt,
+      checked: task.completedToday,
+      editing: editing,
+      onEdit: () => onEdit(task),
+      onRemove: () => onRemove(task),
+      onTap: () async {
+        final completed = await controller.completeTask(task.id);
+        if (completed) await HapticFeedback.mediumImpact();
+      },
+    );
+
+    final listChildren = <Widget>[
+      for (final (index, task) in groups.regular.indexed) ...<Widget>[
+        if (index > 0) const SizedBox(height: PetSpacing.s10),
+        taskCard(task),
+      ],
+      if (groups.comingUp.isNotEmpty) ...<Widget>[
+        if (groups.regular.isNotEmpty) const SizedBox(height: PetSpacing.s20),
         Padding(
-          padding: const EdgeInsets.only(left: PetSpacing.s10),
+          padding: const EdgeInsets.only(
+            left: PetSpacing.s10,
+            bottom: PetSpacing.s8,
+          ),
           child: Row(
             children: <Widget>[
-              const Expanded(
-                child: Text(
-                  "Today's little things",
-                  style: PetTextStyles.caption,
-                ),
+              const PxIcon(
+                PxIconData.calendar,
+                size: PetSpacing.s16,
+                color: PetColors.caption,
               ),
-              IconButton(
-                tooltip: 'Things we did together',
-                onPressed: onHistory,
-                icon: const PxIcon(PxIconData.heart),
-              ),
-              TextButton(
-                onPressed: onToggleEditing,
-                child: Text(editing ? 'Done' : 'Edit'),
-              ),
+              const SizedBox(width: PetSpacing.s6),
+              const Text('Coming up', style: PetTextStyles.caption),
             ],
           ),
         ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.only(top: PetSpacing.s4),
-            itemCount: controller.state.tasks.length,
-            separatorBuilder: (_, _) => const SizedBox(height: PetSpacing.s10),
-            itemBuilder: (context, index) {
-              final task = controller.state.tasks[index];
-              return _TaskCard(
-                title: task.title,
-                note: task.note,
-                kind: task.kind,
-                firstWin: isFirstWinTask(task),
-                hasReminder: task.reminder?.enabled ?? false,
-                checked: task.completedToday,
-                editing: editing,
-                onEdit: () => onEdit(task),
-                onRemove: () => onRemove(task),
-                onTap: () async {
-                  final completed = await controller.completeTask(task.id);
-                  if (completed) await HapticFeedback.mediumImpact();
-                },
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: PetSpacing.s8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: onQuickAdd,
-            icon: const PxIcon(PxIconData.plus, size: PetSpacing.s18),
-            label: Text(
-              onQuickAdd == null
-                  ? 'Seven little things are plenty for now'
-                  : editing
-                  ? 'Add one little thing'
-                  : 'Jot it down',
+        for (final (index, task) in groups.comingUp.indexed) ...<Widget>[
+          if (index > 0) const SizedBox(height: PetSpacing.s10),
+          taskCard(task, scheduledAt: task.reminder!.scheduledAt),
+        ],
+      ],
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        PetSpacing.s20,
+        PetSpacing.zero,
+        PetSpacing.s20,
+        PetSpacing.s12,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(left: PetSpacing.s10),
+            child: Row(
+              children: <Widget>[
+                const Expanded(
+                  child: Text(
+                    "Today's little things",
+                    style: PetTextStyles.caption,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Things we did together',
+                  onPressed: onHistory,
+                  icon: const PxIcon(PxIconData.heart),
+                ),
+                TextButton(
+                  onPressed: onToggleEditing,
+                  child: Text(editing ? 'Done' : 'Edit'),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(top: PetSpacing.s4),
+              children: listChildren,
+            ),
+          ),
+          const SizedBox(height: PetSpacing.s8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onQuickAdd,
+              icon: const PxIcon(PxIconData.plus, size: PetSpacing.s18),
+              label: Text(
+                onQuickAdd == null
+                    ? 'Seven little things are plenty for now'
+                    : editing
+                    ? 'Add one little thing'
+                    : 'Jot it down',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TaskCard extends StatelessWidget {
@@ -740,6 +827,7 @@ class _TaskCard extends StatelessWidget {
     required this.kind,
     required this.firstWin,
     required this.hasReminder,
+    required this.scheduledAt,
     required this.checked,
     required this.editing,
     required this.onTap,
@@ -752,6 +840,7 @@ class _TaskCard extends StatelessWidget {
   final TaskKind kind;
   final bool firstWin;
   final bool hasReminder;
+  final DateTime? scheduledAt;
   final bool checked;
   final bool editing;
   final VoidCallback onTap;
@@ -770,7 +859,9 @@ class _TaskCard extends StatelessWidget {
     return Semantics(
       container: true,
       button: true,
-      label: title,
+      label: scheduledAt == null
+          ? title
+          : '$title, ${formatTimedReminder(scheduledAt!)}',
       excludeSemantics: !editing,
       enabled: editing || !checked,
       checked: checked,
@@ -824,7 +915,12 @@ class _TaskCard extends StatelessWidget {
                           const SizedBox(height: PetSpacing.xs),
                           Text(note!, style: PetTextStyles.small),
                         ],
+                        if (scheduledAt != null) ...<Widget>[
+                          const SizedBox(height: PetSpacing.s6),
+                          _TimedReminderBadge(scheduledAt: scheduledAt!),
+                        ],
                         if (!firstWin &&
+                            scheduledAt == null &&
                             (kind == TaskKind.oneOff ||
                                 hasReminder)) ...<Widget>[
                           const SizedBox(height: PetSpacing.xs),
@@ -865,6 +961,41 @@ class _TaskCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TimedReminderBadge extends StatelessWidget {
+  const _TimedReminderBadge({required this.scheduledAt});
+
+  final DateTime scheduledAt;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: const ShapeDecoration(
+      color: PetColors.badgeFill,
+      shape: StairBorder.small(),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: PetSpacing.s8,
+        vertical: PetSpacing.s4,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const PxIcon(
+            PxIconData.clock,
+            size: PetSpacing.s13,
+            color: PetColors.accentText,
+          ),
+          const SizedBox(width: PetSpacing.s5),
+          Text(
+            formatTimedReminder(scheduledAt),
+            style: PetTextStyles.caption.copyWith(color: PetColors.accentText),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Owns its own text controller: disposing one right after `showDialog`
@@ -1213,25 +1344,10 @@ class _StarPainter extends CustomPainter {
 }
 
 String _dateGreeting(DateTime value) {
-  const weekdays = <String>['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const months = <String>[
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
   final dayPart = value.hour < 12
       ? 'Lovely morning'
       : value.hour < 18
       ? 'Lovely afternoon'
       : 'Lovely evening';
-  return '${weekdays[value.weekday - 1]}, ${months[value.month - 1]} ${value.day} · $dayPart';
+  return '${formatShortDate(value)} · $dayPart';
 }

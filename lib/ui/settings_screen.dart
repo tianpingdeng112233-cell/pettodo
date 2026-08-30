@@ -63,18 +63,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           state.notificationPermission == NotificationPermissionState.denied,
     );
     if (draft == null) return;
-    final saved = await widget.controller.editTask(
+    final reminderSaved = await widget.controller.editTask(
       taskId: task.id,
       title: draft.title,
       kind: draft.kind,
       note: draft.note,
-    );
-    if (!saved) return;
-    final reminderSaved = await widget.controller.setTaskReminder(
-      taskId: task.id,
-      enabled: draft.reminderEnabled,
-      hour: draft.reminderTime.hour,
-      minute: draft.reminderTime.minute,
+      reminderSelection: TaskReminderSelection(
+        enabled: draft.reminderEnabled,
+        hour: draft.reminderTime.hour,
+        minute: draft.reminderTime.minute,
+        scheduledAt: draft.reminderScheduledAt,
+      ),
     );
     if (!reminderSaved && draft.reminderEnabled && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -106,6 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       enabled: draft.reminderEnabled,
       hour: draft.reminderTime.hour,
       minute: draft.reminderTime.minute,
+      scheduledAt: draft.reminderScheduledAt,
     );
   }
 
