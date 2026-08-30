@@ -35,4 +35,4 @@ frozen(台账保留不排期);剩余工作对齐毕设交付:终稿 8k 词、演
 
 - UI 验收用 **Android emulator**(`flutter emulators --launch meetpr`),不开 iOS 模拟器;金样测试 `flutter test --update-goldens` 刷新后必须肉眼核对
 - Codex 派卡走 `docs/CODEX-TASK-*.md`(自包含:目标/范围/约束/验收/测试 seam)
-- spec 正典:`docs/SPEC-015`(rig 管线)/`016`(onboarding)/`017`(overlay)/`018`(房间家具);重大取舍在 `docs/adr/`
+- spec 正典:`docs/SPEC-015`(rig 管线)/`016`(onboarding)/`017`(overlay)/`018`(房间家具)/`019`(专注)/`020`(喂养羁绊)/`021`(到时提醒);重大取舍在 `docs/adr/`
