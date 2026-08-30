@@ -44,6 +44,8 @@ void main() {
         'frontLegRotation': 0.0,
         'hindLegRotation': 0.0,
         'sleepOpacity': 0.0,
+        'garmentOpacity': 0.5,
+        'usesSidePose': false,
         'blinkClosed': false,
       },
     );
@@ -68,6 +70,8 @@ void main() {
         'frontLegRotation': 18.0,
         'hindLegRotation': -18.0,
         'sleepOpacity': 0.0,
+        'garmentOpacity': 0.0,
+        'usesSidePose': true,
         'blinkClosed': false,
       },
     );
@@ -92,8 +96,51 @@ void main() {
         'frontLegRotation': 0.0,
         'hindLegRotation': 0.0,
         'sleepOpacity': 0.0,
+        'garmentOpacity': 0.9,
+        'usesSidePose': false,
         'blinkClosed': false,
       },
+    );
+  });
+
+  test('driver owns fitted garment visibility for every pose family', () {
+    expect(
+      driver
+          .sample(
+            action: RigPetAction.sleepTransition,
+            elapsed: const Duration(milliseconds: 450),
+          )
+          .garmentOpacity,
+      0.5,
+    );
+    expect(
+      driver
+          .sample(
+            action: RigPetAction.happyJump,
+            elapsed: const Duration(milliseconds: 450),
+          )
+          .garmentOpacity,
+      0.5,
+    );
+    expect(
+      driver
+          .sample(
+            action: RigPetAction.running,
+            elapsed: Duration.zero,
+            hasSide: true,
+          )
+          .garmentOpacity,
+      0,
+    );
+    expect(
+      driver
+          .sample(
+            action: RigPetAction.running,
+            elapsed: const Duration(milliseconds: 450),
+            hasSide: false,
+          )
+          .garmentOpacity,
+      0.5,
     );
   });
 

@@ -27,6 +27,7 @@ class RigDriverParameters {
   static const int sidelessRunBobPixels = 10;
   static const double tailDegrees = 7;
   static const double sleepTransitionSeconds = 0.9;
+  static const double garmentFadeSeconds = 0.9;
   static const double stretchDurationSeconds = 1.8;
   static const double nuzzlePulsePeriodSeconds = 1.2;
   static const double nuzzleVerticalBase = 0.45;
@@ -64,6 +65,8 @@ class RigPoseFrame {
     required this.frontLegRotationDegrees,
     required this.hindLegRotationDegrees,
     required this.sleepOpacity,
+    required this.garmentOpacity,
+    required this.usesSidePose,
     required this.blinkClosed,
   });
 
@@ -79,6 +82,8 @@ class RigPoseFrame {
   final double frontLegRotationDegrees;
   final double hindLegRotationDegrees;
   final double sleepOpacity;
+  final double garmentOpacity;
+  final bool usesSidePose;
   final bool blinkClosed;
 
   Map<String, Object> get snapshot => <String, Object>{
@@ -91,6 +96,8 @@ class RigPoseFrame {
     'frontLegRotation': frontLegRotationDegrees,
     'hindLegRotation': hindLegRotationDegrees,
     'sleepOpacity': sleepOpacity,
+    'garmentOpacity': garmentOpacity,
+    'usesSidePose': usesSidePose,
     'blinkClosed': blinkClosed,
   };
 }
@@ -119,6 +126,8 @@ class RigDriver {
     var frontLegRotation = 0.0;
     var hindLegRotation = 0.0;
     var sleepOpacity = 0.0;
+    var garmentOpacity = 1.0;
+    final usesSidePose = action == RigPetAction.running && hasSide;
 
     if (action != RigPetAction.running) {
       final breath =
@@ -164,6 +173,7 @@ class RigDriver {
         );
         break;
       case RigPetAction.happyJump:
+        garmentOpacity = _frontGarmentOpacity(seconds);
         final phase = _phase(seconds, RigDriverParameters.jumpPeriodSeconds);
         final lift = math.sin(phase * math.pi).clamp(0.0, 1.0);
         translationY = _pixel(-RigDriverParameters.jumpHeight * lift);
@@ -172,11 +182,13 @@ class RigDriver {
         scaleY = _scale(1 + squash * RigDriverParameters.jumpStretchY);
         break;
       case RigPetAction.eatTreat:
+        garmentOpacity = _frontGarmentOpacity(seconds);
         final dip = _pulse(seconds, RigDriverParameters.eatPulsePeriodSeconds);
         headY = _pixel(RigDriverParameters.eatingHeadDrop * dip);
         headRotation = _rotation(RigDriverParameters.eatHeadDegrees * dip);
         break;
       case RigPetAction.morningStretch:
+        garmentOpacity = _frontGarmentOpacity(seconds);
         final progress = (seconds / RigDriverParameters.stretchDurationSeconds)
             .clamp(0.0, 1.0);
         final stretch = math.sin(progress * math.pi);
@@ -192,8 +204,12 @@ class RigDriver {
             1.0,
           ),
         );
+        garmentOpacity = 1 - sleepOpacity;
         break;
       case RigPetAction.running:
+        // There are no side-pose fitted assets. Side running intentionally
+        // hides them immediately; a fade would imply unavailable side art.
+        garmentOpacity = usesSidePose ? 0 : _frontGarmentOpacity(seconds);
         if (!hasSide) {
           final hop = math.sin(
             seconds /
@@ -237,6 +253,8 @@ class RigDriver {
       frontLegRotationDegrees: frontLegRotation,
       hindLegRotationDegrees: hindLegRotation,
       sleepOpacity: sleepOpacity,
+      garmentOpacity: _scale(garmentOpacity),
+      usesSidePose: usesSidePose,
       blinkClosed:
           action != RigPetAction.sleepTransition &&
           _blinkClosed(elapsed.inMilliseconds),
@@ -272,6 +290,9 @@ class RigDriver {
     return false;
   }
 }
+
+double _frontGarmentOpacity(double seconds) =>
+    1 - (seconds / RigDriverParameters.garmentFadeSeconds).clamp(0.0, 1.0);
 
 double _phase(double seconds, double period) => (seconds % period) / period;
 

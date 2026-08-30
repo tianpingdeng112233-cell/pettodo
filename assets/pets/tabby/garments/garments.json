@@ -1,0 +1,40 @@
+{
+  "formatVersion": 1,
+  "petId": "tabby",
+  "canvas": {
+    "width": 1408,
+    "height": 768
+  },
+  "garments": [
+    {
+      "id": "wool_hat",
+      "anchor": "head",
+      "asset": "wool_hat.png"
+    },
+    {
+      "id": "straw_hat",
+      "anchor": "head",
+      "asset": "straw_hat.png"
+    },
+    {
+      "id": "party_hat",
+      "anchor": "head",
+      "asset": "party_hat.png"
+    },
+    {
+      "id": "red_scarf",
+      "anchor": "neck",
+      "asset": "red_scarf.png"
+    },
+    {
+      "id": "plaid_scarf",
+      "anchor": "neck",
+      "asset": "plaid_scarf.png"
+    },
+    {
+      "id": "bell_collar",
+      "anchor": "neck",
+      "asset": "bell_collar.png"
+    }
+  ]
+}

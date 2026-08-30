@@ -19,6 +19,8 @@ void main() {
       frontLegRotationDegrees: 0,
       hindLegRotationDegrees: 0,
       sleepOpacity: 0,
+      garmentOpacity: 1,
+      usesSidePose: false,
       blinkClosed: false,
     );
 
@@ -56,6 +58,8 @@ void main() {
       frontLegRotationDegrees: 0,
       hindLegRotationDegrees: 0,
       sleepOpacity: 0,
+      garmentOpacity: 1,
+      usesSidePose: false,
       blinkClosed: false,
     );
     const rotatedHeadFrame = RigPoseFrame(
@@ -71,6 +75,8 @@ void main() {
       frontLegRotationDegrees: 0,
       hindLegRotationDegrees: 0,
       sleepOpacity: 0,
+      garmentOpacity: 1,
+      usesSidePose: false,
       blinkClosed: false,
     );
 

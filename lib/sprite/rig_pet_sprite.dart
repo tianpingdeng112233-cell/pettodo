@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -8,6 +10,7 @@ import '../ui/widgets/accessory_item_view.dart';
 import 'accessory_anchors.dart';
 import 'fitted_canvas_transform.dart';
 import 'rig_driver.dart';
+import 'rig_garment_manifest.dart';
 import 'rig_pet.dart';
 import 'rig_pet_renderer.dart';
 
@@ -77,9 +80,10 @@ class _RigPetSpriteState extends State<RigPetSprite>
 
   @override
   Widget build(BuildContext context) {
+    final elapsed = widget.fixedElapsed ?? _elapsed;
     final frame = _driver.sample(
       action: widget.action,
-      elapsed: widget.fixedElapsed ?? _elapsed,
+      elapsed: elapsed,
       target: widget.target,
       hasSide: widget.pet.definition.side != null,
     );
@@ -88,7 +92,7 @@ class _RigPetSpriteState extends State<RigPetSprite>
       builder: (context, constraints) {
         final size = constraints.biggest;
         final side = widget.pet.definition.side;
-        final sidePose = widget.action == RigPetAction.running && side != null;
+        final sidePose = frame.usesSidePose;
         final imageWidth = sidePose
             ? widget.pet.sideWidth!
             : widget.pet.frontWidth;
@@ -96,19 +100,41 @@ class _RigPetSpriteState extends State<RigPetSprite>
             ? widget.pet.sideHeight!
             : widget.pet.frontHeight;
         final headBox = sidePose
-            ? side.head
+            ? side!.head
             : widget.pet.definition.front.head;
         final headPivot = sidePose
-            ? side.headPivot
+            ? side!.headPivot
             : widget.pet.definition.front.headPivot;
         final groundY = sidePose
-            ? side.groundY
+            ? side!.groundY
             : widget.pet.definition.front.groundY;
         final fitted = FittedCanvasTransform.contain(
           canvasSize: size,
           contentWidth: imageWidth.toDouble(),
           contentHeight: imageHeight.toDouble(),
         );
+        final garmentLayers = <AccessoryAnchor, ui.Image>{};
+        final stickerAccessories = <AccessoryItem>[];
+        for (final item in widget.accessories) {
+          final selection = selectRigAccessoryRendering(
+            accessory: item,
+            manifest: widget.pet.garments?.manifest,
+          );
+          final garment = selection.garment;
+          final image = garment == null
+              ? null
+              : widget.pet.garments?.imagesById[garment.id];
+          if (image != null) {
+            final canPaintFitted =
+                !sidePose &&
+                (item.anchor != AccessoryAnchor.head || headPivot != null);
+            if (canPaintFitted) {
+              garmentLayers[item.anchor] = image;
+            }
+            continue;
+          }
+          stickerAccessories.add(item);
+        }
         return Stack(
           clipBehavior: Clip.none,
           children: <Widget>[
@@ -116,15 +142,15 @@ class _RigPetSpriteState extends State<RigPetSprite>
               child: CustomPaint(
                 painter: _RigPainter(
                   pet: widget.pet,
-                  action: widget.action,
                   frame: frame,
                   externalOffset: widget.externalOffset,
+                  garmentLayers: garmentLayers,
                 ),
               ),
             ),
             if (widget.accessoryManifest case final manifest?
                 when headBox != null && headPivot != null)
-              for (final item in widget.accessories)
+              for (final item in stickerAccessories)
                 AnchoredAccessoryItemView(
                   item: item,
                   manifest: manifest,
@@ -166,24 +192,24 @@ AccessoryPose _canvasAccessoryPose(
 class _RigPainter extends CustomPainter {
   const _RigPainter({
     required this.pet,
-    required this.action,
     required this.frame,
     required this.externalOffset,
+    required this.garmentLayers,
   });
 
   final LoadedRigPet pet;
-  final RigPetAction action;
   final RigPoseFrame frame;
   final Offset externalOffset;
+  final Map<AccessoryAnchor, ui.Image> garmentLayers;
 
   @override
   void paint(Canvas canvas, Size size) => paintRigPetFrame(
     canvas: canvas,
     size: size,
     pet: pet,
-    action: action,
     frame: frame,
     externalOffset: externalOffset,
+    garmentLayers: garmentLayers,
   );
 
   @override

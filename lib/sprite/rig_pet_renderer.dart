@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import '../domain/pet_action.dart';
+import '../domain/accessory.dart';
 import 'rig_definition.dart';
 import 'rig_driver.dart';
 import 'rig_pet.dart';
@@ -10,16 +10,25 @@ void paintRigPetFrame({
   required ui.Canvas canvas,
   required ui.Size size,
   required LoadedRigPet pet,
-  required RigPetAction action,
   required RigPoseFrame frame,
   ui.Offset externalOffset = ui.Offset.zero,
+  Map<AccessoryAnchor, ui.Image> garmentLayers =
+      const <AccessoryAnchor, ui.Image>{},
 }) {
   final frontOpacity = 1 - frame.sleepOpacity;
   if (frontOpacity > 0) {
-    if (action == RigPetAction.running && pet.definition.side != null) {
+    if (frame.usesSidePose) {
       _paintSide(canvas, size, pet, frame, externalOffset, frontOpacity);
     } else {
-      _paintFront(canvas, size, pet, frame, externalOffset, frontOpacity);
+      _paintFront(
+        canvas,
+        size,
+        pet,
+        frame,
+        externalOffset,
+        frontOpacity,
+        garmentLayers,
+      );
     }
   }
   if (frame.sleepOpacity > 0) {
@@ -41,6 +50,7 @@ void _paintFront(
   RigPoseFrame frame,
   ui.Offset externalOffset,
   double opacity,
+  Map<AccessoryAnchor, ui.Image> garmentLayers,
 ) {
   final rig = pet.definition.front;
   final scale = _prepareCanvas(
@@ -56,6 +66,7 @@ void _paintFront(
     externalOffset.dy.round() / scale,
   );
   final paint = _opacityPaint(opacity);
+  final garmentPaint = _opacityPaint(frame.garmentOpacity);
   final head = pet.frontLayers.head;
   if (head == null) {
     _drawLayer(
@@ -67,6 +78,20 @@ void _paintFront(
       pet.frontHeight,
       paint,
     );
+    if (garmentLayers[AccessoryAnchor.neck] case final neck?) {
+      _drawLayer(canvas, neck, pet.frontWidth, pet.frontHeight, garmentPaint);
+    }
+    // Without a separate head layer there is no head transform to ride, so a
+    // head garment is composited as a plain aligned layer above the body.
+    if (garmentLayers[AccessoryAnchor.head] case final headGarment?) {
+      _drawLayer(
+        canvas,
+        headGarment,
+        pet.frontWidth,
+        pet.frontHeight,
+        garmentPaint,
+      );
+    }
     canvas.restore();
     return;
   }
@@ -87,6 +112,9 @@ void _paintFront(
     pet.frontHeight,
     paint,
   );
+  if (garmentLayers[AccessoryAnchor.neck] case final neck?) {
+    _drawLayer(canvas, neck, pet.frontWidth, pet.frontHeight, garmentPaint);
+  }
   _drawAround(
     canvas,
     frame.blinkClosed ? pet.frontLayers.closedHead! : head,
@@ -100,6 +128,21 @@ void _paintFront(
     pet.frontWidth,
     pet.frontHeight,
   );
+  if (garmentLayers[AccessoryAnchor.head] case final headGarment?) {
+    _drawAround(
+      canvas,
+      headGarment,
+      rig.headPivot!,
+      frame.headRotationDegrees,
+      ui.Offset(
+        frame.headTranslationX.toDouble(),
+        frame.headTranslationY.toDouble(),
+      ),
+      garmentPaint,
+      pet.frontWidth,
+      pet.frontHeight,
+    );
+  }
   canvas.restore();
 }
 

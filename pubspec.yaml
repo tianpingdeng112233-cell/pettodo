@@ -72,11 +72,13 @@ flutter:
     - assets/pets/choco/front-open.png
     - assets/pets/choco/front-closed.png
     - assets/pets/choco/sleep.png
+    - assets/pets/choco/garments/
     - assets/pets/shiba/rig.json
     - assets/pets/shiba/front-open.png
     - assets/pets/shiba/front-closed.png
     - assets/pets/shiba/sleep.png
     - assets/pets/shiba/side.png
+    - assets/pets/shiba/garments/
     - assets/pets/golden/rig.json
     - assets/pets/golden/front-open.png
     - assets/pets/golden/front-closed.png
@@ -97,6 +99,7 @@ flutter:
     - assets/pets/tabby/front-closed.png
     - assets/pets/tabby/sleep.png
     - assets/pets/tabby/side.png
+    - assets/pets/tabby/garments/
     - assets/pets/blackcat/rig.json
     - assets/pets/blackcat/front-open.png
     - assets/pets/blackcat/front-closed.png

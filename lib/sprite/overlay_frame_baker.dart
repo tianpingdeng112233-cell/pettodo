@@ -71,7 +71,6 @@ class OverlayFrameBaker {
       idle.add(
         await _renderRigFrame(
           pet: pet,
-          action: RigPetAction.breathing,
           frame: frame,
           file: File('${output.path}/idle_$index.png'),
         ),
@@ -82,7 +81,6 @@ class OverlayFrameBaker {
       jumping.add(
         await _renderRigFrame(
           pet: pet,
-          action: RigPetAction.happyJump,
           frame: driver.sample(
             action: RigPetAction.happyJump,
             elapsed: Duration(milliseconds: index * 125),
@@ -266,7 +264,6 @@ class OverlayFrameBaker {
 
   Future<File> _renderRigFrame({
     required LoadedRigPet pet,
-    required RigPetAction action,
     required RigPoseFrame frame,
     required File file,
   }) async {
@@ -277,7 +274,6 @@ class OverlayFrameBaker {
       canvas: canvas,
       size: const ui.Size(192, 208),
       pet: pet,
-      action: action,
       frame: frame,
     );
     final picture = recorder.endRecording();

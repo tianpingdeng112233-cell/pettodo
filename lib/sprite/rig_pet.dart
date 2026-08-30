@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 
 import 'rig_definition.dart';
+import 'rig_garment_manifest.dart';
 import 'rig_tuning.dart';
 import 'sprite_atlas.dart';
 
@@ -53,6 +54,7 @@ class LoadedRigPet {
     required this.frontLayers,
     required this.sideLayers,
     required this.sleepImage,
+    this.garments,
   });
 
   final PetAssetDescriptor descriptor;
@@ -66,11 +68,26 @@ class LoadedRigPet {
   final RigLayerSet frontLayers;
   final RigLayerSet? sideLayers;
   final ui.Image sleepImage;
+  final LoadedRigGarments? garments;
 
   void dispose() {
     frontLayers.dispose();
     sideLayers?.dispose();
     sleepImage.dispose();
+    garments?.dispose();
+  }
+}
+
+class LoadedRigGarments {
+  const LoadedRigGarments({required this.manifest, required this.imagesById});
+
+  final RigGarmentManifest manifest;
+  final Map<String, ui.Image> imagesById;
+
+  void dispose() {
+    for (final image in imagesById.values) {
+      image.dispose();
+    }
   }
 }
 
@@ -119,6 +136,7 @@ class RigPetLoader {
     final side = sideAsset == null ? null : decoded[3]!;
     RigLayerSet? frontLayers;
     RigLayerSet? sideLayers;
+    LoadedRigGarments? garments;
     try {
       if (frontOpen.width != frontClosed.width ||
           frontOpen.height != frontClosed.height) {
@@ -174,6 +192,12 @@ class RigPetLoader {
         sleep.dispose();
         sleep = scaledSleep;
       }
+      garments = await _loadGarments(
+        descriptor: descriptor,
+        frontAsset: assets.frontOpenAsset,
+        frontWidth: frontOpen.width,
+        frontHeight: frontOpen.height,
+      );
       final pet = LoadedRigPet(
         descriptor: descriptor,
         definition: definition,
@@ -186,16 +210,19 @@ class RigPetLoader {
         frontLayers: frontLayers,
         sideLayers: sideLayers,
         sleepImage: sleep,
+        garments: garments,
       );
       // ownership transferred to LoadedRigPet
       frontLayers = null;
       sideLayers = null;
       sleep = null;
+      garments = null;
       return pet;
     } catch (_) {
       frontLayers?.dispose();
       sideLayers?.dispose();
       sleep?.dispose();
+      garments?.dispose();
       rethrow;
     } finally {
       frontOpen.dispose();
@@ -219,11 +246,88 @@ class RigPetLoader {
       ? File(path).readAsString()
       : _bundle.loadString(path);
 
+  Future<String?> _tryReadString(String path) async {
+    if (path.startsWith('/')) {
+      final file = File(path);
+      return await file.exists() ? file.readAsString() : null;
+    }
+    try {
+      return await _bundle.loadString(path);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<Uint8List> _readBytes(String path) async {
     if (path.startsWith('/')) return File(path).readAsBytes();
     final data = await _bundle.load(path);
     return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
+
+  Future<LoadedRigGarments?> _loadGarments({
+    required PetAssetDescriptor descriptor,
+    required String frontAsset,
+    required int frontWidth,
+    required int frontHeight,
+  }) async {
+    final manifestAsset = _garmentManifestAsset(frontAsset);
+    final source = await _tryReadString(manifestAsset);
+    if (source == null) return null;
+    final manifest = parseRigGarmentManifest(
+      source: source,
+      manifestAsset: manifestAsset,
+    );
+    if (manifest.petId != descriptor.id ||
+        manifest.canvasWidth != frontWidth ||
+        manifest.canvasHeight != frontHeight) {
+      throw const FormatException(
+        'The garments manifest does not match the rig pack.',
+      );
+    }
+    final decoded = <String, ui.Image>{};
+    try {
+      for (final garment in manifest.garmentsById.values) {
+        ui.Image? image;
+        try {
+          image = await _decode(garment.assetPath);
+          if (image.width != frontWidth || image.height != frontHeight) {
+            image.dispose();
+            image = null;
+            continue;
+          }
+          final scaled = await _downscaleImage(
+            image,
+            _fitScale(frontWidth, frontHeight),
+          );
+          if (!identical(scaled, image)) image.dispose();
+          decoded[garment.id] = scaled;
+          image = null;
+        } catch (_) {
+          image?.dispose();
+          // A fitted layer is an optional enhancement. Keeping its manifest
+          // entry but omitting the decoded image selects the sticker fallback.
+          continue;
+        }
+      }
+      return LoadedRigGarments(
+        manifest: manifest,
+        imagesById: Map<String, ui.Image>.unmodifiable(decoded),
+      );
+    } catch (_) {
+      for (final image in decoded.values) {
+        image.dispose();
+      }
+      rethrow;
+    }
+  }
+}
+
+String _garmentManifestAsset(String frontAsset) {
+  final slash = frontAsset.lastIndexOf('/');
+  if (slash <= 0) {
+    throw const FormatException('The front pose asset path is invalid.');
+  }
+  return '${frontAsset.substring(0, slash)}/garments/garments.json';
 }
 
 double _fitScale(int width, int height) =>
