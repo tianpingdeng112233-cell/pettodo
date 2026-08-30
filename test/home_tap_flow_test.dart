@@ -137,9 +137,9 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsNothing);
       expect(
         tester
-            .widget<PxButton>(find.widgetWithText(PxButton, 'Feed · 0'))
+            .widget<PxButton>(find.widgetWithText(PxButton, 'Snacks · 0'))
             .onPressed,
-        isNull,
+        isNotNull,
       );
 
       await tester.runAsync(() async {
@@ -182,22 +182,6 @@ void main() {
       );
       await tester.pump();
       expect(controller.petAnimation, controller.currentSchedule.animation);
-
-      await tester.runAsync(() async {
-        final bondXpBefore = controller.state.bondXp;
-        await controller.feedTreat();
-        expect(controller.state.treats, 0);
-        expect(controller.state.foodInventory, <String, int>{'biscuit': 1});
-        expect(controller.state.bondXp, bondXpBefore);
-        expect(controller.state.feedingCountToday, 0);
-        expect(controller.state.isFedOn(DateTime.now()), isTrue);
-        expect(controller.petAnimation, 'waving');
-      });
-      await tester.runAsync(
-        () => _waitReal(
-          () => controller.petAnimation == controller.currentSchedule.animation,
-        ),
-      );
     },
   );
 }

@@ -49,6 +49,7 @@ void main() {
     expect(state.fedToday, '2026-07-20');
     expect(state.feedingCountToday, 1);
     expect(state.bondXp, 25);
+    expect(state.foodInventory, <String, int>{'biscuit': 1});
     expect(state.toJson()['schemaVersion'], 5);
     expect(state.toJson(), isNot(contains('taskTitles')));
   });
@@ -135,6 +136,7 @@ void main() {
     expect(result.treats, 12);
     expect(result.fedToday, '2026-08-12');
     expect(result.notificationEnabled, isTrue);
+    expect(result.foodInventory, <String, int>{'biscuit': 1});
     expect(result.toJson()['schemaVersion'], 5);
   });
 
@@ -190,5 +192,71 @@ void main() {
     }, DateTime(2026, 8, 30));
 
     expect(result.bondXp, 400);
+  });
+
+  test(
+    'v4 history receives one biscuit exactly once when inventory is empty',
+    () {
+      for (final history in <({int completions, int treats})>[
+        (completions: 1, treats: 0),
+        (completions: 0, treats: 1),
+      ]) {
+        final migrated = AppState.fromJson(<String, Object?>{
+          'schemaVersion': 4,
+          'tasks': <Object?>[
+            <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+          ],
+          'lifetimeCompletions': history.completions,
+          'treats': history.treats,
+          'foodInventory': const <String, int>{},
+        }, DateTime(2026, 8, 30));
+
+        expect(migrated.foodInventory, <String, int>{'biscuit': 1});
+
+        final reloaded = AppState.fromJson(
+          migrated.toJson(),
+          DateTime(2026, 8, 30),
+        );
+        expect(reloaded.foodInventory, <String, int>{'biscuit': 1});
+      }
+    },
+  );
+
+  test(
+    'v5 saves and v4 saves without history receive no migration biscuit',
+    () {
+      final newSave = AppState.fromJson(
+        AppState.initial(DateTime(2026, 8, 30)).toJson(),
+        DateTime(2026, 8, 30),
+      );
+      final emptyLegacySave = AppState.fromJson(<String, Object?>{
+        'schemaVersion': 4,
+        'tasks': <Object?>[
+          <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+        ],
+        'lifetimeCompletions': 0,
+        'treats': 0,
+        'foodInventory': const <String, int>{},
+      }, DateTime(2026, 8, 30));
+
+      expect(newSave.foodInventory, isEmpty);
+      expect(emptyLegacySave.foodInventory, isEmpty);
+    },
+  );
+
+  test('a fedToday-only history still earns the greeting biscuit', () {
+    final result = AppState.fromJson(<String, Object?>{
+      'schemaVersion': 4,
+      'onboardingComplete': true,
+      'tasks': <Object?>[
+        <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+      ],
+      'activeDay': '2026-08-30',
+      'lifetimeCompletions': 0,
+      'treats': 0,
+      'fedToday': '2026-08-29',
+    }, DateTime(2026, 8, 30));
+
+    expect(result.foodInventory, <String, int>{'biscuit': 1});
   });
 }

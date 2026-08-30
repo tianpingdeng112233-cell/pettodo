@@ -63,11 +63,22 @@ List<int> bondLevelsCrossed(int beforeXp, int afterXp) {
 String bondTitleForLevel(int level) {
   if (level < 1) throw ArgumentError.value(level, 'level');
   return switch (level) {
-    1 => 'New Friend',
-    2 => 'Close Pal',
-    3 || 4 => 'Dear Companion',
-    _ => 'Kindred Hearts',
+    1 => 'New Friends',
+    2 => 'Snack Buddies',
+    3 => 'Close Pals',
+    4 => 'Dear Companions',
+    5 => 'Best Friends',
+    6 => 'Kindred Spirits',
+    7 => 'Inseparable Pals',
+    _ => 'Forever Friends',
   };
+}
+
+double bondProgressForXp(int xp) {
+  final level = bondLevelForXp(xp);
+  final currentThreshold = bondXpThresholdForLevel(level);
+  final nextThreshold = bondXpThresholdForLevel(level + 1);
+  return (xp - currentThreshold) / (nextThreshold - currentThreshold);
 }
 
 int _withCozinessBonus(int baseXp, int placedFurnitureCount) {

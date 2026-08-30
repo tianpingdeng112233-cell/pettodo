@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../data/app_state_store.dart';
 import '../data/event_log_store.dart';
 import '../data/feature_gate.dart';
+import '../data/food_asset_manifest.dart';
 import '../data/hatch_api_client.dart';
 import '../data/hatch_request_store.dart';
 import '../data/notification_service.dart';
@@ -14,10 +15,13 @@ import '../data/overlay_service.dart';
 import '../data/pet_pack_service.dart';
 import '../data/room_asset_manifest.dart';
 import '../domain/app_state.dart';
+import '../domain/bond.dart';
 import '../domain/bond_economy.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
 import '../domain/furniture.dart';
+import '../domain/food.dart';
+import '../domain/food_economy.dart' as food_economy;
 import '../domain/furniture_economy.dart' as furniture_economy;
 import '../domain/furniture_placement.dart' as furniture_placement;
 import '../domain/growth.dart';
@@ -115,6 +119,7 @@ class AppController extends ChangeNotifier {
   Timer? _messageTimer;
   Timer? _bannerTimer;
   Timer? _theaterTimer;
+  Timer? _bondHighlightTimer;
   Timer? _dayBoundaryTimer;
   Timer? _scheduleTimer;
   final math.Random _random = math.Random();
@@ -123,6 +128,7 @@ class AppController extends ChangeNotifier {
   late List<PetAssetDescriptor> pets;
   late List<DecorAssetDescriptor> decorations;
   late RoomAssetManifest roomAssets;
+  late FoodAssetManifest foodAssets;
   LoadedSpriteAtlas? _spriteAtlas;
   LoadedRigPet? rigPet;
   BakedOverlayFrames? _bakedOverlayFrames;
@@ -140,6 +146,8 @@ class AppController extends ChangeNotifier {
   String? momentParticle;
   DecorUnlock? activeUnlock;
   bool theaterVisible = false;
+  int? bondCelebrationLevel;
+  double? bondProgressHighlightStart;
   int celebrationNonce = 0;
   int particleNonce = 0;
   int treatDropNonce = 0;
@@ -162,9 +170,6 @@ class AppController extends ChangeNotifier {
   String get statusLine {
     if (momentStatus != null) return momentStatus!;
     if (affectionateMessage != null) return affectionateMessage!;
-    if (state.isFedOn(DateTime.now())) {
-      return '${state.petName} is happily full and feeling wonderful';
-    }
     return currentSchedule.statusFor(state.petName);
   }
 
@@ -181,10 +186,8 @@ class AppController extends ChangeNotifier {
 
   Future<void> initialize() async {
     final now = _now();
-    state = recordCompanionDay(
-      rollOverIfNeeded(await _stateStore.load(now), now),
-      now,
-    );
+    final loadedState = rollOverIfNeeded(await _stateStore.load(now), now);
+    state = recordCompanionDay(loadedState, now);
     final bundledPets = await _spriteLoader.loadManifest();
     List<PetAssetDescriptor> installedPets;
     try {
@@ -205,8 +208,10 @@ class AppController extends ChangeNotifier {
     }
     decorations = await _spriteLoader.loadDecorManifest();
     roomAssets = await RoomAssetManifestLoader().load();
+    foodAssets = await FoodAssetManifestLoader().load();
     currentSchedule = petScheduleAt(now);
     await _loadSelectedPet(selectedPet);
+    _queueBondLevelCelebration(loadedState.bondXp, state.bondXp);
     _applySchedule(now);
     await _stateStore.save(state);
     await _log(PetEventType.appOpen);
@@ -537,12 +542,14 @@ class AppController extends ChangeNotifier {
   Future<void> onResume() async {
     _hatchFlow.resumeForeground();
     final now = _now();
+    final beforeXp = state.bondXp;
     final resumed = recordCompanionDay(rollOverIfNeeded(state, now), now);
     if (!identical(resumed, state)) {
       _cancelMomentTimers();
       state = resumed;
       theaterVisible = false;
       activeUnlock = null;
+      _queueBondLevelCelebration(beforeXp, state.bondXp);
       _applySchedule(now);
       await _stateStore.save(state);
       notifyListeners();
@@ -711,28 +718,6 @@ class AppController extends ChangeNotifier {
     return true;
   }
 
-  Future<bool> feedTreat() async {
-    final now = DateTime.now();
-    state = rollOverIfNeeded(state, now);
-    final next = spendTreatToFeed(state, now);
-    if (next == null) return false;
-    state = next;
-    await _stateStore.save(state);
-    await _log(PetEventType.treatFeed, <String, Object?>{
-      'treat': selectedPet.treatName,
-      'remaining': state.treats,
-    });
-    _playMoment(
-      animation: 'waving',
-      rigAnimation: RigPetAction.eatTreat,
-      status:
-          '${state.petName} savors the ${selectedPet.treatName.toLowerCase()}',
-      particle: selectedPet.treatEmoji,
-    );
-    notifyListeners();
-    return true;
-  }
-
   Future<bool> buyFurniture(String furnitureId) async {
     final item = furnitureById(furnitureId);
     if (item == null || item.source != FurnitureSource.price) return false;
@@ -740,6 +725,52 @@ class AppController extends ChangeNotifier {
     if (next == null) return false;
     state = next;
     await _stateStore.save(state);
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> buyFood(String foodId) async {
+    final item = foodById(foodId);
+    if (item == null) return false;
+    final next = food_economy.purchaseFood(state, item);
+    if (next == null) return false;
+    state = next;
+    await _stateStore.save(state);
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> feedFood(String foodId) async {
+    final item = foodById(foodId);
+    if (item == null) return false;
+    final beforeXp = state.bondXp;
+    final next = food_economy.feedFood(state, item, _now());
+    if (next == null) return false;
+    state = next;
+    final earnedXp = state.bondXp - beforeXp;
+    await _stateStore.save(state);
+    await _log(PetEventType.treatFeed, <String, Object?>{
+      'foodId': item.id,
+      'bondXp': state.bondXp,
+      'remaining': state.foodInventory[item.id] ?? 0,
+    });
+    final beforeLevel = bondLevelForXp(beforeXp);
+    final afterLevel = bondLevelForXp(state.bondXp);
+    bondProgressHighlightStart = beforeLevel == afterLevel
+        ? bondProgressForXp(beforeXp)
+        : 0;
+    _bondHighlightTimer?.cancel();
+    _bondHighlightTimer = Timer(const Duration(milliseconds: 1500), () {
+      bondProgressHighlightStart = null;
+      notifyListeners();
+    });
+    _playMoment(
+      animation: 'waving',
+      rigAnimation: RigPetAction.eatTreat,
+      status: '${state.petName} munched happily',
+      particle: '+$earnedXp',
+    );
+    _queueBondLevelCelebration(beforeXp, state.bondXp);
     notifyListeners();
     return true;
   }
@@ -1001,6 +1032,7 @@ class AppController extends ChangeNotifier {
   }) {
     _animationTimer?.cancel();
     _theaterTimer?.cancel();
+    bondCelebrationLevel = null;
     if (newUnlocks.isNotEmpty) {
       _bannerTimer?.cancel();
       activeUnlock = newUnlocks.last;
@@ -1040,6 +1072,7 @@ class AppController extends ChangeNotifier {
   void dismissTheater() {
     theaterVisible = false;
     hatchCeremonyPetName = null;
+    bondCelebrationLevel = null;
     affectionateMessage = null;
     _returnToSchedule();
   }
@@ -1123,6 +1156,25 @@ class AppController extends ChangeNotifier {
     );
   }
 
+  void _queueBondLevelCelebration(int beforeXp, int afterXp) {
+    final crossedLevels = bondLevelsCrossed(beforeXp, afterXp);
+    if (crossedLevels.isEmpty) return;
+    bondCelebrationLevel = crossedLevels.last;
+    _theaterTimer?.cancel();
+    _theaterTimer = Timer(const Duration(milliseconds: 900), () {
+      theaterVisible = true;
+      if (selectedPet.isRig) {
+        rigAction = RigPetAction.happyJump;
+        rigAnimationNonce++;
+      } else {
+        petAnimation = 'review';
+        petAnimationFrame = null;
+      }
+      celebrationNonce++;
+      notifyListeners();
+    });
+  }
+
   void _holdTouchReaction() {
     _animationTimer?.cancel();
     _animationTimer = Timer(
@@ -1198,9 +1250,12 @@ class AppController extends ChangeNotifier {
     _messageTimer?.cancel();
     _bannerTimer?.cancel();
     _theaterTimer?.cancel();
+    _bondHighlightTimer?.cancel();
     affectionateMessage = null;
     momentStatus = null;
     momentParticle = null;
+    bondCelebrationLevel = null;
+    bondProgressHighlightStart = null;
   }
 
   static String _normalized(String value, String fallback) {

@@ -44,6 +44,20 @@ void main() {
     expect(bondLevelForXp(225), 4);
     expect(bondLevelsCrossed(20, 230), <int>[2, 3, 4]);
     expect(bondLevelsCrossed(230, 20), isEmpty);
+    expect(bondProgressForXp(110), closeTo(0.08, 0.001));
+    expect(
+      [for (var level = 1; level <= 8; level++) bondTitleForLevel(level)],
+      <String>[
+        'New Friends',
+        'Snack Buddies',
+        'Close Pals',
+        'Dear Companions',
+        'Best Friends',
+        'Kindred Spirits',
+        'Inseparable Pals',
+        'Forever Friends',
+      ],
+    );
   });
 
   test('a companion day is recorded once per natural day without backfill', () {
