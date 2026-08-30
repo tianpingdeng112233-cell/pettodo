@@ -35,6 +35,7 @@ import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
 import 'widgets/furniture_item_view.dart';
 import 'widgets/bond_progress_bar.dart';
+import 'widgets/treat_count.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -807,7 +808,16 @@ class _TreatBar extends StatelessWidget {
                   builder: (_) => SnacksScreen(controller: controller),
                 ),
               ),
-              label: Text('Snacks · ${controller.state.treats}'),
+              label: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Text('Snacks '),
+                    TreatCount('${controller.state.treats}', iconSize: 14),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

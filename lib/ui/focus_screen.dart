@@ -14,6 +14,7 @@ import 'theme/pixel_background.dart';
 import 'theme/stair_border.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
+import 'widgets/treat_count.dart';
 
 class FocusScreen extends StatefulWidget {
   const FocusScreen({super.key, required this.controller});
@@ -245,9 +246,19 @@ class _FocusScreenState extends State<FocusScreen> {
                   ],
                 ),
                 const SizedBox(height: PetSpacing.s8),
-                Text(
-                  'Finish to earn $drop ${drop == 1 ? 'treat' : 'treats'}',
-                  style: PetTextStyles.captionSoft,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Text(
+                      'Finish to earn ',
+                      style: PetTextStyles.captionSoft,
+                    ),
+                    TreatCount(
+                      '$drop',
+                      style: PetTextStyles.captionSoft,
+                      iconSize: 14,
+                    ),
+                  ],
                 ),
               ],
             ),

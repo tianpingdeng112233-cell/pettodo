@@ -137,7 +137,7 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsNothing);
       expect(
         tester
-            .widget<PxButton>(find.widgetWithText(PxButton, 'Snacks · 0'))
+            .widget<PxButton>(find.widgetWithText(PxButton, 'Snacks '))
             .onPressed,
         isNotNull,
       );

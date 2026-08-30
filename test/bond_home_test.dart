@@ -13,6 +13,7 @@ import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
 import 'package:pettodo/ui/widgets/bond_progress_bar.dart';
+import 'package:pettodo/ui/widgets/treat_count.dart';
 
 void main() {
   testWidgets('home shows migrated bond level and within-level progress', (
@@ -36,7 +37,8 @@ void main() {
     expect(find.text('Junior'), findsOneWidget);
     expect(find.text('Lv 3'), findsOneWidget);
     expect(find.text('Close Pals'), findsOneWidget);
-    expect(find.text('Snacks · 17'), findsOneWidget);
+    expect(find.text('Snacks '), findsOneWidget);
+    expect(find.widgetWithText(TreatCount, '17'), findsOneWidget);
     final progress = tester.widget<BondProgressBar>(
       find.byType(BondProgressBar),
     );

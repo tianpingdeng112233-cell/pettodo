@@ -821,7 +821,7 @@ class _CelebratePage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   const PxIcon(
-                    PxIconData.bone,
+                    PxIconData.treat,
                     size: PetSpacing.s24,
                     color: PetColors.accentText,
                   ),

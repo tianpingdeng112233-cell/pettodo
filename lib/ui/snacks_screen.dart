@@ -11,6 +11,7 @@ import 'theme/stair_border.dart';
 import 'widgets/food_item_view.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
+import 'widgets/treat_count.dart';
 
 class SnacksScreen extends StatelessWidget {
   const SnacksScreen({super.key, required this.controller});
@@ -50,8 +51,8 @@ class SnacksScreen extends StatelessWidget {
                       const Expanded(
                         child: Text('Snacks', style: PetTextStyles.display24),
                       ),
-                      Text(
-                        '${controller.state.treats} treats',
+                      TreatCount(
+                        '${controller.state.treats}',
                         style: PetTextStyles.body15Strong,
                       ),
                     ],
@@ -145,9 +146,10 @@ class _SnackRow extends StatelessWidget {
                               horizontal: PetSpacing.s8,
                               vertical: PetSpacing.s4,
                             ),
-                            child: Text(
+                            child: TreatCount(
                               '${item.price}',
                               style: PetTextStyles.chip,
+                              iconSize: 12,
                             ),
                           ),
                         ),

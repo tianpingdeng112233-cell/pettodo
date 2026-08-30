@@ -10,6 +10,7 @@ import 'theme/pet_spacing.dart';
 import 'theme/pet_text_styles.dart';
 import 'theme/pixel_background.dart';
 import 'widgets/pixel_components.dart';
+import 'widgets/treat_count.dart';
 
 class FocusCompleteScreen extends StatefulWidget {
   const FocusCompleteScreen({
@@ -181,10 +182,7 @@ class _TreatBadge extends StatelessWidget {
         horizontal: PetSpacing.s14,
         vertical: PetSpacing.s6,
       ),
-      child: Text(
-        '+$amount ${amount == 1 ? 'treat' : 'treats'}',
-        style: PetTextStyles.body15Strong,
-      ),
+      child: TreatCount('+$amount', style: PetTextStyles.body15Strong),
     ),
   );
 }

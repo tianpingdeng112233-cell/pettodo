@@ -13,6 +13,7 @@ import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/snacks_screen.dart';
 import 'package:pettodo/ui/widgets/food_item_view.dart';
+import 'package:pettodo/ui/widgets/treat_count.dart';
 import 'package:pettodo/ui/widgets/pixel_components.dart';
 
 void main() {
@@ -75,7 +76,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Snacks'), findsOneWidget);
-    expect(find.text('4 treats'), findsOneWidget);
+    expect(find.widgetWithText(TreatCount, '4'), findsOneWidget);
     expect(find.text('Every snack adds a little bond XP'), findsOneWidget);
     expect(find.byType(FoodItemView), findsNWidgets(7));
     expect(find.text('Owned 1'), findsOneWidget);
@@ -122,7 +123,7 @@ void main() {
     await tester.pump();
 
     expect(controller.state.treats, 0);
-    expect(find.text('0 treats'), findsOneWidget);
+    expect(find.widgetWithText(TreatCount, '0'), findsOneWidget);
     expect(find.text('Owned 1'), findsOneWidget);
 
     final feed = tester.widget<PxButton>(find.widgetWithText(PxButton, 'Feed'));

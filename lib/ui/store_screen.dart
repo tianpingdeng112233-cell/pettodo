@@ -12,6 +12,7 @@ import 'theme/stair_border.dart';
 import 'widgets/furniture_item_view.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
+import 'widgets/treat_count.dart';
 
 class StoreScreen extends StatelessWidget {
   const StoreScreen({super.key, required this.controller});
@@ -54,8 +55,8 @@ class StoreScreen extends StatelessWidget {
                           style: PetTextStyles.display24,
                         ),
                       ),
-                      Text(
-                        '${controller.state.treats} treats',
+                      TreatCount(
+                        '${controller.state.treats}',
                         style: PetTextStyles.body15Strong,
                       ),
                     ],
@@ -119,9 +120,9 @@ class StoreScreen extends StatelessWidget {
                                             );
                                           }
                                         : null,
-                                    label: Text(
-                                      owned ? 'Owned' : '${item.price} treats',
-                                    ),
+                                    label: owned
+                                        ? const Text('Owned')
+                                        : TreatCount('${item.price}'),
                                   ),
                                 ],
                               ),

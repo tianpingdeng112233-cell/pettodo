@@ -6,6 +6,7 @@ enum PxIconData {
   sliders,
   sparkle,
   bone,
+  treat,
   heart,
   paw,
   plus,
@@ -90,6 +91,46 @@ class _PxIconPainter extends CustomPainter {
         rect(19, 3, 5, 6);
         rect(19, 15, 5, 6);
         rect(3, 8, 18, 8);
+      case PxIconData.treat:
+        // Paw cookie: round cookie with a paw print punched out (grid rows
+        // generated from the approved 24px design; keep rows, not shapes).
+        rect(8, 1, 8, 1);
+        rect(6, 2, 12, 1);
+        rect(5, 3, 14, 1);
+        rect(4, 4, 7, 1);
+        rect(14, 4, 6, 1);
+        rect(3, 5, 3, 1);
+        rect(9, 5, 2, 1);
+        rect(14, 5, 7, 1);
+        rect(3, 6, 3, 1);
+        rect(9, 6, 2, 1);
+        rect(14, 6, 2, 1);
+        rect(19, 6, 2, 1);
+        rect(2, 7, 4, 1);
+        rect(9, 7, 7, 1);
+        rect(19, 7, 3, 1);
+        rect(2, 8, 14, 1);
+        rect(19, 8, 3, 1);
+        rect(1, 9, 22, 1);
+        rect(1, 10, 22, 1);
+        rect(1, 11, 8, 1);
+        rect(16, 11, 7, 1);
+        rect(1, 12, 7, 1);
+        rect(17, 12, 6, 1);
+        rect(1, 13, 7, 1);
+        rect(17, 13, 6, 1);
+        rect(1, 14, 7, 1);
+        rect(17, 14, 6, 1);
+        rect(2, 15, 7, 1);
+        rect(16, 15, 6, 1);
+        rect(2, 16, 8, 1);
+        rect(15, 16, 7, 1);
+        rect(3, 17, 18, 1);
+        rect(3, 18, 18, 1);
+        rect(4, 19, 16, 1);
+        rect(5, 20, 14, 1);
+        rect(6, 21, 12, 1);
+        rect(8, 22, 8, 1);
       case PxIconData.heart:
         rect(3, 3, 6, 3);
         rect(15, 3, 6, 3);
