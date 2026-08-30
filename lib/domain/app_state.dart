@@ -6,7 +6,7 @@ import 'unlocks.dart';
 
 const int minimumTaskCount = 1;
 const int maximumTaskCount = 7;
-const int currentAppStateSchemaVersion = 5;
+const int currentAppStateSchemaVersion = 6;
 
 const List<String> defaultTaskTitles = <String>[
   'Drink 8 cups of water',
@@ -199,6 +199,8 @@ class AppState {
     required this.onboardingComplete,
     required this.selectedPetId,
     required this.petName,
+    Set<String> adoptedPresetPetIds = const <String>{},
+    this.needsPresetAdoptionMigration = false,
     required List<TodoTask> tasks,
     required this.activeDay,
     required this.lifetimeCompletions,
@@ -217,7 +219,8 @@ class AppState {
     required this.notificationMinute,
     required this.onboardingRewardGranted,
     required this.eveningHelloPending,
-  }) : tasks = List<TodoTask>.unmodifiable(tasks),
+  }) : adoptedPresetPetIds = Set<String>.unmodifiable(adoptedPresetPetIds),
+       tasks = List<TodoTask>.unmodifiable(tasks),
        unlockedDecorIds = List<String>.unmodifiable(unlockedDecorIds),
        ownedFurnitureIds = Set<String>.unmodifiable(ownedFurnitureIds),
        placedFurnitureBySlot = Map<String, String>.unmodifiable(
@@ -240,6 +243,7 @@ class AppState {
     onboardingComplete: false,
     selectedPetId: 'choco',
     petName: 'Choco',
+    adoptedPresetPetIds: const <String>{'choco'},
     tasks: _defaultTasks(),
     activeDay: localDayKey(now),
     lifetimeCompletions: 0,
@@ -271,17 +275,13 @@ class AppState {
     final fedToday = json['fedToday'] as String?;
     final persistedBondXp = (json['bondXp'] as int? ?? 0).clamp(0, 1 << 53);
     final legacyBondXp = legacyBondXpForCompletions(lifetimeCompletions);
-    final bondXp =
-        schemaVersion < currentAppStateSchemaVersion &&
-            persistedBondXp < legacyBondXp
+    final bondXp = schemaVersion < 5 && persistedBondXp < legacyBondXp
         ? legacyBondXp
         : persistedBondXp;
     final persistedFeedingCount = (json['feedingCountToday'] as int? ?? 0)
         .clamp(0, 1 << 31);
     final feedingCountToday =
-        schemaVersion < currentAppStateSchemaVersion &&
-            fedToday == activeDay &&
-            persistedFeedingCount == 0
+        schemaVersion < 5 && fedToday == activeDay && persistedFeedingCount == 0
         ? 1
         : persistedFeedingCount;
     final persistedFoodInventory = _foodInventoryFromJson(
@@ -290,7 +290,7 @@ class AppState {
     // Any pre-v5 save with history gets the one-time greeting biscuit, so a
     // migrated user with 1-4 treats can still feed on their first screen.
     final foodInventory =
-        schemaVersion < currentAppStateSchemaVersion &&
+        schemaVersion < 5 &&
             (lifetimeCompletions > 0 ||
                 persistedTreats > 0 ||
                 json['fedToday'] != null) &&
@@ -317,10 +317,21 @@ class AppState {
                 entry.key! as String: entry.value! as String,
           }
         : const <String, String>{};
+    final selectedPetId = json['selectedPetId'] as String? ?? 'choco';
+    final needsPresetAdoptionMigration = !json.containsKey(
+      'adoptedPresetPetIds',
+    );
+    final adoptedPresetPetIds = !needsPresetAdoptionMigration
+        ? (json['adoptedPresetPetIds'] as List<Object?>? ?? const <Object?>[])
+              .whereType<String>()
+              .toSet()
+        : const <String>{};
     return AppState(
       onboardingComplete: json['onboardingComplete'] as bool? ?? false,
-      selectedPetId: json['selectedPetId'] as String? ?? 'choco',
+      selectedPetId: selectedPetId,
       petName: _nonEmpty(json['petName'] as String?, 'Choco'),
+      adoptedPresetPetIds: adoptedPresetPetIds,
+      needsPresetAdoptionMigration: needsPresetAdoptionMigration,
       tasks: _tasksFromJson(json),
       activeDay: activeDay,
       lifetimeCompletions: lifetimeCompletions,
@@ -356,6 +367,8 @@ class AppState {
   final bool onboardingComplete;
   final String selectedPetId;
   final String petName;
+  final Set<String> adoptedPresetPetIds;
+  final bool needsPresetAdoptionMigration;
   final List<TodoTask> tasks;
   final String activeDay;
   final int lifetimeCompletions;
@@ -401,6 +414,8 @@ class AppState {
     bool? onboardingComplete,
     String? selectedPetId,
     String? petName,
+    Set<String>? adoptedPresetPetIds,
+    bool? needsPresetAdoptionMigration,
     List<TodoTask>? tasks,
     String? activeDay,
     int? lifetimeCompletions,
@@ -423,6 +438,9 @@ class AppState {
     onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     selectedPetId: selectedPetId ?? this.selectedPetId,
     petName: petName ?? this.petName,
+    adoptedPresetPetIds: adoptedPresetPetIds ?? this.adoptedPresetPetIds,
+    needsPresetAdoptionMigration:
+        needsPresetAdoptionMigration ?? this.needsPresetAdoptionMigration,
     tasks: tasks ?? this.tasks,
     activeDay: activeDay ?? this.activeDay,
     lifetimeCompletions: lifetimeCompletions ?? this.lifetimeCompletions,
@@ -454,6 +472,8 @@ class AppState {
     'onboardingComplete': onboardingComplete,
     'selectedPetId': selectedPetId,
     'petName': petName,
+    if (!needsPresetAdoptionMigration)
+      'adoptedPresetPetIds': adoptedPresetPetIds.toList(growable: false),
     'tasks': tasks.map((task) => task.toJson()).toList(growable: false),
     'activeDay': activeDay,
     'lifetimeCompletions': lifetimeCompletions,

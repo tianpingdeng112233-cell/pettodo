@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/application/hatch_flow.dart';
-import 'package:pettodo/data/feature_gate.dart';
 import 'package:pettodo/data/hatch_api_client.dart';
 
 void main() {
@@ -22,7 +21,6 @@ void main() {
     var imports = 0;
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (duration) async => delays.add(duration),
       importPack: (file) async => imports++,
     );
@@ -51,7 +49,6 @@ void main() {
     final delays = <Duration>[];
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (duration) async => delays.add(duration),
       importPack: (_) async => fail('failed hatch must not import'),
     );
@@ -67,19 +64,25 @@ void main() {
     ]);
   });
 
-  test('locked gate prevents any submission', () async {
-    final api = _FakeHatchApi(statuses: const <HatchStatusResponse>[]);
+  test('submit reaches hatching without any feature gate state', () async {
+    final api = _FakeHatchApi(
+      statuses: <HatchStatusResponse>[
+        HatchStatusResponse(
+          status: HatchRemoteStatus.ready,
+          packUrl: Uri.parse('https://cdn.example/pip.pettodopet'),
+        ),
+      ],
+    );
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: false),
       delay: (_) async {},
       importPack: (_) async {},
     );
 
     await machine.submit(photos: <File>[File('front.jpg')], petName: 'Pip');
 
-    expect(machine.state.phase, HatchFlowPhase.locked);
-    expect(api.submitCalls, 0);
+    expect(machine.state.phase, HatchFlowPhase.ready);
+    expect(api.submitCalls, 1);
   });
 
   test('the accepted hatchId is persisted even if paused mid-submit', () async {
@@ -91,7 +94,6 @@ void main() {
     String? persisted;
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (_) async {},
       importPack: (_) async {},
       onAccepted: (hatchId) async => persisted = hatchId,
@@ -119,7 +121,6 @@ void main() {
     var notified = 0;
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (_) async {},
       importPack: (_) async {},
       onReady: () async => notified++,
@@ -142,7 +143,6 @@ void main() {
       var imports = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) async {},
         importPack: (_) async => imports++,
         onAccepted: (_) async {},
@@ -172,7 +172,6 @@ void main() {
       var changes = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) async {},
         importPack: (_) async {},
         onAccepted: (hatchId) async => persisted = hatchId,
@@ -203,7 +202,6 @@ void main() {
     );
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (_) async {},
       importPack: (_) async {},
     );
@@ -237,7 +235,6 @@ void main() {
       var imports = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) => gate.future,
         importPack: (_) async => imports++,
       );
@@ -266,7 +263,6 @@ void main() {
       var imports = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) async {},
         importPack: (_) async => imports++,
       );
@@ -298,7 +294,6 @@ void main() {
     var imports = 0;
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (_) async {},
       importPack: (_) async {
         imports++;
@@ -333,7 +328,6 @@ void main() {
       );
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) async {},
         importPack: (_) async {
           await importGate.future;
@@ -377,7 +371,6 @@ void main() {
       var imports = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) async {},
         importPack: (_) async => imports++,
       );
@@ -422,7 +415,6 @@ void main() {
       var imports = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) => pollGate.future,
         importPack: (_) async => imports++,
       );
@@ -474,7 +466,6 @@ void main() {
       var imports = 0;
       final machine = HatchFlowMachine(
         api: api,
-        featureGate: _MemoryFeatureGate(unlocked: true),
         delay: (_) async {},
         importPack: (_) async {
           imports++;
@@ -508,7 +499,6 @@ void main() {
     var changes = 0;
     final machine = HatchFlowMachine(
       api: api,
-      featureGate: _MemoryFeatureGate(unlocked: true),
       delay: (_) async {},
       importPack: (_) async {},
       onChanged: () => changes++,
@@ -520,21 +510,6 @@ void main() {
     expect(machine.state.wishSent, isFalse);
     expect(changes, after); // no late notifications into a disposed listener
   });
-}
-
-class _MemoryFeatureGate implements FeatureGate {
-  _MemoryFeatureGate({required this.unlocked});
-
-  bool unlocked;
-
-  @override
-  String get priceLabel => 'One-time price coming soon';
-
-  @override
-  Future<bool> isUnlocked() async => unlocked;
-
-  @override
-  Future<void> unlock() async => unlocked = true;
 }
 
 class _FakeHatchApi implements HatchApi {

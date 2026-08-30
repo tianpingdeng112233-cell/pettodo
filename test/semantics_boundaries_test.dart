@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/application/app_controller.dart';
 import 'package:pettodo/data/app_state_store.dart';
 import 'package:pettodo/data/event_log_store.dart';
-import 'package:pettodo/data/feature_gate.dart';
 import 'package:pettodo/data/hatch_request_store.dart';
 import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/data/pet_pack_service.dart';
@@ -116,21 +115,6 @@ class _FakeSpriteLoader extends SpriteAtlasLoader {
   );
 }
 
-class _MemoryFeatureGate implements FeatureGate {
-  _MemoryFeatureGate(this._unlocked);
-
-  bool _unlocked;
-
-  @override
-  String get priceLabel => 'One-time price coming soon';
-
-  @override
-  Future<bool> isUnlocked() async => _unlocked;
-
-  @override
-  Future<void> unlock() async => _unlocked = true;
-}
-
 Future<ui.Image> _makeImage() {
   final recorder = ui.PictureRecorder();
   ui.Canvas(recorder).drawRect(
@@ -143,7 +127,6 @@ Future<ui.Image> _makeImage() {
 Future<({AppController controller, EventLogStore eventLog})> _createController(
   WidgetTester tester, {
   bool pendingRequest = false,
-  bool hatchUnlocked = true,
   Map<String, Object?>? persistedState,
 }) async {
   final tempDir = Directory.systemTemp.createTempSync('pettodo-semantics');
@@ -172,7 +155,6 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
       spriteLoader: _FakeSpriteLoader(await _makeImage()),
       hatchRequestStore: hatchRequestStore,
       petPackService: PetPackService(() async => tempDir),
-      featureGate: _MemoryFeatureGate(hatchUnlocked),
     );
     await controller.initialize();
   });
@@ -217,7 +199,7 @@ void main() {
     _expectButtonNode(tester, "That's the one");
     _expectButtonNode(
       tester,
-      'Your real pet can live here too — from your photos, unlockable anytime',
+      'Your real pet can live here too — start with 1–3 photos',
     );
     expect(tester.takeException(), isNull);
 
@@ -272,20 +254,13 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    final newFixture = await _createController(tester, hatchUnlocked: false);
+    final newFixture = await _createController(tester);
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
         home: HatchRequestScreen(controller: newFixture.controller),
       ),
     );
-    await tester.pump();
-    _expectButtonNode(tester, 'Unlock');
-    expect(
-      find.text('One unlock includes 3 hatches for your own cat or dog.'),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Unlock'));
     await tester.pump();
     _expectButtonNode(tester, 'Photo library');
     _expectButtonNode(tester, 'Camera');
