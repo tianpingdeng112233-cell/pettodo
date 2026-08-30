@@ -11,6 +11,7 @@ import '../domain/onboarding_flow.dart';
 import '../sprite/pet_sprite.dart';
 import '../sprite/rig_pet_sprite.dart';
 import 'collection_screen.dart';
+import 'focus_screen.dart';
 import 'history_screen.dart';
 import 'hatch_request_screen.dart';
 import 'settings_screen.dart';
@@ -235,6 +236,29 @@ class _HomeContentState extends State<_HomeContent> {
         ),
       ),
       _TreatBar(controller: controller),
+      if (!widget.visualTestMode)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            PetSpacing.s20,
+            PetSpacing.s8,
+            PetSpacing.s20,
+            PetSpacing.s8,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: PxButton(
+              height: 48,
+              style: PxButtonStyle.outline,
+              icon: const PxIcon(PxIconData.clock, size: PetSpacing.s18),
+              label: Text('Focus with ${controller.state.petName}'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => FocusScreen(controller: controller),
+                ),
+              ),
+            ),
+          ),
+        ),
       Flexible(
         flex: 5,
         child: _TaskList(
