@@ -696,7 +696,7 @@ class _RoomFurnitureLayer extends StatelessWidget {
     return Stack(
       children: placed
           .map((item) {
-            final offset = _roomSlotOffsets[item.slot]!;
+            final placement = _roomSlotPlacements[item.slot]!;
             final alternatives = furnitureCatalog
                 .where(
                   (candidate) =>
@@ -705,8 +705,9 @@ class _RoomFurnitureLayer extends StatelessWidget {
                 )
                 .toList(growable: false);
             return Positioned(
-              left: offset.dx,
-              top: offset.dy,
+              left: placement.left,
+              top: placement.top,
+              bottom: placement.bottom,
               child: Semantics(
                 button: alternatives.length > 1,
                 label: alternatives.length > 1
@@ -726,6 +727,7 @@ class _RoomFurnitureLayer extends StatelessWidget {
                   child: FurnitureItemView(
                     item: item,
                     manifest: controller.roomAssets,
+                    scale: placement.scale,
                   ),
                 ),
               ),
@@ -736,18 +738,29 @@ class _RoomFurnitureLayer extends StatelessWidget {
   }
 }
 
-const Map<FurnitureSlot, Offset> _roomSlotOffsets = <FurnitureSlot, Offset>{
-  FurnitureSlot.window: Offset(18, 18),
-  FurnitureSlot.wallArt: Offset(145, 30),
-  FurnitureSlot.wallClock: Offset(305, 24),
-  FurnitureSlot.bed: Offset(22, 178),
-  FurnitureSlot.rug: Offset(150, 194),
-  FurnitureSlot.bookshelf: Offset(4, 102),
-  FurnitureSlot.floorLamp: Offset(286, 102),
-  FurnitureSlot.plant: Offset(328, 174),
-  FurnitureSlot.toy: Offset(82, 186),
-  FurnitureSlot.rockingChair: Offset(308, 158),
-};
+/// Per-slot placement, proportioned against the ~150px pet (integer scales
+/// keep pixels crisp): tall pieces read near pet height, seats/beds below it,
+/// wall pieces sized to the wall band. Floor items anchor by their bottoms.
+typedef _SlotPlacement = ({
+  double left,
+  double? top,
+  double? bottom,
+  int scale,
+});
+
+const Map<FurnitureSlot, _SlotPlacement> _roomSlotPlacements =
+    <FurnitureSlot, _SlotPlacement>{
+      FurnitureSlot.window: (left: 10, top: 12, bottom: null, scale: 2),
+      FurnitureSlot.wallArt: (left: 150, top: 8, bottom: null, scale: 2),
+      FurnitureSlot.wallClock: (left: 300, top: 14, bottom: null, scale: 2),
+      FurnitureSlot.bookshelf: (left: 6, top: null, bottom: 52, scale: 2),
+      FurnitureSlot.bed: (left: 6, top: null, bottom: 12, scale: 2),
+      FurnitureSlot.rug: (left: 116, top: null, bottom: 8, scale: 3),
+      FurnitureSlot.toy: (left: 92, top: null, bottom: 6, scale: 2),
+      FurnitureSlot.floorLamp: (left: 300, top: null, bottom: 40, scale: 2),
+      FurnitureSlot.plant: (left: 308, top: null, bottom: 44, scale: 2),
+      FurnitureSlot.rockingChair: (left: 272, top: null, bottom: 6, scale: 2),
+    };
 
 class _TreatBar extends StatelessWidget {
   const _TreatBar({required this.controller});
