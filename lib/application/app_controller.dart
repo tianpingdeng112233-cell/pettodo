@@ -14,6 +14,7 @@ import '../data/overlay_service.dart';
 import '../data/pet_pack_service.dart';
 import '../data/room_asset_manifest.dart';
 import '../domain/app_state.dart';
+import '../domain/bond_economy.dart';
 import '../domain/day_rollover.dart';
 import '../domain/event_log.dart';
 import '../domain/furniture.dart';
@@ -179,8 +180,11 @@ class AppController extends ChangeNotifier {
   String get hatchPriceLabel => _featureGate.priceLabel;
 
   Future<void> initialize() async {
-    final now = DateTime.now();
-    state = rollOverIfNeeded(await _stateStore.load(now), now);
+    final now = _now();
+    state = recordCompanionDay(
+      rollOverIfNeeded(await _stateStore.load(now), now),
+      now,
+    );
     final bundledPets = await _spriteLoader.loadManifest();
     List<PetAssetDescriptor> installedPets;
     try {
@@ -532,13 +536,14 @@ class AppController extends ChangeNotifier {
 
   Future<void> onResume() async {
     _hatchFlow.resumeForeground();
-    final rolled = rollOverIfNeeded(state, DateTime.now());
-    if (!identical(rolled, state)) {
+    final now = _now();
+    final resumed = recordCompanionDay(rollOverIfNeeded(state, now), now);
+    if (!identical(resumed, state)) {
       _cancelMomentTimers();
-      state = rolled;
+      state = resumed;
       theaterVisible = false;
       activeUnlock = null;
-      _applySchedule(DateTime.now());
+      _applySchedule(now);
       await _stateStore.save(state);
       notifyListeners();
     }
@@ -551,7 +556,7 @@ class AppController extends ChangeNotifier {
     );
     _refreshEveningHelloOffer();
     _scheduleDayBoundary();
-    _applySchedule(DateTime.now());
+    _applySchedule(now);
     _scheduleScheduleBoundary();
     notifyListeners();
     final hatchId = pendingHatchRequest?.hatchId;
