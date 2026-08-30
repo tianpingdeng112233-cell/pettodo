@@ -779,25 +779,30 @@ class _TreatBar extends StatelessWidget {
     child: Row(
       children: <Widget>[
         Expanded(
-          child: TextButton(
+          child: PxButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => CollectionScreen(controller: controller),
               ),
             ),
-            child: const Text('Collection'),
+            label: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('Collection'),
+            ),
           ),
         ),
+        const SizedBox(width: PetSpacing.s10),
         Expanded(
-          child: TextButton(
+          child: PxButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => StoreScreen(controller: controller),
               ),
             ),
-            child: const Text('Shop'),
+            label: const Text('Shop'),
           ),
         ),
+        const SizedBox(width: PetSpacing.s10),
         Expanded(
           child: Semantics(
             button: true,
