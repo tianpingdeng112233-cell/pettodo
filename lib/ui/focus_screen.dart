@@ -110,7 +110,22 @@ class _FocusScreenState extends State<FocusScreen> {
   }
 
   void _abandon() {
-    _session?.abandon();
+    final session = _session;
+    final wasActive =
+        session != null &&
+        (session.state == FocusSessionState.running ||
+            session.state == FocusSessionState.paused);
+    session?.abandon();
+    if (wasActive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "That's plenty for now. "
+            '${widget.controller.state.petName} loved being with you.',
+          ),
+        ),
+      );
+    }
     Navigator.of(context).pop();
   }
 
@@ -125,29 +140,40 @@ class _FocusScreenState extends State<FocusScreen> {
   @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
     value: SystemUiOverlayStyle.dark,
-    child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Focus', style: PetTextStyles.display24),
-        backgroundColor: PetColors.transparent,
-        leading: IconButton(
-          tooltip: 'Back',
-          onPressed: _session == null
-              ? () => Navigator.of(context).maybePop()
-              : _abandon,
-          icon: const PxIcon(PxIconData.back),
-        ),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: PetSpacing.s16),
-            child: Center(
-              child: _TreatChip(amount: widget.controller.state.treats),
-            ),
+    child: PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_session == null) {
+          Navigator.of(context).pop();
+        } else {
+          _abandon();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Focus', style: PetTextStyles.display24),
+          backgroundColor: PetColors.transparent,
+          leading: IconButton(
+            tooltip: 'Back',
+            onPressed: _session == null
+                ? () => Navigator.of(context).maybePop()
+                : _abandon,
+            icon: const PxIcon(PxIconData.back),
           ),
-        ],
-      ),
-      body: PixelBackground(
-        showHalo: true,
-        child: _session == null ? _buildSetup() : _buildRunning(_session!),
+          actions: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(right: PetSpacing.s16),
+              child: Center(
+                child: _TreatChip(amount: widget.controller.state.treats),
+              ),
+            ),
+          ],
+        ),
+        body: PixelBackground(
+          showHalo: true,
+          child: _session == null ? _buildSetup() : _buildRunning(_session!),
+        ),
       ),
     ),
   );
