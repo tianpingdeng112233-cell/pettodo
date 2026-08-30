@@ -33,6 +33,15 @@ void main() {
         timestamp: DateTime.utc(2026, 7, 20, 7, 12, 7),
       ),
       PetEvent(
+        type: PetEventType.focusComplete,
+        timestamp: DateTime.utc(2026, 7, 20, 7, 12, 8),
+        data: const <String, Object?>{
+          'minutes': 25,
+          'treats': 1,
+          'taskId': 'daily-1',
+        },
+      ),
+      PetEvent(
         type: PetEventType.unlock,
         timestamp: DateTime.utc(2026, 7, 20, 7, 12, 4),
         data: const <String, Object?>{'decorId': 'soft_ball', 'threshold': 5},
@@ -64,7 +73,8 @@ void main() {
       'taskId': 'daily-3',
       'title': 'Walk',
     });
-    expect(decoded[6].data?['decorId'], 'soft_ball');
+    expect(decoded[6].data?['minutes'], 25);
+    expect(decoded[7].data?['decorId'], 'soft_ball');
   });
 
   test('event store appends and reads JSONL in order', () async {

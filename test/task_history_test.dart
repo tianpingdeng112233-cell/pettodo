@@ -27,11 +27,18 @@ void main() {
           timestamp: DateTime(2026, 8, 3, 12),
           data: const <String, Object?>{'taskId': 'd', 'title': 'Stretch'},
         ),
+        PetEvent(
+          type: PetEventType.focusComplete,
+          timestamp: DateTime(2026, 8, 3, 14),
+          data: const <String, Object?>{'minutes': 25, 'treats': 1},
+        ),
       ]);
 
       expect(weeks, hasLength(2));
       expect(weeks.first.weekStart, DateTime(2026, 8, 3));
-      expect(weeks.first.total, 1);
+      expect(weeks.first.total, 2);
+      expect(weeks.first.days.first.items.first.kind, HistoryItemKind.focus);
+      expect(weeks.first.days.first.items.first.minutes, 25);
       expect(weeks.last.weekStart, DateTime(2026, 7, 20));
       expect(weeks.last.total, 2);
       expect(weeks.last.days, hasLength(2));
@@ -45,6 +52,17 @@ void main() {
         type: PetEventType.taskComplete,
         timestamp: DateTime(2026, 7, 20),
         data: const <String, Object?>{'taskIndex': 0},
+      ),
+    ]);
+    expect(result, isEmpty);
+  });
+
+  test('malformed focus completions are not shown as blank history', () {
+    final result = aggregatePositiveHistory(<PetEvent>[
+      PetEvent(
+        type: PetEventType.focusComplete,
+        timestamp: DateTime(2026, 7, 20),
+        data: const <String, Object?>{'minutes': 0},
       ),
     ]);
     expect(result, isEmpty);

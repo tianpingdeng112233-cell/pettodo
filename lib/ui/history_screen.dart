@@ -126,16 +126,24 @@ class _WeekCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Padding(
-                    padding: EdgeInsets.only(top: 3, right: 5),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3, right: 5),
                     child: PxIcon(
-                      PxIconData.heart,
+                      item.kind == HistoryItemKind.focus
+                          ? PxIconData.clock
+                          : PxIconData.heart,
                       size: 12,
                       color: PetColors.bodySoft,
                     ),
                   ),
                   Expanded(
-                    child: Text(item.title, style: PetTextStyles.body15Soft),
+                    child: Text(
+                      item.kind == HistoryItemKind.focus
+                          ? 'You and $petName focused together for '
+                                '${item.minutes} minutes'
+                          : item.title,
+                      style: PetTextStyles.body15Soft,
+                    ),
                   ),
                 ],
               ),

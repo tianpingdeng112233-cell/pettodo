@@ -168,4 +168,66 @@ void main() {
       addTearDown(controller.dispose);
     },
   );
+
+  testWidgets('focus completion awards once without changing task milestones', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync('pettodo-focus');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    var now = DateTime(2026, 8, 30, 9);
+    late AppController controller;
+    late EventLogStore log;
+
+    await tester.runAsync(() async {
+      log = EventLogStore(() async => directory);
+      controller = AppController(
+        stateStore: AppStateStore(() async => directory),
+        eventLog: log,
+        notifications: NotificationService(),
+        spriteLoader: _LifecycleSpriteLoader(await _image()),
+      );
+      await controller.initialize();
+      final beforeCompletions = controller.state.lifetimeCompletions;
+      final beforeUnlocks = controller.state.unlockedDecorIds;
+      final session = controller.createFocusSession(
+        durationMinutes: 15,
+        taskId: controller.state.tasks.first.id,
+        now: () => now,
+        tickInterval: null,
+      );
+      session.start();
+      now = now.add(const Duration(minutes: 15));
+      await session.tick();
+      await session.tick();
+
+      expect(controller.state.treats, 1);
+      expect(controller.state.lifetimeCompletions, beforeCompletions);
+      expect(controller.state.unlockedDecorIds, orderedEquals(beforeUnlocks));
+      session.dispose();
+
+      final abandoned = controller.createFocusSession(
+        durationMinutes: 5,
+        now: () => now,
+        tickInterval: null,
+      );
+      abandoned.start();
+      now = now.add(const Duration(minutes: 2));
+      abandoned.abandon();
+      await abandoned.tick();
+      expect(controller.state.treats, 1);
+      abandoned.dispose();
+    });
+    addTearDown(controller.dispose);
+
+    final events = await tester.runAsync(log.readAll) ?? const <PetEvent>[];
+    final focusEvents = events
+        .where((event) => event.type == PetEventType.focusComplete)
+        .toList(growable: false);
+    expect(focusEvents, hasLength(1));
+    expect(focusEvents.single.data, <String, Object?>{
+      'minutes': 15,
+      'treats': 1,
+      'taskId': 'daily-1',
+    });
+  });
 }
