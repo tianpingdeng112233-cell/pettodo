@@ -1,9 +1,12 @@
+import 'bond_migration.dart';
+import 'food.dart';
 import 'furniture_migration.dart';
 import 'local_day.dart';
 import 'unlocks.dart';
 
 const int minimumTaskCount = 1;
 const int maximumTaskCount = 7;
+const int currentAppStateSchemaVersion = 5;
 
 const List<String> defaultTaskTitles = <String>[
   'Drink 8 cups of water',
@@ -147,6 +150,10 @@ class AppState {
     required Set<String> ownedFurnitureIds,
     required Map<String, String> placedFurnitureBySlot,
     required this.treats,
+    required Map<String, int> foodInventory,
+    required this.bondXp,
+    required this.feedingCountToday,
+    required this.lastCompanionDay,
     required this.fedToday,
     required this.notificationPermission,
     required this.notificationEnabled,
@@ -159,7 +166,8 @@ class AppState {
        ownedFurnitureIds = Set<String>.unmodifiable(ownedFurnitureIds),
        placedFurnitureBySlot = Map<String, String>.unmodifiable(
          placedFurnitureBySlot,
-       ) {
+       ),
+       foodInventory = Map<String, int>.unmodifiable(foodInventory) {
     if (this.tasks.length < minimumTaskCount ||
         this.tasks.length > maximumTaskCount) {
       throw ArgumentError('Pawside supports between 1 and 7 active tasks.');
@@ -183,6 +191,10 @@ class AppState {
     ownedFurnitureIds: const <String>{},
     placedFurnitureBySlot: const <String, String>{},
     treats: 0,
+    foodInventory: const <String, int>{},
+    bondXp: 0,
+    feedingCountToday: 0,
+    lastCompanionDay: null,
     fedToday: null,
     notificationPermission: NotificationPermissionState.notRequested,
     notificationEnabled: false,
@@ -193,11 +205,29 @@ class AppState {
   );
 
   factory AppState.fromJson(Map<String, Object?> json, DateTime now) {
+    final schemaVersion = json['schemaVersion'] as int? ?? 0;
     final permission = NotificationPermissionState.fromName(
       json['notificationPermission'] as String?,
     );
     final persistedTreats = json['treats'] as int? ?? 0;
     final lifetimeCompletions = json['lifetimeCompletions'] as int? ?? 0;
+    final activeDay = json['activeDay'] as String? ?? localDayKey(now);
+    final fedToday = json['fedToday'] as String?;
+    final persistedBondXp = (json['bondXp'] as int? ?? 0).clamp(0, 1 << 53);
+    final legacyBondXp = legacyBondXpForCompletions(lifetimeCompletions);
+    final bondXp =
+        schemaVersion < currentAppStateSchemaVersion &&
+            persistedBondXp < legacyBondXp
+        ? legacyBondXp
+        : persistedBondXp;
+    final persistedFeedingCount = (json['feedingCountToday'] as int? ?? 0)
+        .clamp(0, 1 << 31);
+    final feedingCountToday =
+        schemaVersion < currentAppStateSchemaVersion &&
+            fedToday == activeDay &&
+            persistedFeedingCount == 0
+        ? 1
+        : persistedFeedingCount;
     final unlockedDecorIds = <String>{
       ...(json['unlockedDecorIds'] as List<Object?>? ?? const <Object?>[])
           .whereType<String>(),
@@ -223,7 +253,7 @@ class AppState {
       selectedPetId: json['selectedPetId'] as String? ?? 'choco',
       petName: _nonEmpty(json['petName'] as String?, 'Choco'),
       tasks: _tasksFromJson(json),
-      activeDay: json['activeDay'] as String? ?? localDayKey(now),
+      activeDay: activeDay,
       lifetimeCompletions: lifetimeCompletions,
       unlockedDecorIds: unlockedDecorIds,
       ownedFurnitureIds: ownedFurnitureIds,
@@ -232,7 +262,11 @@ class AppState {
         placedFurnitureBySlot: persistedPlacements,
       ),
       treats: persistedTreats < 0 ? 0 : persistedTreats,
-      fedToday: json['fedToday'] as String?,
+      foodInventory: _foodInventoryFromJson(json['foodInventory']),
+      bondXp: bondXp,
+      feedingCountToday: feedingCountToday,
+      lastCompanionDay: json['lastCompanionDay'] as String?,
+      fedToday: fedToday,
       notificationPermission: permission,
       notificationEnabled:
           permission == NotificationPermissionState.granted &&
@@ -260,6 +294,10 @@ class AppState {
   final Set<String> ownedFurnitureIds;
   final Map<String, String> placedFurnitureBySlot;
   final int treats;
+  final Map<String, int> foodInventory;
+  final int bondXp;
+  final int feedingCountToday;
+  final String? lastCompanionDay;
   final String? fedToday;
   final NotificationPermissionState notificationPermission;
   final bool notificationEnabled;
@@ -301,6 +339,10 @@ class AppState {
     Set<String>? ownedFurnitureIds,
     Map<String, String>? placedFurnitureBySlot,
     int? treats,
+    Map<String, int>? foodInventory,
+    int? bondXp,
+    int? feedingCountToday,
+    Object? lastCompanionDay = _notProvided,
     Object? fedToday = _notProvided,
     NotificationPermissionState? notificationPermission,
     bool? notificationEnabled,
@@ -319,6 +361,12 @@ class AppState {
     ownedFurnitureIds: ownedFurnitureIds ?? this.ownedFurnitureIds,
     placedFurnitureBySlot: placedFurnitureBySlot ?? this.placedFurnitureBySlot,
     treats: treats ?? this.treats,
+    foodInventory: foodInventory ?? this.foodInventory,
+    bondXp: bondXp ?? this.bondXp,
+    feedingCountToday: feedingCountToday ?? this.feedingCountToday,
+    lastCompanionDay: identical(lastCompanionDay, _notProvided)
+        ? this.lastCompanionDay
+        : lastCompanionDay as String?,
     fedToday: identical(fedToday, _notProvided)
         ? this.fedToday
         : fedToday as String?,
@@ -333,7 +381,7 @@ class AppState {
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'schemaVersion': 4,
+    'schemaVersion': currentAppStateSchemaVersion,
     'onboardingComplete': onboardingComplete,
     'selectedPetId': selectedPetId,
     'petName': petName,
@@ -344,6 +392,10 @@ class AppState {
     'ownedFurnitureIds': ownedFurnitureIds.toList(growable: false),
     'placedFurnitureBySlot': placedFurnitureBySlot,
     'treats': treats,
+    'foodInventory': foodInventory,
+    'bondXp': bondXp,
+    'feedingCountToday': feedingCountToday,
+    'lastCompanionDay': lastCompanionDay,
     'fedToday': fedToday,
     'notificationPermission': notificationPermission.name,
     'notificationEnabled': notificationEnabled,
@@ -395,6 +447,19 @@ class AppState {
   static String _nonEmpty(String? value, String fallback) {
     final normalized = value?.trim() ?? '';
     return normalized.isEmpty ? fallback : normalized;
+  }
+
+  static Map<String, int> _foodInventoryFromJson(Object? value) {
+    if (value is! Map<Object?, Object?>) return const <String, int>{};
+    final result = <String, int>{};
+    for (final entry in value.entries) {
+      final id = entry.key;
+      final count = entry.value;
+      if (id is String && count is int && count > 0 && foodById(id) != null) {
+        result[id] = count;
+      }
+    }
+    return result;
   }
 }
 
