@@ -152,6 +152,22 @@ class OverlayPetService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun applyForegroundState() {
+        if (appInForeground) {
+            hideBubble()
+            handler.removeCallbacks(showNextBubble)
+            petView?.let {
+                it.persistPosition()
+                if (it.isAttachedToWindow) windowManager.removeView(it)
+                it.release()
+            }
+            petView = null
+        } else {
+            showOverlay()
+            reconcileBubbleSchedule()
+        }
+    }
+
     override fun onDestroy() {
         if (activeService === this) activeService = null
         handler.removeCallbacksAndMessages(null)
@@ -308,6 +324,9 @@ class OverlayPetService : Service() {
     }
 
     private fun showOverlay() {
+        // The floating pet only lives outside the app: while Pawside itself is
+        // in the foreground the overlay stays hidden (David 2026-08-30).
+        if (appInForeground) return
         if (petView != null || !android.provider.Settings.canDrawOverlays(this)) return
         val view = OverlayPetView(
             this,
@@ -435,6 +454,13 @@ class OverlayPetService : Service() {
         private const val MAX_OVERDUE_BUBBLE_AGE_MILLIS = 120_000L
         @Volatile
         private var activeService: OverlayPetService? = null
+        private var appInForeground = false
+
+        fun notifyAppInForeground(foreground: Boolean) {
+            if (appInForeground == foreground) return
+            appInForeground = foreground
+            activeService?.applyForegroundState()
+        }
 
         internal fun preferences(context: Context) =
             context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
