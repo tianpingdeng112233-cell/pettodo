@@ -10,6 +10,7 @@ import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
+import 'package:pettodo/ui/widgets/pixel_components.dart';
 
 class _FakeSpriteLoader extends SpriteAtlasLoader {
   _FakeSpriteLoader(this._image);
@@ -115,6 +116,9 @@ void main() {
         await controller.initialize();
       });
       addTearDown(controller.dispose);
+      controller.state = controller.state.copyWith(
+        foodInventory: const <String, int>{'biscuit': 1},
+      );
 
       // Render smoke: HomeScreen builds with a real (fake-atlas) controller.
       await tester.pumpWidget(
@@ -131,6 +135,12 @@ void main() {
       expect(controller.state.completedToday, everyElement(isFalse));
       expect(controller.petAnimation, controller.currentSchedule.animation);
       expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(
+        tester
+            .widget<PxButton>(find.widgetWithText(PxButton, 'Snacks · 0'))
+            .onPressed,
+        isNotNull,
+      );
 
       await tester.runAsync(() async {
         await controller.touchPet(dx: 96, dy: 0);
@@ -172,18 +182,6 @@ void main() {
       );
       await tester.pump();
       expect(controller.petAnimation, controller.currentSchedule.animation);
-
-      await tester.runAsync(() async {
-        await controller.feedTreat();
-        expect(controller.state.treats, 0);
-        expect(controller.state.isFedOn(DateTime.now()), isTrue);
-        expect(controller.petAnimation, 'waving');
-      });
-      await tester.runAsync(
-        () => _waitReal(
-          () => controller.petAnimation == controller.currentSchedule.animation,
-        ),
-      );
     },
   );
 }

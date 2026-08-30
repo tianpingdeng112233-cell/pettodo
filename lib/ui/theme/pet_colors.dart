@@ -28,6 +28,9 @@ abstract final class PetColors {
   static const Color theaterLabel = Color(0xFFFFE2B8);
   static const Color decorHouse = Color(0xFFE8B57E);
   static const Color ballHighlight = Color(0xFFFFD9A8);
+  static const Color confettiMint = Color(0xFF8FD5B8);
+  static const Color confettiBlue = Color(0xFF8FBCE6);
+  static const Color confettiPink = Color(0xFFF39AB5);
   static const Color futureCard = Color.fromRGBO(255, 255, 255, 0.55);
   static const Color transparent = Color(0x00000000);
   static const Color groundShadow = Color.fromRGBO(201, 150, 90, 0.16);
