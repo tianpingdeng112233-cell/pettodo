@@ -13,14 +13,17 @@
 
 ### 022A 免费领养 + 拆收费门
 1. Collection 宠物架末尾加一个「adopt」格：打开预置宠 roster（复用 onboarding 的
-   领养 grid 数据源，绝不硬编码），列出尚未领养的预置宠；点选即免费领养入架，
-   并切换为当前宠（与 onboarding 语义一致：命名步骤照走，含骰子随机名）。
+   领养 grid 数据源，绝不硬编码），列出尚未领养的预置宠；点选仅本地高亮，
+   进入命名页（含骰子随机名）确认后才完成领养入架并切换为当前宠，
+   中途返回不产生任何领养（2026-08-30 review 修订：防连点多只绕过命名）。
 2. own-pet 孵化去收费：删除 `lib/data/feature_gate.dart` 及全部价格/订阅/试用文案
    （hatch_request_screen 的 Unlock 卡、settings 里的价格行）；孵化入口直接可用。
    3 次孵化尝试额度保留（成本约束，与钱无关）。
 3. 存量照护（交付红线）：已写过 `hatch-feature-gate.json` 的设备升级后行为不变
    （文件被忽略，不迁移不报错）；`selectedPetId`、已孵化宠、宠物架不受影响；
-   带历史的老用户升级后第一屏与升级前一致。
+   带历史的老用户升级后第一屏与升级前一致。旧档（无 adoptedPresetPetIds 字段）
+   回填=全部 bundled 预置宠——升级前架上本就列出全部预置，只回填 selected 会让
+   其余宠从架上消失（2026-08-30 review 修订）；installed 同 ID 覆盖包不算 preset。
 
 ### 022B 添加即编辑
 - Home 的「+ Jot it down」不再弹 60 字快速框，直接打开 task_editor_sheet
