@@ -25,6 +25,7 @@ import '../sprite/overlay_frame_baker.dart';
 import '../sprite/rig_driver.dart';
 import '../sprite/rig_pet.dart';
 import '../sprite/sprite_atlas.dart';
+import 'focus_session_controller.dart';
 import 'hatch_flow.dart';
 
 class AppController extends ChangeNotifier {
@@ -599,6 +600,32 @@ class AppController extends ChangeNotifier {
     state = state.copyWith(eveningHelloPending: false);
     await _stateStore.save(state);
     if (accepted) await setNotificationEnabled(true);
+    notifyListeners();
+  }
+
+  FocusSessionController createFocusSession({
+    required int durationMinutes,
+    String? taskId,
+    DateTime Function()? now,
+    Duration? tickInterval = const Duration(seconds: 1),
+  }) => FocusSessionController(
+    durationMinutes: durationMinutes,
+    taskId: taskId,
+    now: now,
+    tickInterval: tickInterval,
+    onComplete: _completeFocus,
+  );
+
+  Future<void> _completeFocus(FocusSessionCompletion completion) async {
+    state = awardTreats(state, completion.treats);
+    lastTreatDrop = completion.treats;
+    if (completion.treats > 0) treatDropNonce++;
+    await _stateStore.save(state);
+    await _log(PetEventType.focusComplete, <String, Object?>{
+      'minutes': completion.minutes,
+      'treats': completion.treats,
+      if (completion.taskId != null) 'taskId': completion.taskId,
+    });
     notifyListeners();
   }
 

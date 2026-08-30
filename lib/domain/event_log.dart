@@ -7,6 +7,7 @@ enum PetEventType {
   taskRemove('task_remove'),
   taskEdit('task_edit'),
   oneoffComplete('oneoff_complete'),
+  focusComplete('focus_complete'),
   allDone('all_done'),
   notificationTap('notification_tap'),
   unlock('unlock'),

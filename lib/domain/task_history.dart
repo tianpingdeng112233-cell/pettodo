@@ -1,15 +1,21 @@
 import 'event_log.dart';
 
+enum HistoryItemKind { task, focus }
+
 class HistoryItem {
   const HistoryItem({
+    required this.kind,
     required this.taskId,
     required this.title,
     required this.completedAt,
+    this.minutes,
   });
 
+  final HistoryItemKind kind;
   final String taskId;
   final String title;
   final DateTime completedAt;
+  final int? minutes;
 }
 
 class HistoryDay {
@@ -37,14 +43,27 @@ List<HistoryWeek> aggregatePositiveHistory(Iterable<PetEvent> events) {
           .where(
             (event) =>
                 event.type == PetEventType.taskComplete ||
-                event.type == PetEventType.oneoffComplete,
+                event.type == PetEventType.oneoffComplete ||
+                event.type == PetEventType.focusComplete,
           )
           .map((event) {
             final data = event.data;
+            final local = event.timestamp.toLocal();
+            if (event.type == PetEventType.focusComplete) {
+              final minutes = data?['minutes'] as int? ?? 0;
+              if (minutes <= 0) return null;
+              return HistoryItem(
+                kind: HistoryItemKind.focus,
+                taskId: data?['taskId'] as String? ?? '',
+                title: '',
+                completedAt: local,
+                minutes: minutes,
+              );
+            }
             final title = (data?['title'] as String? ?? '').trim();
             if (title.isEmpty) return null;
-            final local = event.timestamp.toLocal();
             return HistoryItem(
+              kind: HistoryItemKind.task,
               taskId: data?['taskId'] as String? ?? '',
               title: title,
               completedAt: local,
