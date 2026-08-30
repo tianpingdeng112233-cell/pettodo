@@ -15,6 +15,11 @@ python3 -m tools.rig_pipeline --text-only "a red shiba inu with a cream muzzle" 
   --id red-shiba --name "Red Shiba" --species dog
 ```
 
+`--pose-note "..."` appends a free-text emphasis to every pose prompt — use it
+to pin details the identity references alone cannot hold (a breed's true tail
+carriage, a strict no-white-markings coat). The base prompt deliberately defers
+tail length and carriage to the pet's own references.
+
 The live command reads the Gemini API key at runtime using
 `security find-generic-password -s gemini-api-key -w`. The key is held in memory
 and is never written to a file. Use `--dry-run` to validate input and inspect the
