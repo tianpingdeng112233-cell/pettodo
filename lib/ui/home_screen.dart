@@ -518,7 +518,7 @@ class _RoomScene extends StatelessWidget {
             ),
             Positioned(
               left: 108,
-              top: 38,
+              bottom: 12,
               child: SizedBox(
                 width: 144,
                 height: 156,
@@ -624,39 +624,30 @@ class _BreathingSpriteState extends State<_BreathingSprite>
                       ),
                     );
                   },
-                  child: DecoratedBox(
-                    decoration: ShapeDecoration(
-                      color: PetColors.inputFill,
-                      shape: StairBorder.large(
-                        side: BorderSide(
-                          color: treatment.frameColor,
-                          width: treatment.frameWidth,
+                  // Pet lives directly in the room scene — no framing card
+                  // (David 2026-08-30).
+                  child: widget.controller.selectedPet.isRig
+                      ? RigPetSprite(
+                          key: ValueKey<(String, int)>((
+                            widget.controller.selectedPet.id,
+                            widget.controller.rigAnimationNonce,
+                          )),
+                          pet: widget.controller.rigPet!,
+                          action: widget.controller.rigAction,
+                          target: widget.controller.rigTarget,
+                          fixedElapsed: widget.visualTestMode
+                              ? Duration.zero
+                              : null,
+                        )
+                      : PetSprite(
+                          atlas: widget.controller.spriteAtlas,
+                          stateName: widget.visualTestMode
+                              ? 'idle'
+                              : widget.controller.petAnimation,
+                          fixedFrame: widget.visualTestMode
+                              ? 0
+                              : widget.controller.petAnimationFrame,
                         ),
-                      ),
-                    ),
-                    child: widget.controller.selectedPet.isRig
-                        ? RigPetSprite(
-                            key: ValueKey<(String, int)>((
-                              widget.controller.selectedPet.id,
-                              widget.controller.rigAnimationNonce,
-                            )),
-                            pet: widget.controller.rigPet!,
-                            action: widget.controller.rigAction,
-                            target: widget.controller.rigTarget,
-                            fixedElapsed: widget.visualTestMode
-                                ? Duration.zero
-                                : null,
-                          )
-                        : PetSprite(
-                            atlas: widget.controller.spriteAtlas,
-                            stateName: widget.visualTestMode
-                                ? 'idle'
-                                : widget.controller.petAnimation,
-                            fixedFrame: widget.visualTestMode
-                                ? 0
-                                : widget.controller.petAnimationFrame,
-                          ),
-                  ),
                 ),
               ),
               if (widget.controller.scheduleShowsZzz && !widget.visualTestMode)
@@ -754,9 +745,9 @@ const Map<FurnitureSlot, _SlotPlacement> _roomSlotPlacements =
       FurnitureSlot.window: (left: 10, top: 12, bottom: null, scale: 2),
       FurnitureSlot.wallArt: (left: 150, top: 8, bottom: null, scale: 2),
       FurnitureSlot.wallClock: (left: 300, top: 14, bottom: null, scale: 2),
-      FurnitureSlot.bookshelf: (left: 6, top: null, bottom: 52, scale: 2),
-      FurnitureSlot.bed: (left: 6, top: null, bottom: 12, scale: 2),
-      FurnitureSlot.rug: (left: 116, top: null, bottom: 8, scale: 3),
+      FurnitureSlot.bookshelf: (left: 10, top: null, bottom: 58, scale: 2),
+      FurnitureSlot.bed: (left: 16, top: null, bottom: 6, scale: 2),
+      FurnitureSlot.rug: (left: 108, top: null, bottom: 10, scale: 3),
       FurnitureSlot.toy: (left: 92, top: null, bottom: 6, scale: 2),
       FurnitureSlot.floorLamp: (left: 300, top: null, bottom: 40, scale: 2),
       FurnitureSlot.plant: (left: 308, top: null, bottom: 44, scale: 2),
