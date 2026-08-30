@@ -267,11 +267,14 @@ void main() {
       'pettodo-legacy-reminder',
     );
     addTearDown(() => directory.deleteSync(recursive: true));
-    final store = AppStateStore(() async => directory);
     final notifications = _FakeNotifications(grant: true);
+    late AppStateStore store;
     late AppController controller;
 
     await tester.runAsync(() async {
+      // Stores must be constructed inside runAsync (IMPLEMENTATION-NOTES:
+      // their Future chains otherwise bind to the fake zone and deadlock).
+      store = AppStateStore(() async => directory);
       await store.save(
         AppState.initial(DateTime(2026, 8, 30)).copyWith(
           notificationPermission: NotificationPermissionState.granted,
