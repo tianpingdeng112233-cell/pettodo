@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
 import '../domain/app_state.dart';
+import '../domain/furniture.dart';
+import '../domain/furniture_migration.dart';
 import '../domain/onboarding_flow.dart';
 import '../sprite/pet_sprite.dart';
 import '../sprite/rig_pet_sprite.dart';
@@ -12,6 +14,7 @@ import 'focus_screen.dart';
 import 'history_screen.dart';
 import 'hatch_request_screen.dart';
 import 'settings_screen.dart';
+import 'store_screen.dart';
 import 'task_editor_sheet.dart';
 import 'theme/pet_colors.dart';
 import 'theme/pet_effects.dart';
@@ -24,6 +27,7 @@ import 'theme/pet_text_styles.dart';
 import 'theme/stair_border.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
+import 'widgets/furniture_item_view.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -296,62 +300,46 @@ class _PetStage extends StatelessWidget {
       fit: BoxFit.scaleDown,
       child: SizedBox(
         width: MediaQuery.sizeOf(context).width,
-        height: PetSpacing.sunSize,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            _BreathingSprite(
-              controller: controller,
-              visualTestMode: visualTestMode,
-            ),
-            Transform.translate(
-              offset: const Offset(PetSpacing.zero, -PetSpacing.s12),
-              child: const PxGroundBar(
-                width: PetSpacing.s170,
-                height: PetSpacing.s20,
-              ),
-            ),
-            Transform.translate(
-              offset: const Offset(PetSpacing.zero, -PetSpacing.s8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(name, style: PetTextStyles.display30),
-                  const SizedBox(width: PetSpacing.s8),
-                  DecoratedBox(
-                    decoration: const ShapeDecoration(
-                      color: PetColors.badgeFill,
-                      shape: StairBorder.small(),
+            _RoomScene(controller: controller, visualTestMode: visualTestMode),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(name, style: PetTextStyles.display30),
+                const SizedBox(width: PetSpacing.s8),
+                DecoratedBox(
+                  decoration: const ShapeDecoration(
+                    color: PetColors.badgeFill,
+                    shape: StairBorder.small(),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: PetSpacing.s10,
+                      vertical: PetSpacing.s4,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: PetSpacing.s10,
-                        vertical: PetSpacing.s4,
-                      ),
-                      child: Text(
-                        controller.growthStage.label,
-                        style: PetTextStyles.small.copyWith(
-                          color: PetColors.accentText,
-                        ),
+                    child: Text(
+                      controller.growthStage.label,
+                      style: PetTextStyles.small.copyWith(
+                        color: PetColors.accentText,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Transform.translate(
-              offset: const Offset(PetSpacing.zero, -PetSpacing.s8),
-              child: SizedBox(
-                width: PetSpacing.s280,
-                height: PetSpacing.s38,
-                child: AnimatedSwitcher(
-                  duration: PetMotion.task,
-                  child: Text(
-                    status,
-                    key: ValueKey<String>(status),
-                    style: PetTextStyles.status,
-                    textAlign: TextAlign.center,
-                  ),
+            SizedBox(
+              width: PetSpacing.s280,
+              height: PetSpacing.s38,
+              child: AnimatedSwitcher(
+                duration: PetMotion.task,
+                child: Text(
+                  status,
+                  key: ValueKey<String>(status),
+                  style: PetTextStyles.status,
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -387,12 +375,78 @@ class _PetStage extends StatelessWidget {
                   ),
                 ),
               ),
-            ExcludeSemantics(child: _Decorations(controller: controller)),
           ],
         ),
       ),
     );
   }
+}
+
+class _RoomScene extends StatelessWidget {
+  const _RoomScene({required this.controller, required this.visualTestMode});
+
+  final AppController controller;
+  final bool visualTestMode;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 360,
+    height: 220,
+    child: DecoratedBox(
+      decoration: const ShapeDecoration(
+        color: Color(0xFFFFF1DA),
+        shape: StairBorder.large(
+          side: BorderSide(color: PetColors.stroke, width: 2),
+        ),
+      ),
+      child: ClipPath(
+        clipper: const ShapeBorderClipper(shape: StairBorder.large()),
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: <Widget>[
+            const Positioned.fill(
+              bottom: 62,
+              child: ColoredBox(color: Color(0xFFFFE8C8)),
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 64,
+              child: ColoredBox(color: Color(0xFFD8B080)),
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 60,
+              height: 6,
+              child: ColoredBox(color: Color(0xFFB9865B)),
+            ),
+            _RoomFurnitureLayer(controller: controller),
+            const Positioned(
+              left: 95,
+              bottom: 14,
+              child: PxGroundBar(width: 170, height: 20),
+            ),
+            Positioned(
+              left: 108,
+              top: 38,
+              child: SizedBox(
+                width: 144,
+                height: 156,
+                child: FittedBox(
+                  child: _BreathingSprite(
+                    controller: controller,
+                    visualTestMode: visualTestMode,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _BreathingSprite extends StatefulWidget {
@@ -541,42 +595,72 @@ class _BreathingSpriteState extends State<_BreathingSprite>
   }
 }
 
-class _Decorations extends StatelessWidget {
-  const _Decorations({required this.controller});
+class _RoomFurnitureLayer extends StatelessWidget {
+  const _RoomFurnitureLayer({required this.controller});
 
   final AppController controller;
 
   @override
   Widget build(BuildContext context) {
-    final unlocked = controller.decorations
-        .where((item) => controller.state.unlockedDecorIds.contains(item.id))
+    final placed = controller.state.placedFurnitureBySlot.values
+        .map(furnitureById)
+        .whereType<FurnitureItem>()
         .toList(growable: false);
-    const slots = <Offset>[
-      Offset(2, 16),
-      Offset(56, 25),
-      Offset(112, 8),
-      Offset(178, 24),
-      Offset(236, 10),
-      Offset(292, 20),
-    ];
-    return SizedBox(
-      width: 336,
-      height: PetSpacing.s52,
-      child: Stack(
-        children: unlocked
-            .map((item) {
-              final offset = slots[item.slot.clamp(0, slots.length - 1)];
-              return Positioned(
-                left: offset.dx,
-                top: offset.dy,
-                child: DecorItemView(decor: item, unlocked: true),
-              );
-            })
-            .toList(growable: false),
-      ),
+    return Stack(
+      children: placed
+          .map((item) {
+            final offset = _roomSlotOffsets[item.slot]!;
+            final alternatives = furnitureCatalog
+                .where(
+                  (candidate) =>
+                      candidate.slot == item.slot &&
+                      controller.state.ownedFurnitureIds.contains(candidate.id),
+                )
+                .toList(growable: false);
+            return Positioned(
+              left: offset.dx,
+              top: offset.dy,
+              child: Semantics(
+                button: alternatives.length > 1,
+                label: alternatives.length > 1
+                    ? '${item.name}. Double tap to switch this slot'
+                    : item.name,
+                child: GestureDetector(
+                  onTap: alternatives.length > 1
+                      ? () async {
+                          final current = alternatives.indexWhere(
+                            (candidate) => candidate.id == item.id,
+                          );
+                          final next =
+                              alternatives[(current + 1) % alternatives.length];
+                          await controller.placeFurniture(next.id);
+                        }
+                      : null,
+                  child: FurnitureItemView(
+                    item: item,
+                    manifest: controller.roomAssets,
+                  ),
+                ),
+              ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
+
+const Map<FurnitureSlot, Offset> _roomSlotOffsets = <FurnitureSlot, Offset>{
+  FurnitureSlot.window: Offset(18, 18),
+  FurnitureSlot.wallArt: Offset(145, 30),
+  FurnitureSlot.wallClock: Offset(305, 24),
+  FurnitureSlot.bed: Offset(22, 178),
+  FurnitureSlot.rug: Offset(150, 194),
+  FurnitureSlot.bookshelf: Offset(4, 102),
+  FurnitureSlot.floorLamp: Offset(286, 102),
+  FurnitureSlot.plant: Offset(328, 174),
+  FurnitureSlot.toy: Offset(82, 186),
+  FurnitureSlot.rockingChair: Offset(308, 158),
+};
 
 class _TreatBar extends StatelessWidget {
   const _TreatBar({required this.controller});
@@ -594,21 +678,25 @@ class _TreatBar extends StatelessWidget {
     child: Row(
       children: <Widget>[
         Expanded(
-          child: TextButton.icon(
+          child: TextButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => CollectionScreen(controller: controller),
               ),
             ),
-            icon: const PxIcon(
-              PxIconData.sparkle,
-              size: PetSpacing.s18,
-              color: PetColors.accentText,
-            ),
-            label: const Text('Collection'),
+            child: const Text('Collection'),
           ),
         ),
-        const SizedBox(width: PetSpacing.s10),
+        Expanded(
+          child: TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => StoreScreen(controller: controller),
+              ),
+            ),
+            child: const Text('Shop'),
+          ),
+        ),
         Expanded(
           child: Semantics(
             button: true,
@@ -987,6 +1075,10 @@ class _UnlockBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unlock = controller.activeUnlock;
+    final furnitureId = unlock == null
+        ? null
+        : legacyDecorToFurnitureIds[unlock.id];
+    final furniture = furnitureId == null ? null : furnitureById(furnitureId);
     return AnimatedSlide(
       duration: PetMotion.unlockSlide,
       curve: Curves.easeOut,
@@ -1018,13 +1110,11 @@ class _UnlockBanner extends StatelessWidget {
               ),
               child: Row(
                 children: <Widget>[
-                  if (unlock != null)
+                  if (furniture != null)
                     ExcludeSemantics(
-                      child: DecorItemView(
-                        decor: controller.decorations.firstWhere(
-                          (item) => item.id == unlock.id,
-                        ),
-                        unlocked: true,
+                      child: FurnitureItemView(
+                        item: furniture,
+                        manifest: controller.roomAssets,
                       ),
                     ),
                   const SizedBox(width: PetSpacing.s14),
@@ -1033,14 +1123,14 @@ class _UnlockBanner extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          'New keepsake · ${unlock?.name ?? ''} is here!',
+                          'New furniture · ${furniture?.name ?? ''}',
                           style: PetTextStyles.body15Strong.copyWith(
                             color: PetColors.display,
                           ),
                         ),
                         const SizedBox(height: PetSpacing.xxs),
                         Text(
-                          'It lives beside ${controller.state.petName} forever',
+                          'Placed in ${controller.state.petName}\'s room',
                           style: PetTextStyles.small,
                         ),
                       ],

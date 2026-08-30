@@ -41,11 +41,11 @@ void main() {
     expect(state.unlockedDecorIds, <String>['soft_ball', 'flower', 'home']);
     expect(state.treats, 4);
     expect(state.fedToday, '2026-07-20');
-    expect(state.toJson()['schemaVersion'], 3);
+    expect(state.toJson()['schemaVersion'], 4);
     expect(state.toJson(), isNot(contains('taskTitles')));
   });
 
-  test('v3 round-trips task kind, note, reminder, and completion fields', () {
+  test('current JSON round-trips task and completion fields', () {
     final json = AppState.initial(DateTime(2026, 7, 20))
         .copyWith(
           tasks: const <TodoTask>[
@@ -69,7 +69,7 @@ void main() {
     expect(result.tasks.last.reminder?.minute, 15);
   });
 
-  test('v3 keeps choco and all progress without a task-008 schema bump', () {
+  test('v3 keeps choco and all progress while upgrading to v4', () {
     final result = AppState.fromJson(<String, Object?>{
       'schemaVersion': 3,
       'onboardingComplete': true,
@@ -113,6 +113,20 @@ void main() {
     expect(result.treats, 12);
     expect(result.fedToday, '2026-08-12');
     expect(result.notificationEnabled, isTrue);
-    expect(result.toJson()['schemaVersion'], 3);
+    expect(result.toJson()['schemaVersion'], 4);
+  });
+
+  test('v4 round-trips furniture ownership and slot placements', () {
+    final source = AppState.initial(DateTime(2026, 8, 28)).copyWith(
+      ownedFurnitureIds: <String>{'bookshelf', 'storage_cabinet'},
+      placedFurnitureBySlot: <String, String>{'bookshelf': 'storage_cabinet'},
+    );
+
+    final result = AppState.fromJson(source.toJson(), DateTime(2026, 8, 28));
+
+    expect(result.ownedFurnitureIds, <String>{'bookshelf', 'storage_cabinet'});
+    expect(result.placedFurnitureBySlot, <String, String>{
+      'bookshelf': 'storage_cabinet',
+    });
   });
 }
