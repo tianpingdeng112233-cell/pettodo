@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -12,13 +13,15 @@ import 'package:pettodo/data/hatch_request_store.dart';
 import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/data/pet_pack_service.dart';
 import 'package:pettodo/domain/app_state.dart';
-import 'package:pettodo/sprite/sprite_atlas.dart';
+import 'package:pettodo/domain/furniture.dart';
 import 'package:pettodo/domain/onboarding_flow.dart';
+import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
 import 'package:pettodo/ui/home_screen.dart';
 import 'package:pettodo/ui/hatch_request_screen.dart';
 import 'package:pettodo/ui/onboarding_screen.dart';
 import 'package:pettodo/ui/settings_screen.dart';
+import 'package:pettodo/ui/widgets/furniture_item_view.dart';
 
 class _FakeSpriteLoader extends SpriteAtlasLoader {
   _FakeSpriteLoader(this._image);
@@ -141,9 +144,16 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
   WidgetTester tester, {
   bool pendingRequest = false,
   bool hatchUnlocked = true,
+  Map<String, Object?>? persistedState,
 }) async {
   final tempDir = Directory.systemTemp.createTempSync('pettodo-semantics');
   addTearDown(() => tempDir.deleteSync(recursive: true));
+
+  if (persistedState != null) {
+    File(
+      '${tempDir.path}/pettodo-state.json',
+    ).writeAsStringSync(jsonEncode(persistedState));
+  }
 
   late final EventLogStore eventLog;
   late final AppController controller;
@@ -368,13 +378,75 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text("Choco's collection"), findsOneWidget);
     // GridView.builder lazily renders only the visible cells, so assert the
-    // domain truth (6 decorations, none unlocked at lifetime 0) rather than a
-    // fixed rendered count; the visible silhouettes prove the locked mapping.
-    expect(fixture.controller.decorations, hasLength(6));
-    expect(fixture.controller.state.unlockedDecorIds, isEmpty);
-    expect(find.text('A little mystery'), findsAtLeastNWidgets(1));
+    // domain truth rather than a fixed rendered count; the visible silhouettes
+    // prove the unowned mapping.
+    expect(furnitureCatalog, hasLength(12));
+    expect(fixture.controller.state.ownedFurnitureIds, isEmpty);
+    expect(find.text('Not owned'), findsAtLeastNWidgets(1));
     semantics.dispose();
   });
+
+  testWidgets(
+    'historical milestones all appear once on the first home screen',
+    (tester) async {
+      final fixture = await _createController(
+        tester,
+        persistedState: <String, Object?>{
+          'schemaVersion': 3,
+          'onboardingComplete': true,
+          'selectedPetId': 'choco',
+          'petName': 'Choco',
+          'tasks': <Object?>[
+            <String, Object?>{
+              'id': 'daily-water',
+              'title': 'Water',
+              'kind': 'daily',
+            },
+          ],
+          'activeDay': '2026-08-28',
+          'lifetimeCompletions': 120,
+          'unlockedDecorIds': <String>[
+            'soft_ball',
+            'flower',
+            'home',
+            'blanket',
+            'lamp',
+            'window',
+          ],
+          'treats': 8,
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: HomeScreen(
+            controller: fixture.controller,
+            eventLog: fixture.eventLog,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      const expectedFurnitureIds = <String>[
+        'rug',
+        'plant',
+        'bed',
+        'bookshelf',
+        'floor_lamp',
+        'curtain_window',
+      ];
+      expect(find.byType(FurnitureItemView), findsNWidgets(6));
+      for (final id in expectedFurnitureIds) {
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is FurnitureItemView && widget.item.id == id,
+          ),
+          findsOneWidget,
+        );
+      }
+    },
+  );
 
   // Fleeting-thought capture is the core ADHD flow: it must survive the
   // dialog's exit animation. Disposing the field controller as soon as

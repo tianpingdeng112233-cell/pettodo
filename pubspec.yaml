@@ -64,6 +64,8 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/room/
+    - assets/food/
     - assets/pets/manifest.json
     - assets/pets/choco/pet_request.json
     - assets/pets/choco/spritesheet-extended.webp

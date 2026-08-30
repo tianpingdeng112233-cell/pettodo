@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pettodo/domain/app_state.dart';
 
 void main() {
-  test('v2 JSON migrates to v3 tasks while preserving raising state', () {
+  test('v2 JSON migrates to current tasks while preserving raising state', () {
     final state = AppState.fromJson(<String, Object?>{
       'schemaVersion': 2,
       'onboardingComplete': true,
@@ -39,13 +39,22 @@ void main() {
     expect(state.tasks.first.completedToday, isTrue);
     expect(state.lifetimeCompletions, 39);
     expect(state.unlockedDecorIds, <String>['soft_ball', 'flower', 'home']);
+    expect(state.ownedFurnitureIds, <String>{'rug', 'plant', 'bed'});
+    expect(state.placedFurnitureBySlot.values.toSet(), <String>{
+      'rug',
+      'plant',
+      'bed',
+    });
     expect(state.treats, 4);
     expect(state.fedToday, '2026-07-20');
-    expect(state.toJson()['schemaVersion'], 3);
+    expect(state.feedingCountToday, 1);
+    expect(state.bondXp, 25);
+    expect(state.foodInventory, <String, int>{'biscuit': 1});
+    expect(state.toJson()['schemaVersion'], 5);
     expect(state.toJson(), isNot(contains('taskTitles')));
   });
 
-  test('v3 round-trips task kind, note, reminder, and completion fields', () {
+  test('current schema round-trips task and bond domain fields', () {
     final json = AppState.initial(DateTime(2026, 7, 20))
         .copyWith(
           tasks: const <TodoTask>[
@@ -58,6 +67,13 @@ void main() {
               reminder: TaskReminder(hour: 18, minute: 15),
             ),
           ],
+          bondXp: 137,
+          foodInventory: const <String, int>{'biscuit': 2, 'steak': 1},
+          feedingCountToday: 4,
+          lastCompanionDay: '2026-07-20',
+          fedToday: '2026-07-20',
+          ownedFurnitureIds: const <String>{'rug'},
+          placedFurnitureBySlot: const <String, String>{'rug': 'rug'},
         )
         .toJson();
     final result = AppState.fromJson(json, DateTime(2026, 7, 20));
@@ -67,6 +83,13 @@ void main() {
     expect(result.tasks.last.note, 'Ask about Sunday');
     expect(result.tasks.last.reminder?.hour, 18);
     expect(result.tasks.last.reminder?.minute, 15);
+    expect(result.bondXp, 137);
+    expect(result.foodInventory, <String, int>{'biscuit': 2, 'steak': 1});
+    expect(result.feedingCountToday, 4);
+    expect(result.lastCompanionDay, '2026-07-20');
+    expect(result.fedToday, '2026-07-20');
+    expect(result.placedFurnitureBySlot, <String, String>{'rug': 'rug'});
+    expect(result.toJson()['schemaVersion'], 5);
   });
 
   test('legacy one-off reminder stays daily and round-trips unchanged', () {
@@ -145,7 +168,7 @@ void main() {
     },
   );
 
-  test('v3 keeps choco and all progress without a task-008 schema bump', () {
+  test('v3 keeps choco and all progress while upgrading to v4', () {
     final result = AppState.fromJson(<String, Object?>{
       'schemaVersion': 3,
       'onboardingComplete': true,
@@ -189,6 +212,127 @@ void main() {
     expect(result.treats, 12);
     expect(result.fedToday, '2026-08-12');
     expect(result.notificationEnabled, isTrue);
-    expect(result.toJson()['schemaVersion'], 3);
+    expect(result.foodInventory, <String, int>{'biscuit': 1});
+    expect(result.toJson()['schemaVersion'], 5);
+  });
+
+  test(
+    'current schema round-trips furniture ownership and slot placements',
+    () {
+      final source = AppState.initial(DateTime(2026, 8, 28)).copyWith(
+        ownedFurnitureIds: <String>{'bookshelf', 'storage_cabinet'},
+        placedFurnitureBySlot: <String, String>{'bookshelf': 'storage_cabinet'},
+      );
+
+      final result = AppState.fromJson(source.toJson(), DateTime(2026, 8, 28));
+
+      expect(result.ownedFurnitureIds, <String>{
+        'bookshelf',
+        'storage_cabinet',
+      });
+      expect(result.placedFurnitureBySlot, <String, String>{
+        'bookshelf': 'storage_cabinet',
+      });
+    },
+  );
+
+  test('legacy growth stages map to fixed non-zero bond XP floors', () {
+    for (final fixture in <({int completions, int expectedBondXp})>[
+      (completions: 0, expectedBondXp: 25),
+      (completions: 40, expectedBondXp: 100),
+      (completions: 120, expectedBondXp: 225),
+    ]) {
+      final result = AppState.fromJson(<String, Object?>{
+        'schemaVersion': 4,
+        'tasks': <Object?>[
+          <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+        ],
+        'lifetimeCompletions': fixture.completions,
+        'activeDay': '2026-08-30',
+        'treats': 17,
+      }, DateTime(2026, 8, 30));
+
+      expect(result.bondXp, fixture.expectedBondXp);
+      expect(result.treats, 17);
+    }
+  });
+
+  test('legacy migration never lowers an existing bond XP value', () {
+    final result = AppState.fromJson(<String, Object?>{
+      'schemaVersion': 4,
+      'tasks': <Object?>[
+        <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+      ],
+      'lifetimeCompletions': 120,
+      'bondXp': 400,
+    }, DateTime(2026, 8, 30));
+
+    expect(result.bondXp, 400);
+  });
+
+  test(
+    'v4 history receives one biscuit exactly once when inventory is empty',
+    () {
+      for (final history in <({int completions, int treats})>[
+        (completions: 1, treats: 0),
+        (completions: 0, treats: 1),
+      ]) {
+        final migrated = AppState.fromJson(<String, Object?>{
+          'schemaVersion': 4,
+          'tasks': <Object?>[
+            <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+          ],
+          'lifetimeCompletions': history.completions,
+          'treats': history.treats,
+          'foodInventory': const <String, int>{},
+        }, DateTime(2026, 8, 30));
+
+        expect(migrated.foodInventory, <String, int>{'biscuit': 1});
+
+        final reloaded = AppState.fromJson(
+          migrated.toJson(),
+          DateTime(2026, 8, 30),
+        );
+        expect(reloaded.foodInventory, <String, int>{'biscuit': 1});
+      }
+    },
+  );
+
+  test(
+    'v5 saves and v4 saves without history receive no migration biscuit',
+    () {
+      final newSave = AppState.fromJson(
+        AppState.initial(DateTime(2026, 8, 30)).toJson(),
+        DateTime(2026, 8, 30),
+      );
+      final emptyLegacySave = AppState.fromJson(<String, Object?>{
+        'schemaVersion': 4,
+        'tasks': <Object?>[
+          <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+        ],
+        'lifetimeCompletions': 0,
+        'treats': 0,
+        'foodInventory': const <String, int>{},
+      }, DateTime(2026, 8, 30));
+
+      expect(newSave.foodInventory, isEmpty);
+      expect(emptyLegacySave.foodInventory, isEmpty);
+    },
+  );
+
+  test('a fedToday-only history still earns the greeting biscuit', () {
+    final result = AppState.fromJson(<String, Object?>{
+      'schemaVersion': 4,
+      'onboardingComplete': true,
+      'tasks': <Object?>[
+        <String, Object?>{'id': 'daily', 'title': 'Water', 'kind': 'daily'},
+      ],
+      'activeDay': '2026-08-30',
+      'lifetimeCompletions': 0,
+      'treats': 0,
+      'fedToday': '2026-08-29',
+    }, DateTime(2026, 8, 30));
+
+    expect(result.foodInventory, <String, int>{'biscuit': 1});
   });
 }
