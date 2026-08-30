@@ -14,6 +14,19 @@ The app uses a small custom `CustomPainter` plus Flutter `Ticker`, not Flame. At
 
 Frame counts, row indexes, cell size, and image dimensions are parsed at runtime from `pet_request.json`; only safe product state names (`idle`, `jumping`, `waving`, `review`) are selected by v1 behavior. The `failed` row is never selected.
 
+## Rig layer baking must stay on the CPU (2026-08-28)
+
+Every pixel operation in rig pack composition — head/tail cutouts, part masks,
+and the pixelScale downscale — runs as plain Dart pixel arithmetic in
+`lib/sprite/rig_pet.dart`, never through `Picture.toImage`. GPU-backend
+rasterization is not trustworthy for this: Impeller silently no-ops
+`BlendMode.clear`/`dstIn` (+`MaskFilter`) erases (the moving head ghosted over
+its baked-in twin) and its `drawImageRect` filtering of transparent pixels
+shifted layer colours — while the software Skia used by `flutter test` renders
+both correctly, so tests can never catch a regression that reintroduces GPU
+baking. If you touch layer composition, keep it CPU-side and verify on an
+Android emulator, not just in tests.
+
 ## Adding pet #2
 
 Add the new pet folder beneath `assets/pets/`, declare its metadata and atlas files under Flutter assets, and append one descriptor to `assets/pets/manifest.json`. No Dart code change is needed. The manifest supplies pet id, display name, metadata path, and spritesheet path; the metadata supplies the atlas grid and sequences.
