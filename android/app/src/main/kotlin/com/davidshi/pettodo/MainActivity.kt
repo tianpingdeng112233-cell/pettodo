@@ -12,6 +12,16 @@ class MainActivity : FlutterActivity() {
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var permissionSettingsOpened = false
 
+    override fun onStart() {
+        super.onStart()
+        OverlayPetService.notifyAppInForeground(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        OverlayPetService.notifyAppInForeground(false)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(
