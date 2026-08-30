@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../application/app_controller.dart';
 import '../data/event_log_store.dart';
 import '../domain/app_state.dart';
+import '../domain/bond.dart';
 import '../domain/furniture.dart';
 import '../domain/furniture_migration.dart';
 import '../domain/onboarding_flow.dart';
@@ -13,6 +14,7 @@ import 'collection_screen.dart';
 import 'history_screen.dart';
 import 'hatch_request_screen.dart';
 import 'settings_screen.dart';
+import 'snacks_screen.dart';
 import 'store_screen.dart';
 import 'task_editor_sheet.dart';
 import 'theme/pet_colors.dart';
@@ -27,6 +29,7 @@ import 'theme/stair_border.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
 import 'widgets/furniture_item_view.dart';
+import 'widgets/bond_progress_bar.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -306,6 +309,46 @@ class _PetStage extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: PetSpacing.s6),
+            SizedBox(
+              width: 250,
+              child: Row(
+                children: <Widget>[
+                  DecoratedBox(
+                    decoration: const ShapeDecoration(
+                      color: PetColors.primary,
+                      shape: StairBorder.small(),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: PetSpacing.s8,
+                        vertical: PetSpacing.s4,
+                      ),
+                      child: Text(
+                        'Lv ${bondLevelForXp(controller.state.bondXp)}',
+                        style: PetTextStyles.small.copyWith(
+                          color: PetColors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: PetSpacing.s8),
+                  Expanded(
+                    child: BondProgressBar(
+                      value: bondProgressForXp(controller.state.bondXp),
+                      highlightStart: controller.bondProgressHighlightStart,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: PetSpacing.s4),
+            Text(
+              bondTitleForLevel(bondLevelForXp(controller.state.bondXp)),
+              style: PetTextStyles.caption,
+            ),
+            const SizedBox(height: PetSpacing.s4),
             SizedBox(
               width: PetSpacing.s280,
               height: PetSpacing.s38,
@@ -676,22 +719,14 @@ class _TreatBar extends StatelessWidget {
         Expanded(
           child: Semantics(
             button: true,
-            enabled: controller.state.treats > 0,
-            label:
-                'Feed ${controller.state.petName}, ${controller.state.treats} ${controller.selectedPet.treatName}s available',
+            label: 'Open snacks, ${controller.state.treats} treats',
             child: PxButton(
-              onPressed: controller.state.treats > 0
-                  ? () async {
-                      final fed = await controller.feedTreat();
-                      if (fed) await HapticFeedback.lightImpact();
-                    }
-                  : null,
-              icon: const PxIcon(
-                PxIconData.bone,
-                size: PetSpacing.s20,
-                color: PetColors.white,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SnacksScreen(controller: controller),
+                ),
               ),
-              label: Text('Feed · ${controller.state.treats}'),
+              label: Text('Snacks · ${controller.state.treats}'),
             ),
           ),
         ),
@@ -1122,79 +1157,135 @@ class _UnlockBanner extends StatelessWidget {
   }
 }
 
+enum _TheaterType { bond, daily, hatch }
+
 class _LittleTheater extends StatelessWidget {
   const _LittleTheater({required this.controller});
 
   final AppController controller;
 
   @override
-  Widget build(BuildContext context) => AnimatedOpacity(
-    duration: PetMotion.fade,
-    opacity: controller.theaterVisible
-        ? PetEffects.fullOpacity
-        : PetSpacing.zero,
-    child: DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          center: PetEffects.theaterGradientCenter,
-          colors: <Color>[PetColors.theaterCenter, PetColors.theaterEdge],
+  Widget build(BuildContext context) {
+    final bondLevel = controller.bondCelebrationLevel;
+    final hatchPetName = controller.hatchCeremonyPetName;
+    final theaterType = bondLevel != null
+        ? _TheaterType.bond
+        : hatchPetName != null
+        ? _TheaterType.hatch
+        : _TheaterType.daily;
+    final (heading, message, actionLabel) = switch (theaterType) {
+      _TheaterType.bond => (
+        '· BOND GREW ·',
+        'You and ${controller.state.petName} grew a little closer.',
+        'Continue',
+      ),
+      _TheaterType.daily => (
+        '· LITTLE THEATER ·',
+        '${controller.state.petName} nuzzles you happily — thank you for today',
+        'Thank you, ${controller.state.petName}',
+      ),
+      _TheaterType.hatch => (
+        '· A NEW FRIEND ADOPTED ·',
+        'Welcome, $hatchPetName. Your little companion is here with you.',
+        'Welcome home, ${controller.state.petName}',
+      ),
+    };
+    return AnimatedOpacity(
+      duration: PetMotion.fade,
+      opacity: controller.theaterVisible
+          ? PetEffects.fullOpacity
+          : PetSpacing.zero,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: PetEffects.theaterGradientCenter,
+            colors: <Color>[PetColors.theaterCenter, PetColors.theaterEdge],
+          ),
+        ),
+        child: Stack(
+          children: <Widget>[
+            const Positioned.fill(child: _TwinkleField()),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(heading, style: PetTextStyles.theaterLabel),
+                  const SizedBox(height: PetSpacing.s16),
+                  ExcludeSemantics(
+                    child: SizedBox(
+                      width: PetSpacing.s192,
+                      height: PetSpacing.s208,
+                      child: controller.selectedPet.isRig
+                          ? RigPetSprite(
+                              pet: controller.rigPet!,
+                              action: controller.rigAction,
+                            )
+                          : PetSprite(
+                              atlas: controller.spriteAtlas,
+                              stateName: 'review',
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: PetSpacing.s16),
+                  if (bondLevel != null) ...<Widget>[
+                    Text(
+                      'Bond Lv $bondLevel',
+                      style: PetTextStyles.display30.copyWith(
+                        color: PetColors.theaterText,
+                      ),
+                    ),
+                    const SizedBox(height: PetSpacing.s10),
+                    DecoratedBox(
+                      decoration: const ShapeDecoration(
+                        color: PetColors.badgeFill,
+                        shape: StairBorder.small(),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: PetSpacing.s12,
+                          vertical: PetSpacing.s5,
+                        ),
+                        child: Text(
+                          bondTitleForLevel(bondLevel),
+                          style: PetTextStyles.chip.copyWith(
+                            color: PetColors.accentText,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: PetSpacing.s12),
+                  ],
+                  SizedBox(
+                    width: PetSpacing.s280,
+                    child: Text(
+                      message,
+                      style: PetTextStyles.theaterLine,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  if (bondLevel != null) ...<Widget>[
+                    const SizedBox(height: PetSpacing.s16),
+                    SizedBox(
+                      width: 250,
+                      child: BondProgressBar(
+                        value: bondProgressForXp(controller.state.bondXp),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: PetSpacing.s20),
+                  _PrimaryButton(
+                    label: actionLabel,
+                    onTap: controller.dismissTheater,
+                    compact: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      child: Stack(
-        children: <Widget>[
-          const Positioned.fill(child: _TwinkleField()),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  controller.hatchCeremonyPetName == null
-                      ? '· LITTLE THEATER ·'
-                      : '· A NEW FRIEND ADOPTED ·',
-                  style: PetTextStyles.theaterLabel,
-                ),
-                const SizedBox(height: PetSpacing.s16),
-                ExcludeSemantics(
-                  child: SizedBox(
-                    width: PetSpacing.s192,
-                    height: PetSpacing.s208,
-                    child: controller.selectedPet.isRig
-                        ? RigPetSprite(
-                            pet: controller.rigPet!,
-                            action: controller.rigAction,
-                          )
-                        : PetSprite(
-                            atlas: controller.spriteAtlas,
-                            stateName: 'review',
-                          ),
-                  ),
-                ),
-                const SizedBox(height: PetSpacing.s16),
-                SizedBox(
-                  width: PetSpacing.s280,
-                  child: Text(
-                    controller.hatchCeremonyPetName == null
-                        ? '${controller.state.petName} nuzzles you happily — thank you for today'
-                        : 'Welcome, ${controller.hatchCeremonyPetName}. Your little companion is here with you.',
-                    style: PetTextStyles.theaterLine,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: PetSpacing.s20),
-                _PrimaryButton(
-                  label: controller.hatchCeremonyPetName == null
-                      ? 'Thank you, ${controller.state.petName}'
-                      : 'Welcome home, ${controller.state.petName}',
-                  onTap: controller.dismissTheater,
-                  compact: true,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+    );
+  }
 }
 
 class _PrimaryButton extends StatelessWidget {
@@ -1255,10 +1346,17 @@ class _StarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = PetColors.theaterLabel;
+    const colors = <Color>[
+      PetColors.primary,
+      PetColors.ballHighlight,
+      PetColors.confettiMint,
+      PetColors.confettiBlue,
+      PetColors.confettiPink,
+    ];
+    final paint = Paint();
     for (var index = 0; index < 20; index++) {
       final phase = (progress + index * PetEffects.twinklePhaseStep) % 1;
-      paint.color = PetColors.theaterLabel.withValues(
+      paint.color = colors[index % colors.length].withValues(
         alpha:
             PetEffects.twinkleMinimum +
             PetEffects.twinkleRange *
