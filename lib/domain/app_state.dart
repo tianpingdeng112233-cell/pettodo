@@ -29,30 +29,86 @@ class TaskReminder {
     required this.hour,
     required this.minute,
     this.enabled = true,
+  }) : scheduledAt = null,
+       _enabledWasExplicit = true;
+
+  factory TaskReminder.once({
+    required DateTime scheduledAt,
+    bool enabled = true,
+  }) => TaskReminder._(
+    hour: scheduledAt.hour,
+    minute: scheduledAt.minute,
+    enabled: enabled,
+    scheduledAt: scheduledAt,
+    enabledWasExplicit: true,
+  );
+
+  const TaskReminder._({
+    required this.hour,
+    required this.minute,
+    required this.enabled,
+    required this.scheduledAt,
+    required this._enabledWasExplicit,
   });
 
-  factory TaskReminder.fromJson(Map<Object?, Object?> json) => TaskReminder(
-    hour: (json['hour'] as int? ?? 9).clamp(0, 23),
-    minute: (json['minute'] as int? ?? 0).clamp(0, 59),
-    enabled: json['enabled'] as bool? ?? true,
-  );
+  factory TaskReminder.fromJson(Map<Object?, Object?> json) {
+    final scheduledAt = _tryDate(json['scheduledAt'] as String?);
+    if (scheduledAt != null) {
+      return TaskReminder.once(
+        scheduledAt: scheduledAt,
+        enabled: json['enabled'] as bool? ?? true,
+      );
+    }
+    return TaskReminder._(
+      hour: (json['hour'] as int? ?? 9).clamp(0, 23),
+      minute: (json['minute'] as int? ?? 0).clamp(0, 59),
+      enabled: json['enabled'] as bool? ?? true,
+      scheduledAt: null,
+      enabledWasExplicit: json.containsKey('enabled'),
+    );
+  }
 
   final int hour;
   final int minute;
+  final DateTime? scheduledAt;
   final bool enabled;
+  final bool _enabledWasExplicit;
 
-  TaskReminder copyWith({int? hour, int? minute, bool? enabled}) =>
-      TaskReminder(
-        hour: (hour ?? this.hour).clamp(0, 23),
-        minute: (minute ?? this.minute).clamp(0, 59),
+  bool get isDaily => scheduledAt == null;
+  bool get isTimed => scheduledAt != null;
+
+  TaskReminder copyWith({
+    int? hour,
+    int? minute,
+    DateTime? scheduledAt,
+    bool? enabled,
+  }) {
+    final nextScheduledAt = scheduledAt ?? this.scheduledAt;
+    if (nextScheduledAt != null) {
+      return TaskReminder.once(
+        scheduledAt: nextScheduledAt,
         enabled: enabled ?? this.enabled,
       );
+    }
+    return TaskReminder._(
+      hour: (hour ?? this.hour).clamp(0, 23),
+      minute: (minute ?? this.minute).clamp(0, 59),
+      enabled: enabled ?? this.enabled,
+      scheduledAt: null,
+      enabledWasExplicit: enabled != null || _enabledWasExplicit,
+    );
+  }
 
-  Map<String, Object?> toJson() => <String, Object?>{
-    'hour': hour,
-    'minute': minute,
-    'enabled': enabled,
-  };
+  Map<String, Object?> toJson() => isTimed
+      ? <String, Object?>{
+          'scheduledAt': scheduledAt!.toIso8601String(),
+          'enabled': enabled,
+        }
+      : <String, Object?>{
+          'hour': hour,
+          'minute': minute,
+          if (_enabledWasExplicit) 'enabled': enabled,
+        };
 }
 
 class TodoTask {

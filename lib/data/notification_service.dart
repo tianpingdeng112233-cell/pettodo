@@ -15,13 +15,22 @@ class TaskReminderSchedule {
     required this.hour,
     required this.minute,
     this.skipToday = false,
-  });
+  }) : scheduledAt = null;
+
+  const TaskReminderSchedule.once({
+    required this.taskId,
+    required this.title,
+    required this.scheduledAt,
+  }) : hour = 0,
+       minute = 0,
+       skipToday = false;
 
   final String taskId;
   final String title;
   final int hour;
   final int minute;
   final bool skipToday;
+  final DateTime? scheduledAt;
 }
 
 class ScheduledPetNotification {
@@ -130,12 +139,13 @@ List<ScheduledPetNotification> buildNotificationWindow({
   required int invitationHour,
   required int invitationMinute,
   required List<TaskReminderSchedule> taskReminders,
-  int limit = notificationWindowSize,
+  int recurringLimit = notificationWindowSize,
   math.Random? random,
 }) {
-  if (limit <= 0) return const <ScheduledPetNotification>[];
+  if (recurringLimit <= 0) return const <ScheduledPetNotification>[];
   final rng = random ?? math.Random();
   final candidates = <ScheduledPetNotification>[];
+  final timedCandidates = <ScheduledPetNotification>[];
 
   if (includeDailyInvitation) {
     var previousTemplate = -1;
@@ -184,7 +194,23 @@ List<ScheduledPetNotification> buildNotificationWindow({
   }
 
   for (final reminder in taskReminders) {
-    for (var dayOffset = 0; dayOffset <= limit; dayOffset++) {
+    final scheduledAt = reminder.scheduledAt;
+    if (scheduledAt != null) {
+      if (scheduledAt.isAfter(now)) {
+        timedCandidates.add(
+          ScheduledPetNotification(
+            id: 0,
+            scheduledAt: scheduledAt,
+            title: '$petName brought this along',
+            body: '${reminder.title} is here for this one moment.',
+            kind: PetNotificationKind.taskReminder,
+            taskId: reminder.taskId,
+          ),
+        );
+      }
+      continue;
+    }
+    for (var dayOffset = 0; dayOffset <= recurringLimit; dayOffset++) {
       if (dayOffset == 0 && reminder.skipToday) continue;
       if (dayOffset >= taskReminderAbsenceCutoff) continue;
       final day = DateTime(now.year, now.month, now.day + dayOffset);
@@ -214,20 +240,31 @@ List<ScheduledPetNotification> buildNotificationWindow({
     if (time != 0) return time;
     return (a.taskId ?? '').compareTo(b.taskId ?? '');
   });
+  timedCandidates.sort((a, b) {
+    final time = a.scheduledAt.compareTo(b.scheduledAt);
+    if (time != 0) return time;
+    return (a.taskId ?? '').compareTo(b.taskId ?? '');
+  });
+  final selected =
+      <ScheduledPetNotification>[
+        ...candidates.take(recurringLimit),
+        ...timedCandidates,
+      ]..sort((a, b) {
+        final time = a.scheduledAt.compareTo(b.scheduledAt);
+        if (time != 0) return time;
+        return (a.taskId ?? '').compareTo(b.taskId ?? '');
+      });
   return List<ScheduledPetNotification>.unmodifiable(
-    candidates
-        .take(limit)
-        .indexed
-        .map(
-          (entry) => ScheduledPetNotification(
-            id: NotificationService.firstNotificationId + entry.$1,
-            scheduledAt: entry.$2.scheduledAt,
-            title: entry.$2.title,
-            body: entry.$2.body,
-            kind: entry.$2.kind,
-            taskId: entry.$2.taskId,
-          ),
-        ),
+    selected.indexed.map(
+      (entry) => ScheduledPetNotification(
+        id: NotificationService.firstNotificationId + entry.$1,
+        scheduledAt: entry.$2.scheduledAt,
+        title: entry.$2.title,
+        body: entry.$2.body,
+        kind: entry.$2.kind,
+        taskId: entry.$2.taskId,
+      ),
+    ),
   );
 }
 
@@ -258,6 +295,8 @@ class NotificationService {
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   static const int firstNotificationId = 2000;
+  static const int maximumScheduledNotificationCount =
+      notificationWindowSize + 7;
   static const String _payload = 'pettodo_invitation';
 
   final FlutterLocalNotificationsPlugin _plugin;
@@ -347,7 +386,7 @@ class NotificationService {
   }
 
   Future<void> cancelScheduled() async {
-    for (var index = 0; index < notificationWindowSize; index++) {
+    for (var index = 0; index < maximumScheduledNotificationCount; index++) {
       await _plugin.cancel(id: firstNotificationId + index);
     }
   }

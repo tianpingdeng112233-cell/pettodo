@@ -15,6 +15,7 @@ enum PxIconData {
   edit,
   photo,
   camera,
+  calendar,
   clock,
   package,
   share,
@@ -147,6 +148,15 @@ class _PxIconPainter extends CustomPainter {
         rect(9, 9, 6, 3, secondary);
         rect(7, 12, 10, 6, secondary);
         rect(9, 18, 6, 2, secondary);
+      case PxIconData.calendar:
+        rect(3, 3, 18, 3);
+        rect(1, 6, 22, 16);
+        rect(4, 9, 16, 10, Paint()..color = PetColors.white);
+        rect(6, 1, 3, 7);
+        rect(15, 1, 3, 7);
+        rect(7, 11, 3, 3, secondary);
+        rect(12, 11, 3, 3, secondary);
+        rect(7, 16, 3, 2, secondary);
       case PxIconData.clock:
         rect(7, 2, 10, 3);
         rect(4, 5, 16, 3);

@@ -151,6 +151,92 @@ void main() {
     expect(lastDay, taskReminderAbsenceCutoff - 1);
   });
 
+  test('timed reminder fires once while legacy one-off stays daily', () {
+    final scheduledAt = DateTime(2026, 8, 31, 15);
+    final window = buildNotificationWindow(
+      petName: 'Choco',
+      now: DateTime(2026, 8, 30, 8),
+      includeDailyInvitation: false,
+      invitationHour: 20,
+      invitationMinute: 0,
+      taskReminders: <TaskReminderSchedule>[
+        TaskReminderSchedule.once(
+          taskId: 'timed',
+          title: 'Meet Sam',
+          scheduledAt: scheduledAt,
+        ),
+        const TaskReminderSchedule(
+          taskId: 'legacy',
+          title: 'Old one-off',
+          hour: 10,
+          minute: 30,
+        ),
+      ],
+    );
+
+    final timed = window.where((item) => item.taskId == 'timed').toList();
+    final legacy = window.where((item) => item.taskId == 'legacy').toList();
+    expect(timed, hasLength(1));
+    expect(timed.single.scheduledAt, scheduledAt);
+    expect(timed.single.title, 'Choco brought this along');
+    expect(timed.single.body, 'Meet Sam is here for this one moment.');
+    expect(legacy, hasLength(taskReminderAbsenceCutoff));
+  });
+
+  test('timed reminders keep a slot even beyond the recurring horizon', () {
+    final scheduledAt = DateTime(2027, 8, 31, 15);
+    final recurring = <TaskReminderSchedule>[
+      for (var index = 0; index < 6; index++)
+        TaskReminderSchedule(
+          taskId: 'legacy-$index',
+          title: 'Legacy $index',
+          hour: 9 + index,
+          minute: 0,
+        ),
+    ];
+    final baseline = buildNotificationWindow(
+      petName: 'Choco',
+      now: DateTime(2026, 8, 30, 12),
+      includeDailyInvitation: true,
+      invitationHour: 20,
+      invitationMinute: 0,
+      taskReminders: recurring,
+      random: _SeqRandom(const <int>[5]),
+    );
+    final window = buildNotificationWindow(
+      petName: 'Choco',
+      now: DateTime(2026, 8, 30, 12),
+      includeDailyInvitation: true,
+      invitationHour: 20,
+      invitationMinute: 0,
+      taskReminders: <TaskReminderSchedule>[
+        TaskReminderSchedule.once(
+          taskId: 'far-future',
+          title: 'Future plan',
+          scheduledAt: scheduledAt,
+        ),
+        ...recurring,
+      ],
+      random: _SeqRandom(const <int>[5]),
+    );
+
+    expect(
+      window.where((item) => item.taskId == 'far-future').single.scheduledAt,
+      scheduledAt,
+    );
+    expect(window, hasLength(baseline.length + 1));
+    expect(
+      window
+          .where((item) => item.taskId != 'far-future')
+          .map(
+            (item) => (item.taskId, item.scheduledAt, item.title, item.body),
+          ),
+      baseline.map(
+        (item) => (item.taskId, item.scheduledAt, item.title, item.body),
+      ),
+    );
+  });
+
   test(
     'invitation times jitter within ten minutes and stay in waking hours',
     () {

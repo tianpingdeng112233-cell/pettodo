@@ -7,6 +7,7 @@ import 'package:pettodo/application/app_controller.dart';
 import 'package:pettodo/data/app_state_store.dart';
 import 'package:pettodo/data/event_log_store.dart';
 import 'package:pettodo/data/notification_service.dart';
+import 'package:pettodo/domain/app_state.dart';
 import 'package:pettodo/domain/event_log.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 
@@ -65,6 +66,9 @@ class _FakeNotifications extends NotificationService {
   final bool grant;
   int permissionRequests = 0;
   int scheduleRefreshes = 0;
+  int cancelRefreshes = 0;
+  final List<List<TaskReminderSchedule>> scheduledTaskReminders =
+      <List<TaskReminderSchedule>>[];
 
   @override
   Future<bool> requestPermission() async {
@@ -81,8 +85,15 @@ class _FakeNotifications extends NotificationService {
     required List<TaskReminderSchedule> taskReminders,
     DateTime? now,
   }) async {
+    await cancelScheduled();
     scheduleRefreshes++;
+    scheduledTaskReminders.add(List<TaskReminderSchedule>.of(taskReminders));
     return const <ScheduledPetNotification>[];
+  }
+
+  @override
+  Future<void> cancelScheduled() async {
+    cancelRefreshes++;
   }
 }
 
@@ -216,6 +227,133 @@ void main() {
       addTearDown(controller.dispose);
     },
   );
+
+  testWidgets(
+    'timed reminder set, change, delete, and completion each refresh once',
+    (tester) async {
+      final directory = Directory.systemTemp.createTempSync(
+        'pettodo-timed-reminder',
+      );
+      addTearDown(() => directory.deleteSync(recursive: true));
+      final notifications = _FakeNotifications(grant: true);
+      late AppController controller;
+
+      await tester.runAsync(() async {
+        controller = AppController(
+          stateStore: AppStateStore(() async => directory),
+          eventLog: EventLogStore(() async => directory),
+          notifications: notifications,
+          spriteLoader: _LifecycleSpriteLoader(await _image()),
+          now: () => DateTime(2026, 8, 30, 12),
+        );
+        await controller.initialize();
+        await controller.addTask(title: 'Meet Sam');
+        final taskId = controller.state.tasks.last.id;
+        final firstAt = DateTime(2026, 8, 31, 15);
+        final changedAt = DateTime(2026, 9, 1, 16, 30);
+
+        expect(
+          await controller.setTaskReminder(
+            taskId: taskId,
+            enabled: true,
+            hour: firstAt.hour,
+            minute: firstAt.minute,
+            scheduledAt: firstAt,
+          ),
+          isTrue,
+        );
+        expect(notifications.scheduleRefreshes, 1);
+        expect(notifications.cancelRefreshes, 1);
+        expect(
+          notifications.scheduledTaskReminders.single.single.scheduledAt,
+          firstAt,
+        );
+
+        await controller.setTaskReminder(
+          taskId: taskId,
+          enabled: true,
+          hour: changedAt.hour,
+          minute: changedAt.minute,
+          scheduledAt: changedAt,
+        );
+        expect(notifications.scheduleRefreshes, 2);
+        expect(notifications.cancelRefreshes, 2);
+        expect(
+          notifications.scheduledTaskReminders.last.single.scheduledAt,
+          changedAt,
+        );
+
+        await controller.removeTask(taskId);
+        expect(notifications.scheduleRefreshes, 3);
+        expect(notifications.cancelRefreshes, 3);
+        expect(notifications.scheduledTaskReminders.last, isEmpty);
+
+        await controller.addTask(title: 'Post the letter');
+        final completingTaskId = controller.state.tasks.last.id;
+        await controller.setTaskReminder(
+          taskId: completingTaskId,
+          enabled: true,
+          hour: firstAt.hour,
+          minute: firstAt.minute,
+          scheduledAt: firstAt,
+        );
+        expect(notifications.scheduleRefreshes, 4);
+        expect(notifications.cancelRefreshes, 4);
+        await controller.completeTask(completingTaskId);
+        expect(notifications.scheduleRefreshes, 5);
+        expect(notifications.cancelRefreshes, 5);
+        expect(notifications.scheduledTaskReminders.last, isEmpty);
+      });
+      addTearDown(controller.dispose);
+    },
+  );
+
+  testWidgets('legacy one-off reminder still enters the daily schedule path', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync(
+      'pettodo-legacy-reminder',
+    );
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final notifications = _FakeNotifications(grant: true);
+    late AppStateStore store;
+    late AppController controller;
+
+    await tester.runAsync(() async {
+      // Stores must be constructed inside runAsync (IMPLEMENTATION-NOTES:
+      // their Future chains otherwise bind to the fake zone and deadlock).
+      store = AppStateStore(() async => directory);
+      await store.save(
+        AppState.initial(DateTime(2026, 8, 30)).copyWith(
+          notificationPermission: NotificationPermissionState.granted,
+          tasks: const <TodoTask>[
+            TodoTask(id: 'daily', title: 'Water', kind: TaskKind.daily),
+            TodoTask(
+              id: 'legacy',
+              title: 'Old one-off',
+              kind: TaskKind.oneOff,
+              reminder: TaskReminder(hour: 10, minute: 30),
+            ),
+          ],
+        ),
+      );
+      controller = AppController(
+        stateStore: store,
+        eventLog: EventLogStore(() async => directory),
+        notifications: notifications,
+        spriteLoader: _LifecycleSpriteLoader(await _image()),
+        now: () => DateTime(2026, 8, 30, 12),
+      );
+      await controller.initialize();
+
+      final scheduled = notifications.scheduledTaskReminders.single.single;
+      expect(scheduled.taskId, 'legacy');
+      expect(scheduled.scheduledAt, isNull);
+      expect(scheduled.hour, 10);
+      expect(scheduled.minute, 30);
+    });
+    addTearDown(controller.dispose);
+  });
 
   testWidgets('focus completion awards once without changing task milestones', (
     tester,
