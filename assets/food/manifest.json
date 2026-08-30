@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "food": [
+    {
+      "id": "biscuit",
+      "asset": "assets/food/biscuit.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#D9A66F"
+    },
+    {
+      "id": "chicken_bites",
+      "asset": "assets/food/chicken_bites.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#E7B85C"
+    },
+    {
+      "id": "salmon",
+      "asset": "assets/food/salmon.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#F29A62"
+    },
+    {
+      "id": "soft_egg",
+      "asset": "assets/food/soft_egg.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#F1D39A"
+    },
+    {
+      "id": "drumstick",
+      "asset": "assets/food/drumstick.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#B9855C"
+    },
+    {
+      "id": "steak",
+      "asset": "assets/food/steak.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#BD5956"
+    },
+    {
+      "id": "shrimp",
+      "asset": "assets/food/shrimp.png",
+      "pixel_width": 40,
+      "pixel_height": 40,
+      "placeholder": "#F29A62"
+    }
+  ]
+}
