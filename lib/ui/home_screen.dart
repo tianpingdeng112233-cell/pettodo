@@ -121,18 +121,10 @@ class _HomeContentState extends State<_HomeContent> {
     _comingUpBoundaryTimer?.cancel();
     if (widget.now != null) return;
     final now = DateTime.now();
-    final futureTimes =
-        controller.state.tasks
-            .where(
-              (task) =>
-                  task.kind == TaskKind.oneOff &&
-                  task.reminder?.enabled == true &&
-                  task.reminder?.isTimed == true &&
-                  task.reminder!.scheduledAt!.isAfter(now),
-            )
-            .map((task) => task.reminder!.scheduledAt!)
-            .toList(growable: false)
-          ..sort();
+    final futureTimes = groupTasksForHome(controller.state.tasks, now: now)
+        .comingUp
+        .map((task) => task.reminder!.scheduledAt!)
+        .toList(growable: false);
     if (futureTimes.isEmpty) return;
     _comingUpBoundaryTimer = Timer(
       futureTimes.first.difference(now) + const Duration(milliseconds: 1),

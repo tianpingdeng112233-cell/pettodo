@@ -33,3 +33,9 @@ String format24Hour(int hour, int minute) =>
 
 String formatTimedReminder(DateTime value) =>
     '${formatShortDate(value)} · ${format24Hour(value.hour, value.minute)}';
+
+String formatAmPm(int hour, int minute) {
+  final period = hour < 12 ? 'AM' : 'PM';
+  final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+  return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
+}

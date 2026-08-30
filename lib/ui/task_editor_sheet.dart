@@ -324,7 +324,9 @@ class _TaskEditorState extends State<_TaskEditor> {
               const PxIcon(PxIconData.clock, size: 18),
               const SizedBox(width: PetSpacing.s8),
               Expanded(
-                child: Text('Every day at ${_reminderTime.format(context)}'),
+                child: Text(
+                  'Every day at ${formatAmPm(_reminderTime.hour, _reminderTime.minute)}',
+                ),
               ),
               const PxIcon(PxIconData.chevronRight, size: 16),
             ],
