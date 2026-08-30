@@ -20,22 +20,33 @@ class FocusPet extends StatelessWidget {
   final FocusPetPose pose;
   final double size;
 
-  ({RigPetAction rigAction, String atlasState, int? atlasFrame})
+  // V1 freeze (David 2026-08-30): focus screens render static frames only —
+  // no drift, transition, or celebration motion.
+  ({
+    RigPetAction rigAction,
+    Duration rigElapsed,
+    String atlasState,
+    int atlasFrame,
+  })
   get _rendering => switch (pose) {
     FocusPetPose.awake => (
       rigAction: RigPetAction.breathing,
+      rigElapsed: Duration.zero,
       atlasState: 'idle',
-      atlasFrame: null,
+      atlasFrame: 0,
     ),
     FocusPetPose.napping => (
+      // Past sleepTransitionSeconds, the driver holds the settled sleep pose.
       rigAction: RigPetAction.sleepTransition,
+      rigElapsed: const Duration(seconds: 2),
       atlasState: 'waiting',
       atlasFrame: 0,
     ),
     FocusPetPose.celebrating => (
-      rigAction: RigPetAction.happyJump,
+      rigAction: RigPetAction.breathing,
+      rigElapsed: Duration.zero,
       atlasState: 'waving',
-      atlasFrame: null,
+      atlasFrame: 0,
     ),
   };
 
@@ -64,6 +75,7 @@ class FocusPet extends StatelessWidget {
                 ? RigPetSprite(
                     pet: controller.rigPet!,
                     action: rendering.rigAction,
+                    fixedElapsed: rendering.rigElapsed,
                   )
                 : PetSprite(
                     atlas: controller.spriteAtlas,

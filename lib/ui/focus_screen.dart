@@ -405,34 +405,14 @@ class _TaskChip extends StatelessWidget {
   );
 }
 
-class _FloatingZzz extends StatefulWidget {
+class _FloatingZzz extends StatelessWidget {
   const _FloatingZzz();
 
+  // V1 freeze (David 2026-08-30): static glyphs, no drift animation.
   @override
-  State<_FloatingZzz> createState() => _FloatingZzzState();
-}
-
-class _FloatingZzzState extends State<_FloatingZzz> {
-  bool _raised = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _raised = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedSlide(
-    offset: _raised ? const Offset(0, -0.18) : Offset.zero,
-    duration: const Duration(seconds: 2),
-    curve: Curves.easeInOut,
-    onEnd: () => setState(() => _raised = !_raised),
-    child: Text(
-      'z  z  z',
-      style: PetTextStyles.display24.copyWith(color: PetColors.bodySoft),
-    ),
+  Widget build(BuildContext context) => Text(
+    'z  z  z',
+    style: PetTextStyles.display24.copyWith(color: PetColors.bodySoft),
   );
 }
 
