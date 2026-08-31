@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import '../data/feature_gate.dart';
 import '../data/hatch_api_client.dart';
 
 enum HatchFlowPhase {
   idle,
-  locked,
   submitting,
   incubating,
   downloading,
@@ -43,7 +41,6 @@ typedef HatchReadyNotifier = Future<void> Function();
 class HatchFlowMachine {
   HatchFlowMachine({
     required HatchApi api,
-    required FeatureGate featureGate,
     required HatchPackImporter importPack,
     HatchDelay? delay,
     HatchAccepted? onAccepted,
@@ -52,8 +49,6 @@ class HatchFlowMachine {
   }) : // Named public parameters keep injection readable at call sites.
        // ignore: prefer_initializing_formals
        _api = api,
-       // ignore: prefer_initializing_formals
-       _featureGate = featureGate,
        // ignore: prefer_initializing_formals
        _importPack = importPack,
        _delayOverride = delay,
@@ -65,7 +60,6 @@ class HatchFlowMachine {
        _onChanged = onChanged;
 
   final HatchApi _api;
-  final FeatureGate _featureGate;
   final HatchPackImporter _importPack;
   final HatchDelay? _delayOverride;
   Timer? _activeTimer;
@@ -100,16 +94,8 @@ class HatchFlowMachine {
     _downloadOwner = -1; // a new live run revokes any stale ownership
     _foreground = true;
     _cancelWait();
-    // mark in-flight synchronously — the double-tap guard reads this phase
-    // and must not race the async gate check below
+    // Mark in-flight synchronously so a double tap cannot race the POST.
     _setState(const HatchFlowState(phase: HatchFlowPhase.submitting));
-    if (!await _featureGate.isUnlocked()) {
-      if (_mayReport(run)) {
-        _downloadOwner = -1;
-        _setState(const HatchFlowState(phase: HatchFlowPhase.locked));
-      }
-      return;
-    }
     try {
       final submission = await _api.submitHatch(
         photos: photos,

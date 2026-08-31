@@ -1,5 +1,104 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pettodo/application/app_controller.dart';
+import 'package:pettodo/data/app_state_store.dart';
+import 'package:pettodo/data/event_log_store.dart';
+import 'package:pettodo/data/hatch_request_store.dart';
+import 'package:pettodo/data/notification_service.dart';
+import 'package:pettodo/data/pet_pack_service.dart';
 import 'package:pettodo/domain/app_state.dart';
+import 'package:pettodo/sprite/sprite_atlas.dart';
+
+class _MigrationPetLoader extends SpriteAtlasLoader {
+  _MigrationPetLoader(this._images);
+
+  final Map<String, ui.Image> _images;
+
+  @override
+  Future<List<PetAssetDescriptor>> loadManifest() async => const [
+    PetAssetDescriptor(
+      id: 'choco',
+      displayName: 'Choco',
+      metadataAsset: 'fake',
+      spritesheetAsset: 'fake',
+    ),
+    PetAssetDescriptor(
+      id: 'pip',
+      displayName: 'Pip',
+      metadataAsset: 'fake',
+      spritesheetAsset: 'fake',
+    ),
+  ];
+
+  @override
+  Future<List<DecorAssetDescriptor>> loadDecorManifest() async => const [
+    DecorAssetDescriptor(
+      id: 'soft_ball',
+      displayName: 'Bouncy Ball',
+      emoji: '🧶',
+      slot: 0,
+    ),
+  ];
+
+  @override
+  Future<LoadedSpriteAtlas> loadPet(
+    PetAssetDescriptor descriptor, {
+    String? growthStage,
+  }) async => LoadedSpriteAtlas(
+    descriptor: descriptor,
+    definition: SpriteAtlasDefinition(
+      petId: descriptor.id,
+      columns: 8,
+      rows: 11,
+      cellWidth: 4,
+      cellHeight: 4,
+      imageWidth: 32,
+      imageHeight: 44,
+      sequences: {
+        for (final entry in const [
+          ('idle', 0, 6),
+          ('jumping', 4, 5),
+          ('waving', 3, 4),
+          ('review', 8, 6),
+          ('waiting', 6, 6),
+          ('look-row-9', 9, 8),
+          ('look-row-10', 10, 8),
+        ])
+          entry.$1: SpriteSequenceDefinition(
+            state: entry.$1,
+            row: entry.$2,
+            frameCount: entry.$3,
+            purpose: 'test',
+          ),
+      },
+    ),
+    image: _images[descriptor.id]!,
+  );
+}
+
+class _MigrationNotifications extends NotificationService {
+  @override
+  Future<List<ScheduledPetNotification>> scheduleWindow({
+    required String petName,
+    required bool includeDailyInvitation,
+    required int invitationHour,
+    required int invitationMinute,
+    required List<TaskReminderSchedule> taskReminders,
+    DateTime? now,
+  }) async => const <ScheduledPetNotification>[];
+}
+
+Future<ui.Image> _migrationImage() {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder).drawRect(
+    const ui.Rect.fromLTWH(0, 0, 32, 44),
+    ui.Paint()..color = const ui.Color(0xFF8A5A2E),
+  );
+  return recorder.endRecording().toImage(32, 44);
+}
 
 void main() {
   test('v2 JSON migrates to current tasks while preserving raising state', () {
@@ -22,6 +121,8 @@ void main() {
     }, DateTime(2026, 7, 20));
 
     expect(state.petName, 'Cocoa');
+    expect(state.adoptedPresetPetIds, isEmpty);
+    expect(state.needsPresetAdoptionMigration, isTrue);
     expect(state.tasks.map((task) => task.id), <String>[
       'daily-1',
       'daily-2',
@@ -50,8 +151,121 @@ void main() {
     expect(state.feedingCountToday, 1);
     expect(state.bondXp, 25);
     expect(state.foodInventory, <String, int>{'biscuit': 1});
-    expect(state.toJson()['schemaVersion'], 5);
+    expect(state.toJson()['schemaVersion'], 6);
     expect(state.toJson(), isNot(contains('taskTitles')));
+  });
+
+  testWidgets(
+    'v5 save with a non-Choco selection keeps every bundled preset on its shelf',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'pettodo-preset-migration',
+      );
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      late final AppController controller;
+      await tester.runAsync(() async {
+        await File('${tempDir.path}/pettodo-state.json').writeAsString(
+          jsonEncode(<String, Object?>{
+            'schemaVersion': 5,
+            'onboardingComplete': true,
+            'selectedPetId': 'pip',
+            'petName': 'Pip',
+            'tasks': <Object?>[
+              <String, Object?>{
+                'id': 'daily-water',
+                'title': 'Drink some water',
+                'kind': 'daily',
+              },
+            ],
+            'activeDay': '2026-08-30',
+          }),
+        );
+        controller = AppController(
+          stateStore: AppStateStore(() async => tempDir),
+          eventLog: EventLogStore(() async => tempDir),
+          notifications: _MigrationNotifications(),
+          spriteLoader: _MigrationPetLoader(<String, ui.Image>{
+            'choco': await _migrationImage(),
+            'pip': await _migrationImage(),
+          }),
+          hatchRequestStore: HatchRequestStore(() async => tempDir),
+          petPackService: PetPackService(() async => tempDir),
+          now: () => DateTime(2026, 8, 30, 12),
+        );
+        await controller.initialize();
+      });
+      addTearDown(controller.dispose);
+
+      expect(controller.state.selectedPetId, 'pip');
+      expect(controller.state.adoptedPresetPetIds, <String>{'choco', 'pip'});
+      expect(controller.adoptedPets.map((pet) => pet.id), <String>[
+        'choco',
+        'pip',
+      ]);
+
+      late final Map<String, Object?> persisted;
+      await tester.runAsync(() async {
+        persisted =
+            jsonDecode(
+                  await File(
+                    '${tempDir.path}/pettodo-state.json',
+                  ).readAsString(),
+                )
+                as Map<String, Object?>;
+      });
+      expect(
+        (persisted['adoptedPresetPetIds']! as List<Object?>).toSet(),
+        <String>{'choco', 'pip'},
+      );
+    },
+  );
+
+  testWidgets('selected-pet fallback also adopts a bundled fallback', (
+    tester,
+  ) async {
+    final tempDir = Directory.systemTemp.createTempSync(
+      'pettodo-selected-fallback',
+    );
+    addTearDown(() => tempDir.deleteSync(recursive: true));
+
+    late final AppController controller;
+    await tester.runAsync(() async {
+      await File('${tempDir.path}/pettodo-state.json').writeAsString(
+        jsonEncode(<String, Object?>{
+          'schemaVersion': 6,
+          'onboardingComplete': true,
+          'selectedPetId': 'missing-pet',
+          'petName': 'Missing',
+          'adoptedPresetPetIds': <String>[],
+          'tasks': <Object?>[
+            <String, Object?>{
+              'id': 'daily-water',
+              'title': 'Drink some water',
+              'kind': 'daily',
+            },
+          ],
+          'activeDay': '2026-08-30',
+        }),
+      );
+      controller = AppController(
+        stateStore: AppStateStore(() async => tempDir),
+        eventLog: EventLogStore(() async => tempDir),
+        notifications: _MigrationNotifications(),
+        spriteLoader: _MigrationPetLoader(<String, ui.Image>{
+          'choco': await _migrationImage(),
+          'pip': await _migrationImage(),
+        }),
+        hatchRequestStore: HatchRequestStore(() async => tempDir),
+        petPackService: PetPackService(() async => tempDir),
+        now: () => DateTime(2026, 8, 30, 12),
+      );
+      await controller.initialize();
+    });
+    addTearDown(controller.dispose);
+
+    expect(controller.state.selectedPetId, 'choco');
+    expect(controller.state.adoptedPresetPetIds, <String>{'choco'});
+    expect(controller.adoptedPets.map((pet) => pet.id), <String>['choco']);
   });
 
   test('current schema round-trips task and bond domain fields', () {
@@ -74,6 +288,7 @@ void main() {
           fedToday: '2026-07-20',
           ownedFurnitureIds: const <String>{'rug'},
           placedFurnitureBySlot: const <String, String>{'rug': 'rug'},
+          adoptedPresetPetIds: const <String>{'choco', 'pip'},
         )
         .toJson();
     final result = AppState.fromJson(json, DateTime(2026, 7, 20));
@@ -89,7 +304,8 @@ void main() {
     expect(result.lastCompanionDay, '2026-07-20');
     expect(result.fedToday, '2026-07-20');
     expect(result.placedFurnitureBySlot, <String, String>{'rug': 'rug'});
-    expect(result.toJson()['schemaVersion'], 5);
+    expect(result.adoptedPresetPetIds, <String>{'choco', 'pip'});
+    expect(result.toJson()['schemaVersion'], 6);
   });
 
   test('legacy one-off reminder stays daily and round-trips unchanged', () {
@@ -213,7 +429,7 @@ void main() {
     expect(result.fedToday, '2026-08-12');
     expect(result.notificationEnabled, isTrue);
     expect(result.foodInventory, <String, int>{'biscuit': 1});
-    expect(result.toJson()['schemaVersion'], 5);
+    expect(result.toJson()['schemaVersion'], 6);
   });
 
   test(

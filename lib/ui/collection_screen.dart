@@ -16,6 +16,7 @@ import 'theme/stair_border.dart';
 import 'widgets/pixel_components.dart';
 import 'widgets/pixel_icon.dart';
 import 'widgets/furniture_item_view.dart';
+import 'onboarding_screen.dart';
 
 class CollectionScreen extends StatelessWidget {
   const CollectionScreen({super.key, required this.controller});
@@ -84,11 +85,55 @@ class CollectionScreen extends StatelessWidget {
                     height: PetSpacing.s134,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: controller.pets.length,
+                      // With every preset adopted there is nothing to offer —
+                      // hide the adopt slot instead of opening an empty roster.
+                      itemCount:
+                          controller.adoptedPets.length +
+                          (controller.unadoptedPresetPets.isEmpty ? 0 : 1),
                       separatorBuilder: (_, _) =>
                           const SizedBox(width: PetSpacing.s10),
                       itemBuilder: (context, index) {
-                        final pet = controller.pets[index];
+                        final adoptedPets = controller.adoptedPets;
+                        if (index == adoptedPets.length) {
+                          return Semantics(
+                            container: true,
+                            button: true,
+                            label: 'Adopt a preset pet',
+                            child: InkWell(
+                              customBorder: const StairBorder.large(),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => PresetAdoptionScreen(
+                                    controller: controller,
+                                  ),
+                                ),
+                              ),
+                              child: const SizedBox(
+                                width: PetSpacing.s134,
+                                child: PxCard(
+                                  padding: EdgeInsets.all(PetSpacing.s8),
+                                  shadows: PetShadows.panel,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      PxIcon(
+                                        PxIconData.paw,
+                                        size: PetSpacing.s54,
+                                        color: PetColors.inactive,
+                                      ),
+                                      SizedBox(height: PetSpacing.s12),
+                                      Text(
+                                        'Adopt',
+                                        style: PetTextStyles.body15Strong,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        final pet = adoptedPets[index];
                         final selected =
                             pet.id == controller.state.selectedPetId;
                         return Semantics(

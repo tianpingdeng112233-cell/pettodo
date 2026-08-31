@@ -9,9 +9,11 @@ import 'package:pettodo/data/event_log_store.dart';
 import 'package:pettodo/data/hatch_request_store.dart';
 import 'package:pettodo/data/notification_service.dart';
 import 'package:pettodo/data/pet_pack_service.dart';
+import 'package:pettodo/domain/app_state.dart';
 import 'package:pettodo/domain/onboarding_flow.dart';
 import 'package:pettodo/sprite/sprite_atlas.dart';
 import 'package:pettodo/ui/app_theme.dart';
+import 'package:pettodo/ui/collection_screen.dart';
 import 'package:pettodo/ui/onboarding_screen.dart';
 import 'package:pettodo/ui/widgets/pixel_components.dart';
 
@@ -92,6 +94,38 @@ class _TwoPetLoader extends SpriteAtlasLoader {
   );
 }
 
+class _ThreePetLoader extends _TwoPetLoader {
+  _ThreePetLoader(super.images);
+
+  @override
+  Future<List<PetAssetDescriptor>> loadManifest() async => const [
+    _TwoPetLoader._choco,
+    _TwoPetLoader._pip,
+    PetAssetDescriptor(
+      id: 'mochi',
+      displayName: 'Mochi',
+      metadataAsset: 'fake',
+      spritesheetAsset: 'fake',
+    ),
+  ];
+}
+
+class _MemoryAppStateStore extends AppStateStore {
+  _MemoryAppStateStore(DateTime now)
+    : _state = AppState.initial(now),
+      super(() async => Directory.systemTemp);
+
+  AppState _state;
+
+  @override
+  Future<AppState> load(DateTime now) async => _state;
+
+  @override
+  Future<void> save(AppState state) async {
+    _state = state;
+  }
+}
+
 class _FakeNotifications extends NotificationService {
   int permissionRequests = 0;
 
@@ -112,6 +146,25 @@ class _FakeNotifications extends NotificationService {
   }) async => const <ScheduledPetNotification>[];
 }
 
+class _InstalledPetPackService extends PetPackService {
+  _InstalledPetPackService(super.documentsProvider, this.installedPets);
+
+  final List<PetAssetDescriptor> installedPets;
+
+  @override
+  Future<List<PetAssetDescriptor>> loadInstalledPets() async => installedPets;
+}
+
+class _ReplacingPetPackService extends PetPackService {
+  _ReplacingPetPackService(super.documentsProvider, this.replacement);
+
+  final PetAssetDescriptor replacement;
+
+  @override
+  Future<InstalledPetPack> install(File source) async =>
+      InstalledPetPack(descriptor: replacement, requestId: null);
+}
+
 Future<ui.Image> _makeImage() {
   final recorder = ui.PictureRecorder();
   ui.Canvas(recorder).drawRect(
@@ -121,7 +174,310 @@ Future<ui.Image> _makeImage() {
   return recorder.endRecording().toImage(32, 44);
 }
 
+class _AdoptionHost extends StatelessWidget {
+  const _AdoptionHost({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: TextButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PresetAdoptionScreen(controller: controller),
+          ),
+        ),
+        child: const Text('Open adoption'),
+      ),
+    ),
+  );
+}
+
 void main() {
+  testWidgets(
+    'adopting a preset adds it to the shelf, selects it, and is idempotent',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync('pettodo-adopt');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      late final AppController controller;
+      await tester.runAsync(() async {
+        controller = AppController(
+          stateStore: AppStateStore(() async => tempDir),
+          eventLog: EventLogStore(() async => tempDir),
+          notifications: _FakeNotifications(),
+          spriteLoader: _TwoPetLoader(<String, ui.Image>{
+            'choco': await _makeImage(),
+            'pip': await _makeImage(),
+          }),
+          hatchRequestStore: HatchRequestStore(() async => tempDir),
+          petPackService: PetPackService(() async => tempDir),
+          now: () => DateTime(2026, 8, 30, 12),
+        );
+        await controller.initialize();
+        await controller.adoptPreset('pip');
+        await controller.adoptPreset('pip');
+      });
+      addTearDown(controller.dispose);
+
+      expect(controller.adoptedPets.map((pet) => pet.id), contains('pip'));
+      expect(
+        controller.adoptedPets.where((pet) => pet.id == 'pip'),
+        hasLength(1),
+      );
+      expect(controller.state.selectedPetId, 'pip');
+    },
+  );
+
+  testWidgets(
+    'the adopt slot hides once every preset is adopted',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync('pettodo-adopt-full');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      late final AppController controller;
+      await tester.runAsync(() async {
+        controller = AppController(
+          stateStore: AppStateStore(() async => tempDir),
+          eventLog: EventLogStore(() async => tempDir),
+          notifications: _FakeNotifications(),
+          spriteLoader: _TwoPetLoader(<String, ui.Image>{
+            'choco': await _makeImage(),
+            'pip': await _makeImage(),
+          }),
+          hatchRequestStore: HatchRequestStore(() async => tempDir),
+          petPackService: PetPackService(() async => tempDir),
+          now: () => DateTime(2026, 8, 30, 12),
+        );
+        await controller.initialize();
+      });
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: CollectionScreen(controller: controller),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Adopt'), findsOneWidget);
+
+      await tester.runAsync(() => controller.adoptPreset('pip'));
+      await tester.pump();
+      expect(find.text('Adopt'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a same-ID pack imported at runtime stays on the shelf and out of adoption',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'pettodo-live-replacement',
+      );
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      late final AppController controller;
+      await tester.runAsync(() async {
+        controller = AppController(
+          stateStore: AppStateStore(() async => tempDir),
+          eventLog: EventLogStore(() async => tempDir),
+          notifications: _FakeNotifications(),
+          spriteLoader: _TwoPetLoader(<String, ui.Image>{
+            'choco': await _makeImage(),
+            'pip': await _makeImage(),
+          }),
+          hatchRequestStore: HatchRequestStore(() async => tempDir),
+          petPackService: _ReplacingPetPackService(
+            () async => tempDir,
+            const PetAssetDescriptor(
+              id: 'pip',
+              displayName: 'My Pip',
+              metadataAsset: '/installed/pet_request.json',
+              spritesheetAsset: '/installed/spritesheet.webp',
+              source: PetAssetSource.fileSystem,
+            ),
+          ),
+          now: () => DateTime(2026, 8, 30, 12),
+        );
+        await controller.initialize();
+        expect(
+          controller.unadoptedPresetPets.map((pet) => pet.id),
+          contains('pip'),
+        );
+        await controller.importPetPack(File('any-pack-file'));
+      });
+      addTearDown(controller.dispose);
+
+      expect(
+        controller.adoptedPets.map((pet) => (pet.id, pet.displayName)),
+        contains(('pip', 'My Pip')),
+      );
+      expect(controller.unadoptedPresetPets, isEmpty);
+      expect(controller.state.selectedPetId, 'pip');
+    },
+  );
+
+  testWidgets(
+    'an installed same-ID replacement stays on the shelf and out of adoption',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'pettodo-installed-replacement',
+      );
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      late final AppController controller;
+      await tester.runAsync(() async {
+        controller = AppController(
+          stateStore: AppStateStore(() async => tempDir),
+          eventLog: EventLogStore(() async => tempDir),
+          notifications: _FakeNotifications(),
+          spriteLoader: _TwoPetLoader(<String, ui.Image>{
+            'choco': await _makeImage(),
+            'pip': await _makeImage(),
+          }),
+          hatchRequestStore: HatchRequestStore(() async => tempDir),
+          petPackService: _InstalledPetPackService(
+            () async => tempDir,
+            const <PetAssetDescriptor>[
+              PetAssetDescriptor(
+                id: 'pip',
+                displayName: 'My Pip',
+                metadataAsset: '/installed/pet_request.json',
+                spritesheetAsset: '/installed/spritesheet.webp',
+                source: PetAssetSource.fileSystem,
+              ),
+            ],
+          ),
+          now: () => DateTime(2026, 8, 30, 12),
+        );
+        await controller.initialize();
+      });
+      addTearDown(controller.dispose);
+
+      expect(
+        controller.adoptedPets.map((pet) => (pet.id, pet.displayName)),
+        contains(('pip', 'My Pip')),
+      );
+      expect(
+        controller.unadoptedPresetPets.map((pet) => pet.id),
+        isNot(contains('pip')),
+      );
+    },
+  );
+
+  testWidgets('backing out after choosing a preset does not adopt it', (
+    tester,
+  ) async {
+    final tempDir = Directory.systemTemp.createTempSync(
+      'pettodo-adoption-cancel',
+    );
+    addTearDown(() => tempDir.deleteSync(recursive: true));
+    final now = DateTime(2026, 8, 30, 12);
+    late final AppController controller;
+    await tester.runAsync(() async {
+      controller = AppController(
+        stateStore: _MemoryAppStateStore(now),
+        eventLog: EventLogStore(() async => tempDir),
+        notifications: _FakeNotifications(),
+        spriteLoader: _ThreePetLoader(<String, ui.Image>{
+          'choco': await _makeImage(),
+          'pip': await _makeImage(),
+          'mochi': await _makeImage(),
+        }),
+        hatchRequestStore: HatchRequestStore(() async => tempDir),
+        petPackService: PetPackService(() async => tempDir),
+        now: () => now,
+      );
+      await controller.initialize();
+    });
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: _AdoptionHost(controller: controller),
+      ),
+    );
+    await tester.tap(find.text('Open adoption'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Pip'));
+    await tester.pump();
+
+    expect(controller.state.selectedPetId, 'choco');
+    expect(controller.state.adoptedPresetPetIds, <String>{'choco'});
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.text('Open adoption'), findsOneWidget);
+    expect(controller.state.adoptedPresetPetIds, <String>{'choco'});
+  });
+
+  testWidgets(
+    'preset adoption commits only the final choice on naming confirmation',
+    (tester) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'pettodo-adoption-confirm',
+      );
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final now = DateTime(2026, 8, 30, 12);
+      late final AppController controller;
+      await tester.runAsync(() async {
+        controller = AppController(
+          stateStore: _MemoryAppStateStore(now),
+          eventLog: EventLogStore(() async => tempDir),
+          notifications: _FakeNotifications(),
+          spriteLoader: _ThreePetLoader(<String, ui.Image>{
+            'choco': await _makeImage(),
+            'pip': await _makeImage(),
+            'mochi': await _makeImage(),
+          }),
+          hatchRequestStore: HatchRequestStore(() async => tempDir),
+          petPackService: PetPackService(() async => tempDir),
+          now: () => now,
+        );
+        await controller.initialize();
+      });
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: _AdoptionHost(controller: controller),
+        ),
+      );
+      await tester.tap(find.text('Open adoption'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Pip'));
+      await tester.pump();
+      await tester.tap(find.text('Mochi'));
+      await tester.pump();
+
+      expect(controller.state.selectedPetId, 'choco');
+      expect(controller.state.adoptedPresetPetIds, <String>{'choco'});
+
+      await tester.tap(find.text("That's the one"));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Nice to meet you, Mochi'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Momo');
+      await tester.pump();
+      await tester.tap(find.text('Nice to meet you, Momo'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Open adoption'), findsOneWidget);
+      expect(controller.state.selectedPetId, 'mochi');
+      expect(controller.state.petName, 'Momo');
+      expect(controller.state.adoptedPresetPetIds, <String>{'choco', 'mochi'});
+      expect(controller.unadoptedPresetPets.map((pet) => pet.id), <String>[
+        'pip',
+      ]);
+    },
+  );
+
   testWidgets(
     timeout: const Timeout(Duration(seconds: 30)),
     'onboarding v2 selects, prefills, limits chips, celebrates, and finishes',

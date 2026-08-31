@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pettodo/data/app_state_store.dart';
 import 'package:pettodo/data/device_id_store.dart';
-import 'package:pettodo/data/feature_gate.dart';
 
 void main() {
   test('device id is a persistent lowercase UUID', () async {
@@ -30,13 +30,20 @@ void main() {
     );
   });
 
-  test('local feature gate stays locked until unlock is stored', () async {
-    final directory = await Directory.systemTemp.createTemp('hatch-gate-test');
+  test('a legacy hatch feature gate file is ignored during startup', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'legacy-hatch-gate-test',
+    );
     addTearDown(() => directory.delete(recursive: true));
-    final gate = LocalFeatureGate(() async => directory);
+    await File(
+      '${directory.path}/hatch-feature-gate.json',
+    ).writeAsString('{"unlocked":true}');
 
-    expect(await gate.isUnlocked(), isFalse);
-    await gate.unlock();
-    expect(await LocalFeatureGate(() async => directory).isUnlocked(), isTrue);
+    final state = await AppStateStore(
+      () async => directory,
+    ).load(DateTime(2026, 8, 30));
+
+    expect(state.selectedPetId, 'choco');
+    expect(state.petName, 'Choco');
   });
 }

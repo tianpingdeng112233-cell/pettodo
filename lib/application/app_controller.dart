@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 
 import '../data/app_state_store.dart';
 import '../data/event_log_store.dart';
-import '../data/feature_gate.dart';
 import '../data/food_asset_manifest.dart';
 import '../data/hatch_api_client.dart';
 import '../data/hatch_request_store.dart';
@@ -64,7 +63,6 @@ class AppController extends ChangeNotifier {
     PetPackService? petPackService,
     DateTime Function()? now,
     HatchApi? hatchApi,
-    FeatureGate? featureGate,
     HatchDelay? hatchDelay,
   }) => AppController._(
     stateStore,
@@ -79,7 +77,6 @@ class AppController extends ChangeNotifier {
     petPackService ?? PetPackService.onDevice(),
     now ?? DateTime.now,
     hatchApi ?? HatchApiClient.onDevice(),
-    featureGate ?? LocalFeatureGate.onDevice(),
     hatchDelay,
   );
 
@@ -95,12 +92,10 @@ class AppController extends ChangeNotifier {
     this._petPackService,
     this._now,
     HatchApi hatchApi,
-    this._featureGate,
     HatchDelay? hatchDelay,
   ) {
     _hatchFlow = HatchFlowMachine(
       api: hatchApi,
-      featureGate: _featureGate,
       importPack: _importHatchedPack,
       delay: hatchDelay,
       onAccepted: _rememberHatchId,
@@ -119,7 +114,6 @@ class AppController extends ChangeNotifier {
   final HatchRequestStore _hatchRequestStore;
   final PetPackService _petPackService;
   final DateTime Function() _now;
-  final FeatureGate _featureGate;
   late final HatchFlowMachine _hatchFlow;
   final Map<String, LoadedSpriteAtlas> _spriteCache =
       <String, LoadedSpriteAtlas>{};
@@ -141,6 +135,7 @@ class AppController extends ChangeNotifier {
 
   late AppState state;
   late List<PetAssetDescriptor> pets;
+  late Set<String> _presetPetIds;
   late List<DecorAssetDescriptor> decorations;
   late RoomAssetManifest roomAssets;
   late FoodAssetManifest foodAssets;
@@ -168,7 +163,6 @@ class AppController extends ChangeNotifier {
   int treatDropNonce = 0;
   int lastTreatDrop = 0;
   HatchRequest? pendingHatchRequest;
-  bool hatchUnlocked = false;
   String? hatchCeremonyPetName;
   bool eveningHelloVisible = false;
   int _taskIdNonce = 0;
@@ -179,6 +173,22 @@ class AppController extends ChangeNotifier {
     (pet) => pet.id == state.selectedPetId,
     orElse: () => pets.first,
   );
+
+  List<PetAssetDescriptor> get adoptedPets => pets
+      .where(
+        (pet) =>
+            !_presetPetIds.contains(pet.id) ||
+            state.adoptedPresetPetIds.contains(pet.id),
+      )
+      .toList(growable: false);
+
+  List<PetAssetDescriptor> get unadoptedPresetPets => pets
+      .where(
+        (pet) =>
+            _presetPetIds.contains(pet.id) &&
+            !state.adoptedPresetPetIds.contains(pet.id),
+      )
+      .toList(growable: false);
 
   LoadedSpriteAtlas get spriteAtlas => _spriteAtlas!;
 
@@ -197,7 +207,6 @@ class AppController extends ChangeNotifier {
   bool get overlayEnabled => _overlayService.enabled;
   bool get overlayBusy => _overlayService.busy;
   HatchFlowState get hatchFlow => _hatchFlow.state;
-  String get hatchPriceLabel => _featureGate.priceLabel;
 
   Future<void> initialize() async {
     final now = _now();
@@ -212,14 +221,23 @@ class AppController extends ChangeNotifier {
       installedPets = const <PetAssetDescriptor>[];
       pendingHatchRequest = null;
     }
-    try {
-      hatchUnlocked = await _featureGate.isUnlocked();
-    } on Object {
-      hatchUnlocked = false;
-    }
+    _presetPetIds = bundledPets.map((pet) => pet.id).toSet()
+      ..removeAll(installedPets.map((pet) => pet.id));
     pets = mergePetRegistry(bundledPets, installedPets);
+    if (state.needsPresetAdoptionMigration) {
+      state = state.copyWith(
+        adoptedPresetPetIds: _presetPetIds,
+        needsPresetAdoptionMigration: false,
+      );
+    }
     if (!pets.any((pet) => pet.id == state.selectedPetId)) {
-      state = state.copyWith(selectedPetId: pets.first.id);
+      final fallbackPetId = pets.first.id;
+      state = state.copyWith(
+        selectedPetId: fallbackPetId,
+        adoptedPresetPetIds: _presetPetIds.contains(fallbackPetId)
+            ? <String>{...state.adoptedPresetPetIds, fallbackPetId}
+            : state.adoptedPresetPetIds,
+      );
     }
     decorations = await _spriteLoader.loadDecorManifest();
     roomAssets = await RoomAssetManifestLoader().load();
@@ -248,7 +266,7 @@ class AppController extends ChangeNotifier {
     _scheduleDayBoundary();
     _scheduleScheduleBoundary();
     final hatchId = pendingHatchRequest?.hatchId;
-    if (hatchUnlocked && hatchId != null) {
+    if (hatchId != null) {
       unawaited(_hatchFlow.resume(hatchId));
     }
   }
@@ -265,20 +283,10 @@ class AppController extends ChangeNotifier {
     return pendingHatchRequest!;
   }
 
-  Future<void> unlockHatching() async {
-    await _featureGate.unlock();
-    hatchUnlocked = true;
-    notifyListeners();
-  }
-
   Future<void> startHatch({
     required List<File> photos,
     required String petName,
   }) async {
-    if (!hatchUnlocked) {
-      await _hatchFlow.submit(photos: photos, petName: petName);
-      return;
-    }
     pendingHatchRequest = await _hatchRequestStore.create(
       photos: photos,
       petName: petName,
@@ -292,7 +300,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> retryHatch() async {
     final request = pendingHatchRequest;
-    if (!hatchUnlocked || request == null) return;
+    if (request == null) return;
     if (request.hatchId != null) {
       unawaited(_hatchFlow.resume(request.hatchId!));
       return;
@@ -340,6 +348,9 @@ class AppController extends ChangeNotifier {
         ...pets.skip(existingIndex + 1),
       ];
     }
+    // An installed pack owns its id from now on — a same-ID replacement must
+    // stay on the shelf, not fall back into the preset adoption roster.
+    _presetPetIds = <String>{..._presetPetIds}..remove(descriptor.id);
     await _replaceLoadedPet(descriptor);
     state = state.copyWith(
       selectedPetId: descriptor.id,
@@ -554,6 +565,20 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> adoptPreset(String petId) async {
+    if (!_presetPetIds.contains(petId)) {
+      throw ArgumentError.value(petId, 'petId', 'Not a preset pet');
+    }
+    if (state.adoptedPresetPetIds.contains(petId)) {
+      if (state.selectedPetId != petId) await selectPet(petId);
+      return;
+    }
+    state = state.copyWith(
+      adoptedPresetPetIds: <String>{...state.adoptedPresetPetIds, petId},
+    );
+    await selectPet(petId);
+  }
+
   Future<void> onResume() async {
     _hatchFlow.resumeForeground();
     final now = _now();
@@ -582,7 +607,7 @@ class AppController extends ChangeNotifier {
     _scheduleScheduleBoundary();
     notifyListeners();
     final hatchId = pendingHatchRequest?.hatchId;
-    if (hatchUnlocked && hatchId != null) {
+    if (hatchId != null) {
       unawaited(_hatchFlow.resume(hatchId));
     }
   }
@@ -600,6 +625,11 @@ class AppController extends ChangeNotifier {
     state = state.copyWith(
       selectedPetId: selectedPetId,
       petName: normalizedName,
+      adoptedPresetPetIds: _presetPetIds.contains(selectedPetId)
+          ? state.onboardingComplete
+                ? <String>{...state.adoptedPresetPetIds, selectedPetId}
+                : <String>{selectedPetId}
+          : state.adoptedPresetPetIds,
       tasks: buildOnboardingTasks(
         petName: normalizedName,
         littleThings: taskTitles,

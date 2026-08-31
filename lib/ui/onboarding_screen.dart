@@ -43,11 +43,163 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+mixin _ControllerRefresh<T extends StatefulWidget> on State<T> {
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+}
+
+class _PetNameDraft {
+  _PetNameDraft({
+    required this.controller,
+    required this.field,
+    required this.random,
+    required this.fallbackName,
+  });
+
+  final AppController controller;
+  final TextEditingController field;
+  final math.Random random;
+  final String Function() fallbackName;
+
+  String get displayName {
+    final value = field.text.trim();
+    return value.isEmpty ? fallbackName() : value;
+  }
+
+  void roll() {
+    final next = suggestedPetName(
+      pool: <String>{
+        ...onboardingNamePool,
+        ...controller.pets.map((pet) => pet.displayName),
+      }.toList(growable: false),
+      current: displayName,
+      roll: random.nextInt(1 << 31),
+    );
+    field.text = next;
+    field.selection = TextSelection.collapsed(offset: next.length);
+  }
+}
+
+class PresetAdoptionScreen extends StatefulWidget {
+  const PresetAdoptionScreen({
+    super.key,
+    required this.controller,
+    this.random,
+  });
+
+  final AppController controller;
+  final math.Random? random;
+
+  @override
+  State<PresetAdoptionScreen> createState() => _PresetAdoptionScreenState();
+}
+
+class _PresetAdoptionScreenState extends State<PresetAdoptionScreen>
+    with _ControllerRefresh<PresetAdoptionScreen> {
+  late final PageController _pages;
+  late final TextEditingController _name;
+  late final _PetNameDraft _petName;
+  late final List<PetAssetDescriptor> _roster;
+  String? _selectedPetId;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = PageController();
+    _name = TextEditingController();
+    _roster = widget.controller.unadoptedPresetPets;
+    _petName = _PetNameDraft(
+      controller: widget.controller,
+      field: _name,
+      random: widget.random ?? math.Random(),
+      fallbackName: () =>
+          _selectedPet?.displayName ??
+          widget.controller.selectedPet.displayName,
+    );
+    widget.controller.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_refresh);
+    _pages.dispose();
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _selectPet(PetAssetDescriptor pet) {
+    _selectedPetId = pet.id;
+    _name.text = pet.displayName;
+    setState(() {});
+  }
+
+  void _goToName() {
+    if (_selectedPetId == null) return;
+    _pages.animateToPage(1, duration: PetMotion.fade, curve: Curves.easeOut);
+  }
+
+  Future<void> _finish() async {
+    final selectedPetId = _selectedPetId;
+    if (_saving || selectedPetId == null) return;
+    setState(() => _saving = true);
+    final petName = _petName.displayName;
+    await widget.controller.adoptPreset(selectedPetId);
+    await widget.controller.updatePetName(petName);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  PetAssetDescriptor? get _selectedPet {
+    final selectedPetId = _selectedPetId;
+    if (selectedPetId == null) return null;
+    return _roster.firstWhere((pet) => pet.id == selectedPetId);
+  }
+
+  @override
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+    value: SystemUiOverlayStyle.dark.copyWith(
+      statusBarColor: PetColors.transparent,
+      systemNavigationBarColor: PetColors.screenBottom,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+    child: Scaffold(
+      body: PixelBackground(
+        child: PageView(
+          controller: _pages,
+          physics: const NeverScrollableScrollPhysics(),
+          children: <Widget>[
+            _ChoosePetPage(
+              controller: widget.controller,
+              pets: _roster,
+              selectedPetId: _selectedPetId,
+              showOwnPetEntry: false,
+              onSelect: _selectPet,
+              onHatch: () {},
+              onNext: _selectedPetId == null ? null : _goToName,
+            ),
+            _NamePage(
+              controller: widget.controller,
+              pet: _selectedPet,
+              field: _name,
+              displayName: _petName.displayName,
+              onChanged: (_) => setState(() {}),
+              onRoll: () => setState(_petName.roll),
+              onNext: _saving ? null : _finish,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with _ControllerRefresh<OnboardingScreen> {
   late final List<OnboardingStep> _steps;
   late final PageController _pages;
   late final TextEditingController _name;
-  late final math.Random _random;
+  late final _PetNameDraft _petName;
   late OnboardingStep _step;
   late Set<int> _selectedThings;
   String? _customThing;
@@ -68,7 +220,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _name = TextEditingController(
       text: widget.controller.selectedPet.displayName,
     );
-    _random = widget.random ?? math.Random();
+    _petName = _PetNameDraft(
+      controller: widget.controller,
+      field: _name,
+      random: widget.random ?? math.Random(),
+      fallbackName: () => widget.controller.selectedPet.displayName,
+    );
     _selectedThings = <int>{
       ...widget.initialSelectedThingIndexes.where(
         (index) => index >= 0 && index < onboardingThings.length,
@@ -83,10 +240,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _pages.dispose();
     _name.dispose();
     super.dispose();
-  }
-
-  void _refresh() {
-    if (mounted) setState(() {});
   }
 
   void _goTo(OnboardingStep step) {
@@ -138,20 +291,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() {});
   }
 
-  void _rollName() {
-    final next = suggestedPetName(
-      pool: <String>{
-        ...onboardingNamePool,
-        ...widget.controller.pets.map((pet) => pet.displayName),
-      }.toList(growable: false),
-      current: _displayName,
-      roll: _random.nextInt(1 << 31),
-    );
-    _name.text = next;
-    _name.selection = TextSelection.collapsed(offset: next.length);
-    setState(() {});
-  }
-
   void _toggleThing(int index) {
     setState(() {
       _selectedThings = toggleOnboardingThing(_selectedThings, index);
@@ -177,7 +316,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _saving = true);
     await widget.controller.prepareOnboarding(
       selectedPetId: widget.controller.state.selectedPetId,
-      petName: _displayName,
+      petName: _petName.displayName,
       taskTitles: _selectedTaskTitles,
     );
     if (!mounted) return;
@@ -232,9 +371,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingStep.namePet => _NamePage(
       controller: widget.controller,
       field: _name,
-      displayName: _displayName,
+      displayName: _petName.displayName,
       onChanged: (_) => setState(() {}),
-      onRoll: _rollName,
+      onRoll: () => setState(_petName.roll),
       onNext: () => _goTo(OnboardingStep.littleThings),
     ),
     OnboardingStep.littleThings => _LittleThingsPage(
@@ -255,17 +394,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingStep.stayOnScreen => _StayOnScreenPage(
       controller: widget.controller,
-      petName: _displayName,
+      petName: _petName.displayName,
       saving: _saving,
       onEnable: _enableOverlayAndFinish,
       onSkip: _finish,
     ),
   };
-
-  String get _displayName {
-    final value = _name.text.trim();
-    return value.isEmpty ? widget.controller.selectedPet.displayName : value;
-  }
 
   int get _selectionCount =>
       _selectedThings.length + (_customThing == null ? 0 : 1);
@@ -311,55 +445,68 @@ class _ChoosePetPage extends StatelessWidget {
     required this.onSelect,
     required this.onHatch,
     required this.onNext,
+    this.pets,
+    this.selectedPetId,
+    this.showOwnPetEntry = true,
   });
 
   final AppController controller;
   final ValueChanged<PetAssetDescriptor> onSelect;
   final VoidCallback onHatch;
-  final VoidCallback onNext;
+  final VoidCallback? onNext;
+  final List<PetAssetDescriptor>? pets;
+  final String? selectedPetId;
+  final bool showOwnPetEntry;
 
   @override
-  Widget build(BuildContext context) => _PageShell(
-    progress: const _ProgressDots(OnboardingStep.choosePet),
-    button: PxButton(label: const Text("That's the one"), onPressed: onNext),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Text("Who's coming home?", style: PetTextStyles.display26),
-        const SizedBox(height: PetSpacing.s6),
-        Text(
-          // The roster grows as preset pets land; the line must never claim
-          // more friends than the registry actually holds.
-          controller.pets.length == 1
-              ? 'A little friend is waiting — take your time'
-              : '${controller.pets.length} little friends are waiting '
-                    '— take your time',
-          style: PetTextStyles.body15Soft,
-        ),
-        const SizedBox(height: PetSpacing.s18),
-        GridView.count(
-          crossAxisCount: 3,
-          crossAxisSpacing: PetSpacing.s10,
-          mainAxisSpacing: PetSpacing.s10,
-          childAspectRatio: 0.98,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: controller.pets
-              .map(
-                (pet) => _PetChoice(
-                  controller: controller,
-                  pet: pet,
-                  selected: pet.id == controller.state.selectedPetId,
-                  onTap: () => onSelect(pet),
-                ),
-              )
-              .toList(growable: false),
-        ),
-        const SizedBox(height: PetSpacing.s14),
-        _OwnPetEntry(onTap: onHatch),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final roster = pets ?? controller.pets;
+    return _PageShell(
+      progress: const _ProgressDots(OnboardingStep.choosePet),
+      button: PxButton(label: const Text("That's the one"), onPressed: onNext),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text("Who's coming home?", style: PetTextStyles.display26),
+          const SizedBox(height: PetSpacing.s6),
+          Text(
+            // The roster grows as preset pets land; the line must never claim
+            // more friends than the registry actually holds.
+            roster.length == 1
+                ? 'A little friend is waiting — take your time'
+                : '${roster.length} little friends are waiting '
+                      '— take your time',
+            style: PetTextStyles.body15Soft,
+          ),
+          const SizedBox(height: PetSpacing.s18),
+          GridView.count(
+            crossAxisCount: 3,
+            crossAxisSpacing: PetSpacing.s10,
+            mainAxisSpacing: PetSpacing.s10,
+            childAspectRatio: 0.98,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: roster
+                .map(
+                  (pet) => _PetChoice(
+                    controller: controller,
+                    pet: pet,
+                    selected:
+                        pet.id ==
+                        (selectedPetId ?? controller.state.selectedPetId),
+                    onTap: () => onSelect(pet),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          if (showOwnPetEntry) ...<Widget>[
+            const SizedBox(height: PetSpacing.s14),
+            _OwnPetEntry(onTap: onHatch),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _PetChoice extends StatelessWidget {
@@ -445,8 +592,7 @@ class _OwnPetEntry extends StatelessWidget {
     container: true,
     excludeSemantics: true,
     button: true,
-    label:
-        'Your real pet can live here too — from your photos, unlockable anytime',
+    label: 'Your real pet can live here too — start with 1–3 photos',
     onTap: onTap,
     child: GestureDetector(
       onTap: onTap,
@@ -472,7 +618,7 @@ class _OwnPetEntry extends StatelessWidget {
                     style: PetTextStyles.body15Strong,
                   ),
                   Text(
-                    'From your photos — unlockable anytime',
+                    'Start with 1–3 photos',
                     style: PetTextStyles.captionSoft,
                   ),
                 ],
@@ -493,6 +639,7 @@ class _OwnPetEntry extends StatelessWidget {
 class _NamePage extends StatelessWidget {
   const _NamePage({
     required this.controller,
+    this.pet,
     required this.field,
     required this.displayName,
     required this.onChanged,
@@ -501,11 +648,12 @@ class _NamePage extends StatelessWidget {
   });
 
   final AppController controller;
+  final PetAssetDescriptor? pet;
   final TextEditingController field;
   final String displayName;
   final ValueChanged<String> onChanged;
   final VoidCallback onRoll;
-  final VoidCallback onNext;
+  final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) => _PageShell(
@@ -518,7 +666,12 @@ class _NamePage extends StatelessWidget {
     child: Column(
       children: <Widget>[
         const SizedBox(height: PetSpacing.s40),
-        _OnboardingSprite(controller: controller, width: 172, height: 186),
+        _OnboardingSprite(
+          controller: controller,
+          pet: pet,
+          width: 172,
+          height: 186,
+        ),
         const SizedBox(height: PetSpacing.s18),
         const PxCard(
           padding: EdgeInsets.symmetric(
@@ -1059,6 +1212,7 @@ class _OnboardingSprite extends StatelessWidget {
     required this.controller,
     required this.width,
     required this.height,
+    this.pet,
     this.state = 'idle',
     this.fixedFrame = 0,
   });
@@ -1066,23 +1220,56 @@ class _OnboardingSprite extends StatelessWidget {
   final AppController controller;
   final double width;
   final double height;
+  final PetAssetDescriptor? pet;
   final String state;
   final int? fixedFrame;
 
   @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: SizedBox(
-      width: width,
-      height: height,
-      child: controller.selectedPet.isRig
-          ? RigPetSprite(pet: controller.rigPet!, fixedElapsed: Duration.zero)
-          : PetSprite(
-              atlas: controller.spriteAtlas,
-              stateName: state,
-              fixedFrame: fixedFrame,
-            ),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final previewPet = pet;
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: previewPet == null
+            ? controller.selectedPet.isRig
+                  ? RigPetSprite(
+                      pet: controller.rigPet!,
+                      fixedElapsed: Duration.zero,
+                    )
+                  : PetSprite(
+                      atlas: controller.spriteAtlas,
+                      stateName: state,
+                      fixedFrame: fixedFrame,
+                    )
+            : FutureBuilder<Object>(
+                future: previewPet.isRig
+                    ? controller.petRig(previewPet)
+                    : controller.petAtlas(previewPet),
+                builder: (context, snapshot) {
+                  final visual = snapshot.data;
+                  if (visual is LoadedRigPet) {
+                    return RigPetSprite(
+                      pet: visual,
+                      fixedElapsed: Duration.zero,
+                    );
+                  }
+                  if (visual is LoadedSpriteAtlas) {
+                    return PetSprite(
+                      atlas: visual,
+                      stateName: state,
+                      fixedFrame: fixedFrame,
+                    );
+                  }
+                  return const PxIcon(
+                    PxIconData.paw,
+                    color: PetColors.inactive,
+                  );
+                },
+              ),
+      ),
+    );
+  }
 }
 
 class _CustomThingDialog extends StatefulWidget {

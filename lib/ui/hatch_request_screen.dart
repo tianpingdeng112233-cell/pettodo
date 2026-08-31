@@ -83,7 +83,6 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
   final TextEditingController _speciesWish = TextEditingController();
   final List<XFile> _photos = <XFile>[];
   bool _saving = false;
-  bool _unlocking = false;
   bool _leavingForCeremony = false;
 
   @override
@@ -151,26 +150,6 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
     }
   }
 
-  Future<void> _unlock() async {
-    if (_unlocking) return;
-    setState(() => _unlocking = true);
-    try {
-      await widget.controller.unlockHatching();
-    } on Object {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'The unlock could not be saved just now. Please try again.',
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _unlocking = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) => Scaffold(
     body: PixelBackground(
@@ -200,30 +179,7 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
               ],
             ),
             const SizedBox(height: PetSpacing.s20),
-            // the unlock card always leads while locked — a legacy concierge
-            // request stays reachable below it instead of hiding the gate
-            if (!widget.controller.hatchUnlocked) ...<Widget>[
-              _UnlockCard(
-                priceLabel: widget.controller.hatchPriceLabel,
-                unlocking: _unlocking,
-                onUnlock: _unlock,
-              ),
-              const SizedBox(height: PetSpacing.s14),
-              if (widget.controller.pendingHatchRequest != null)
-                // _PendingRequest carries its own import affordance; a second
-                // button here would duplicate the semantics node
-                _PendingRequest(
-                  controller: widget.controller,
-                  speciesWish: _speciesWish,
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      importPetPackFromPicker(context, widget.controller),
-                  icon: const PxIcon(PxIconData.package, size: 18),
-                  label: const Text('Import pet pack'),
-                ),
-            ] else if (widget.controller.pendingHatchRequest != null)
+            if (widget.controller.pendingHatchRequest != null)
               _PendingRequest(
                 controller: widget.controller,
                 speciesWish: _speciesWish,
@@ -242,55 +198,6 @@ class _HatchRequestScreenState extends State<HatchRequestScreen> {
         ),
       ),
     ),
-  );
-}
-
-class _UnlockCard extends StatelessWidget {
-  const _UnlockCard({
-    required this.priceLabel,
-    required this.unlocking,
-    required this.onUnlock,
-  });
-
-  final String priceLabel;
-  final bool unlocking;
-  final VoidCallback onUnlock;
-
-  @override
-  Widget build(BuildContext context) => _HatchPanel(
-    children: <Widget>[
-      const Center(
-        child: ExcludeSemantics(
-          child: PxIcon(
-            PxIconData.paw,
-            size: PetSpacing.s78,
-            color: PetColors.inactive,
-          ),
-        ),
-      ),
-      const Text(
-        'Bring your own pet home',
-        style: PetTextStyles.display24,
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: PetSpacing.s8),
-      const Text(
-        'One unlock includes 3 hatches for your own cat or dog.',
-        style: PetTextStyles.body15Soft,
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: PetSpacing.s8),
-      Text(
-        priceLabel,
-        style: PetTextStyles.captionSoft,
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: PetSpacing.s18),
-      FilledButton(
-        onPressed: unlocking ? null : onUnlock,
-        child: Text(unlocking ? 'Unlocking…' : 'Unlock'),
-      ),
-    ],
   );
 }
 
@@ -423,8 +330,7 @@ class _PendingRequest extends StatelessWidget {
         flow.phase == HatchFlowPhase.failed;
     // a persisted request that predates the online flow (or survived a
     // restart) has no active run yet — offer to start it
-    final canStart =
-        flow.phase == HatchFlowPhase.idle && controller.hatchUnlocked;
+    final canStart = flow.phase == HatchFlowPhase.idle;
     return _HatchPanel(
       children: <Widget>[
         const Center(
@@ -543,8 +449,6 @@ class _PendingRequest extends StatelessWidget {
     switch (flow.phase) {
       case HatchFlowPhase.idle:
         return 'Your photos are saved here. You can start the online hatch again or use the offline options.';
-      case HatchFlowPhase.locked:
-        return 'Unlock hatching whenever it feels right.';
       case HatchFlowPhase.submitting:
         return 'The nursery is receiving your photos.';
       case HatchFlowPhase.incubating:
