@@ -115,6 +115,21 @@ class _FakeSpriteLoader extends SpriteAtlasLoader {
   );
 }
 
+class _GrantedNotifications extends NotificationService {
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<List<ScheduledPetNotification>> scheduleWindow({
+    required String petName,
+    required bool includeDailyInvitation,
+    required int invitationHour,
+    required int invitationMinute,
+    required List<TaskReminderSchedule> taskReminders,
+    DateTime? now,
+  }) async => const <ScheduledPetNotification>[];
+}
+
 Future<ui.Image> _makeImage() {
   final recorder = ui.PictureRecorder();
   ui.Canvas(recorder).drawRect(
@@ -124,10 +139,14 @@ Future<ui.Image> _makeImage() {
   return recorder.endRecording().toImage(32, 44);
 }
 
-Future<({AppController controller, EventLogStore eventLog})> _createController(
+Future<
+  ({AppController controller, EventLogStore eventLog, AppStateStore stateStore})
+>
+_createController(
   WidgetTester tester, {
   bool pendingRequest = false,
   Map<String, Object?>? persistedState,
+  NotificationService? notifications,
 }) async {
   final tempDir = Directory.systemTemp.createTempSync('pettodo-semantics');
   addTearDown(() => tempDir.deleteSync(recursive: true));
@@ -139,9 +158,11 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
   }
 
   late final EventLogStore eventLog;
+  late final AppStateStore stateStore;
   late final AppController controller;
   await tester.runAsync(() async {
     eventLog = EventLogStore(() async => tempDir);
+    stateStore = AppStateStore(() async => tempDir);
     final hatchRequestStore = HatchRequestStore(() async => tempDir);
     if (pendingRequest) {
       final photo = File('${tempDir.path}/source.jpg')
@@ -149,9 +170,9 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
       await hatchRequestStore.create(photos: <File>[photo], petName: 'Pip');
     }
     controller = AppController(
-      stateStore: AppStateStore(() async => tempDir),
+      stateStore: stateStore,
       eventLog: eventLog,
-      notifications: NotificationService(),
+      notifications: notifications ?? NotificationService(),
       spriteLoader: _FakeSpriteLoader(await _makeImage()),
       hatchRequestStore: hatchRequestStore,
       petPackService: PetPackService(() async => tempDir),
@@ -159,7 +180,7 @@ Future<({AppController controller, EventLogStore eventLog})> _createController(
     await controller.initialize();
   });
   addTearDown(controller.dispose);
-  return (controller: controller, eventLog: eventLog);
+  return (controller: controller, eventLog: eventLog, stateStore: stateStore);
 }
 
 /// [label] accepts a Pattern because some labels carry a schedule-dependent
@@ -423,47 +444,84 @@ void main() {
     },
   );
 
-  // Fleeting-thought capture is the core ADHD flow: it must survive the
-  // dialog's exit animation. Disposing the field controller as soon as
-  // showDialog resolved crashed the app here ('_dependents.isEmpty').
-  testWidgets('quick capture saves a one-off task without crashing', (
-    tester,
-  ) async {
-    final fixture = await _createController(tester);
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        home: HomeScreen(
-          controller: fixture.controller,
-          eventLog: fixture.eventLog,
+  testWidgets(
+    'jot it down opens a focused one-off editor and saves a reminder',
+    (tester) async {
+      final fixture = await _createController(
+        tester,
+        notifications: _GrantedNotifications(),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: HomeScreen(
+            controller: fixture.controller,
+            eventLog: fixture.eventLog,
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    // pumpAndSettle never returns on Home: the sprite frames and the sun-halo
-    // twinkle are endless animations. Pump fixed durations instead.
-    await tester.tap(find.text('Jot it down'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.enterText(find.byType(TextField), 'Call the vet');
-    await tester.pump();
-    await tester.tap(find.text('Keep it'));
-    await tester.pump();
-    // The crash window: the route is animating out while the TextField still
-    // depends on the controller that used to be disposed right here.
-    await tester.pump(const Duration(milliseconds: 400));
+      await tester.runAsync(() async => tester.tap(find.text('Jot it down')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
-    expect(tester.takeException(), isNull);
-    expect(
-      fixture.controller.state.tasks.map((task) => task.title),
-      contains('Call the vet'),
-    );
-    expect(
-      fixture.controller.state.tasks
-          .firstWhere((task) => task.title == 'Call the vet')
-          .kind,
-      TaskKind.oneOff,
-    );
-  });
+      expect(find.text('Add one little thing'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      final titleField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == 'Title',
+      );
+      final titleEditable = find.descendant(
+        of: titleField,
+        matching: find.byType(EditableText),
+      );
+      expect(
+        tester.widget<EditableText>(titleEditable).focusNode.hasFocus,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<SegmentedButton<TaskKind>>(
+              find.byType(SegmentedButton<TaskKind>),
+            )
+            .selected,
+        <TaskKind>{TaskKind.oneOff},
+      );
+
+      await tester.enterText(titleField, 'Call the vet');
+      await tester.pump();
+      await tester.tap(find.text('Remind me once'));
+      await tester.pump();
+      await tester.tap(find.text('Save this thing'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      late AppState persisted;
+      await tester.runAsync(() async {
+        final deadline = DateTime.now().add(const Duration(seconds: 3));
+        do {
+          persisted = await fixture.stateStore.load(DateTime.now());
+          if (persisted.tasks.any(
+            (task) => task.title == 'Call the vet' && task.reminder != null,
+          )) {
+            return;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        } while (DateTime.now().isBefore(deadline));
+      });
+
+      expect(tester.takeException(), isNull);
+      expect(
+        persisted.tasks.map((task) => task.title),
+        contains('Call the vet'),
+      );
+      final added = persisted.tasks.firstWhere(
+        (task) => task.title == 'Call the vet',
+      );
+      expect(added.kind, TaskKind.oneOff);
+      expect(added.reminder?.enabled, isTrue);
+      expect(added.reminder?.scheduledAt, isNotNull);
+      expect(added.reminder!.scheduledAt!.isAfter(DateTime.now()), isTrue);
+    },
+  );
 }

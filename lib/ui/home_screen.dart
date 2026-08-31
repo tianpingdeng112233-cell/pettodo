@@ -144,20 +144,10 @@ class _HomeContentState extends State<_HomeContent> {
     );
   }
 
-  Future<void> _quickAdd() async {
-    final title = await showDialog<String>(
-      context: context,
-      builder: (_) => const _QuickAddDialog(),
-    );
-    if (title != null && title.isNotEmpty) {
-      await controller.addTask(title: title);
-    }
-  }
-
-  Future<void> _addFromEditor() async {
+  Future<void> _addFromEditor({TaskKind initialKind = TaskKind.daily}) async {
     final draft = await showTaskEditorSheet(
       context: context,
-      initialKind: TaskKind.daily,
+      initialKind: initialKind,
       notificationDenied:
           controller.state.notificationPermission ==
           NotificationPermissionState.denied,
@@ -178,6 +168,8 @@ class _HomeContentState extends State<_HomeContent> {
       scheduledAt: draft.reminderScheduledAt,
     );
   }
+
+  Future<void> _jotFromEditor() => _addFromEditor(initialKind: TaskKind.oneOff);
 
   Future<void> _editTask(TodoTask task) async {
     final draft = await showTaskEditorSheet(
@@ -313,7 +305,7 @@ class _HomeContentState extends State<_HomeContent> {
           onQuickAdd: controller.state.canAddTask
               ? _editing
                     ? _addFromEditor
-                    : _quickAdd
+                    : _jotFromEditor
               : null,
           onEdit: _editTask,
           onRemove: _removeTask,
@@ -1129,54 +1121,6 @@ class _TimedReminderBadge extends StatelessWidget {
         ],
       ),
     ),
-  );
-}
-
-/// Owns its own text controller: disposing one right after `showDialog`
-/// resolves tears it down while the route is still animating out and the
-/// TextField still depends on it.
-class _QuickAddDialog extends StatefulWidget {
-  const _QuickAddDialog();
-
-  @override
-  State<_QuickAddDialog> createState() => _QuickAddDialogState();
-}
-
-class _QuickAddDialogState extends State<_QuickAddDialog> {
-  final TextEditingController _field = TextEditingController();
-
-  @override
-  void dispose() {
-    _field.dispose();
-    super.dispose();
-  }
-
-  void _keep() {
-    final value = _field.text.trim();
-    if (value.isEmpty) return;
-    Navigator.of(context).pop(value);
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Jot it down'),
-    content: TextField(
-      controller: _field,
-      autofocus: true,
-      maxLength: 60,
-      textInputAction: TextInputAction.done,
-      decoration: const InputDecoration(
-        hintText: 'A thought before it slips away',
-      ),
-      onSubmitted: (_) => _keep(),
-    ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Not now'),
-      ),
-      FilledButton(onPressed: _keep, child: const Text('Keep it')),
-    ],
   );
 }
 
