@@ -74,7 +74,7 @@ describe('front head-box geometry gate', () => {
 
   it('retries an out-of-bounds head box once, then returns an absent head box', async () => {
     const outOfBounds = {
-      head: [182, 230, 609, 1200],
+      head: [182, 230, 609, 1500],
       tail: [550, 650, 720, 1000],
       leftFrontLeg: [280, 650, 390, 1068],
       rightFrontLeg: [430, 650, 540, 1068],
@@ -88,10 +88,45 @@ describe('front head-box geometry gate', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('clamps a small edge overshoot into the image bounds', async () => {
+    const overshoot = {
+      head: [182, 340, 609, 620],
+      tail: [550, 650, 720, 1000],
+      leftFrontLeg: [280, 650, 390, 1160],
+      rightFrontLeg: [430, 650, 540, 1068],
+    };
+    const fetchMock = vi.fn(async () => geminiJson(overshoot));
+    const client = new GeminiClient('test-key', fetchMock);
+
+    await expect(
+      client.detectFrontBoxes(Buffer.from('front-pose'), 768, 1152),
+    ).resolves.toEqual({ ...overshoot, leftFrontLeg: [280, 650, 390, 1152] });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('rescales a per-mille answer into pixel coordinates', async () => {
+    const perMille = {
+      head: [150, 180, 790, 420],
+      tail: [700, 550, 940, 860],
+      leftFrontLeg: [360, 560, 500, 920],
+      rightFrontLeg: [560, 560, 700, 920],
+    };
+    const client = new GeminiClient('test-key', vi.fn(async () => geminiJson(perMille)));
+
+    await expect(
+      client.detectFrontBoxes(Buffer.from('front-pose'), 768, 1152),
+    ).resolves.toEqual({
+      head: [115, 207, 607, 484],
+      tail: [538, 634, 722, 991],
+      leftFrontLeg: [276, 645, 384, 1060],
+      rightFrontLeg: [430, 645, 538, 1060],
+    });
+  });
+
   it('still rejects an out-of-bounds box for parts that cannot be absent', async () => {
     const badTail = {
       head: [182, 340, 609, 620],
-      tail: [550, 650, 800, 1000],
+      tail: [550, 650, 1400, 1000],
       leftFrontLeg: [280, 650, 390, 1068],
       rightFrontLeg: [430, 650, 540, 1068],
     };

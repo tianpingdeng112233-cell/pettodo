@@ -204,7 +204,12 @@ export class GeminiClient implements SpeciesClassifier {
       responseSchema: { type: 'OBJECT', required: names, properties },
       temperature: 0,
     });
-    const parsed = parseJsonText(response) as JsonRecord;
+    const parsed = maybeRescalePerMille(
+      parseJsonText(response) as JsonRecord,
+      names,
+      width,
+      height,
+    );
     return Object.fromEntries(
       names.map((name) => {
         try {
@@ -292,17 +297,52 @@ const EMPTY_NAME_SET: ReadonlySet<string> = new Set();
 // A malformed head box degrades to null so the head-gate retry-then-absent path
 // (SPEC-017 四耳 ruling) owns it; every other part has no absent form in the rig.
 const FRONT_NULLABLE_BOXES: ReadonlySet<string> = new Set(['head']);
+// Despite the pixel-coordinate prompt, Gemini sometimes answers in its native
+// 0–1000 per-mille space or spills a box a few pixels past an edge.
+const BOX_EDGE_TOLERANCE = 0.05;
+
+function maybeRescalePerMille(
+  parsed: JsonRecord,
+  names: string[],
+  width: number,
+  height: number,
+): JsonRecord {
+  const rawBoxes = names
+    .map((name) => parsed[name])
+    .filter((value): value is number[] =>
+      Array.isArray(value) && value.length === 4 && value.every((c) => Number.isFinite(c)));
+  if (rawBoxes.length === 0) return parsed;
+  const allPerMille = rawBoxes.flat().every((c) => c >= 0 && c <= 1000);
+  const overshoots = rawBoxes.some((box) =>
+    box[2]! > width * (1 + BOX_EDGE_TOLERANCE) || box[3]! > height * (1 + BOX_EDGE_TOLERANCE));
+  if (!allPerMille || !overshoots) return parsed;
+  const rescaled = { ...parsed };
+  for (const name of names) {
+    const value = parsed[name];
+    if (Array.isArray(value) && value.length === 4) {
+      rescaled[name] = value.map((c, i) =>
+        (Number(c) * (i % 2 === 0 ? width : height)) / 1000);
+    }
+  }
+  return rescaled;
+}
 
 function validateBox(value: unknown, width: number, height: number, name: string): Box {
   if (!Array.isArray(value) || value.length !== 4 || value.some((coordinate) => !Number.isFinite(coordinate))) {
     throw new Error(`Gemini returned an invalid ${name} box`);
   }
-  const box = value.map((coordinate) => Math.round(Number(coordinate))) as Box;
-  const [x0, y0, x1, y1] = box;
+  const raw = value.map((coordinate) => Math.round(Number(coordinate))) as Box;
+  let [x0, y0, x1, y1] = raw;
+  if (x0 >= -width * BOX_EDGE_TOLERANCE) x0 = Math.max(0, x0);
+  if (y0 >= -height * BOX_EDGE_TOLERANCE) y0 = Math.max(0, y0);
+  if (x1 <= width * (1 + BOX_EDGE_TOLERANCE)) x1 = Math.min(width, x1);
+  if (y1 <= height * (1 + BOX_EDGE_TOLERANCE)) y1 = Math.min(height, y1);
   if (x0 < 0 || y0 < 0 || x1 > width || y1 > height || x0 >= x1 || y0 >= y1) {
-    throw new Error(`Gemini returned an out-of-bounds ${name} box`);
+    throw new Error(
+      `Gemini returned an out-of-bounds ${name} box [${raw.join(', ')}] for ${width}×${height}`,
+    );
   }
-  return box;
+  return [x0, y0, x1, y1];
 }
 
 function cleanDetectedSpecies(value: unknown, fallback: DetectedSpecies): string {
