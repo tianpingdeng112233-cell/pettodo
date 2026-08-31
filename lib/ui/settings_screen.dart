@@ -642,30 +642,32 @@ class _HatchPanel extends StatelessWidget {
           button: true,
           label: 'Adopt your own pet',
           onTap: openHatchRequest,
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const PxIcon(
+          child: PxButton(
+            label: const Text('Adopt your own pet'),
+            icon: const PxIcon(
               PxIconData.paw,
-              size: PetSpacing.s34,
-              color: PetColors.inactive,
+              size: PetSpacing.s18,
+              color: PetColors.white,
             ),
-            title: const Text(
-              'Adopt your own pet',
-              style: PetTextStyles.body16Strong,
-            ),
-            subtitle: Text(
-              controller.pendingHatchRequest == null
-                  ? 'Start with 1–3 photos'
-                  : 'Your pet is on its way — no rush.',
-              style: PetTextStyles.captionSoft,
-            ),
-            onTap: openHatchRequest,
+            onPressed: openHatchRequest,
           ),
         ),
-        OutlinedButton.icon(
-          onPressed: () => importPetPackFromPicker(context, controller),
-          icon: const PxIcon(PxIconData.package, size: 18),
-          label: const Text('Import pet pack'),
+        const SizedBox(height: PetSpacing.s8),
+        Text(
+          controller.pendingHatchRequest == null
+              ? 'Start with 1–3 photos'
+              : 'Your pet is on its way — no rush.',
+          style: PetTextStyles.captionSoft,
+          textAlign: TextAlign.center,
+        ),
+        Center(
+          child: TextButton(
+            onPressed: () => importPetPackFromPicker(context, controller),
+            child: const Text(
+              'Import pet pack',
+              style: PetTextStyles.secondaryLink,
+            ),
+          ),
         ),
       ],
     );
