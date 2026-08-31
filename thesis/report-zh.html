@@ -86,7 +86,7 @@ th { background:#f2f2f2; }
 <p>第 4.4 节的像素实验敲定了风格问题,而且这个决定贯穿了整个产品,不只是精灵。&quot;Cozy Pixel&quot; 改版给应用换上阶梯描边、硬阴影、像素字体和像素图标;内置宠物 Choco 以 像素风重新生成为正典,带全套 QA 图集。因为改版被限制在 <code>lib/ui/</code> 和素材文件里, 它落地时没碰 domain 逻辑一行——第 2.1 节的架构主张第二次被实证。同一波里还有一次 更名:产品取了正式名 <strong>Pawside</strong>,取代工作名 PetTodo;爪印图形取代蛋的意象, 面向用户的文案从&quot;孵化&quot;改为&quot;领养&quot;叙事。本报告全文使用 Pawside;仓库路径与 <code>.pettodopet</code> 扩展名等技术标识刻意保留旧名。复古像素同时是一个定位回答:第 1.3.2 节 记录了成年人说品类第一名幼稚,而像素风读起来是成年人的怀旧,不是儿童玩具。</p>
 <h3>3.4 Android 常驻层</h3>
 <p>评论语料里最有力的单条用户证据,是一条五星评论:在用户已经放弃的那天,小组件里 的宠物对他说了话。这个表面现在在 Android 上做出来了:一个原生 Kotlin 悬浮层, 无论用户在干什么,宠物都以很小的环境尺寸待在屏幕上。第一版把宠物画成了三分之一 屏;上线版画 1 倍大——&quot;常驻&quot;的意思是待在余光里。按红线,悬浮层从不谈任务: 没有任何提醒从那里发出,它只是陪着。它对应用内发生的事只有单向反应——在应用里 完成一个任务,悬浮宠一秒内开始庆祝;任何负面的东西都不会传到它那里。宠物位置 可拖动,连应用进程被杀都记得住。用户拒绝悬浮层权限,应用就静默继续,并且永不 再问。悬浮层现在画的就是用户领养的那只宠物:活跃宠物变更时——孵化,或在收藏馆 里切换——应用把该宠物的待机与庆祝帧离线烘焙好交给原生服务;没有烘焙产物时回退 到内置宠物,表面永远不会开天窗。真实使用还带来两处打磨:应用自己在前台时,悬浮 宠会把自己藏起来——同一只动物出现两份,多了一份;它还多了一个邀请气泡:到了某 条任务的提醒时刻,一句宠物邀请口吻的话在它身旁出现几秒,点击进应用——与系统 通知同一套&quot;永不催促&quot;的语义,只是亲自来说。</p>
-<figure><figcaption><strong>图 4 — 住进用户屏幕的宠物。</strong>左:悬浮宠在 Android 桌面上,和用户自己的图标 待在一起。右:同一只宠物浮在另一个应用之上。</figcaption><img src="figures/app/08-android-overlay.png" alt="两张 Android 截图:像素宠物浮在桌面上与 Chrome 之上"></figure>
+<figure><figcaption><strong>图 4 — 住进用户屏幕的宠物。</strong>左:悬浮宠在 Android 桌面上,和用户自己的图标 待在一起。右:同一只宠物浮在另一个应用之上。</figcaption><img src="figures/app/overlay-pet.png" alt="两张 Android 截图:领养的像素宠物在桌面上与 Chrome 之上"></figure>
 <h3>3.5 孵化管线,第二代</h3>
 <p>第一代管线(第 3.2 节)靠&quot;每一帧都单独生成一张图&quot;来产出宠物:约 14 次串行生成、每只 约 40 分钟,帧间漂移见第 3.2 节,成品包还要人工发回给用户。这条路线已经退役。 换代后的管线只生成四张正典姿势——坐姿睁眼、同姿闭眼、蜷卧睡姿、侧视——外加头、尾、腿 的部件框,打包成 &quot;rig pack&quot;。会动的部分全部是代码:模板骨架驱动呼吸、眨眼、 视线跟随、开心跳、吃零食、伸懒腰、入睡过渡和奔跑,位移按像素网格量化,不背叛 画风。图 5 对比两条路线。现在孵化一只约一分钟,模型费用约 £0.03(¥0.3),这让 应用内直接孵化变得可行:照片从应用发到一个小型代理后端,由它持有图像模型的 key、执行物种门(目前只收猫狗)、按设备计的孵化配额、限流和成本封顶——然后把成品包 直接送回设备。不建账号,服务端不留照片。照片本身什么角度都行——应用内的文案 只说&quot;提供不同角度可以提高生成质量&quot;,不指挥用户拍什么;那四张姿势是生成的 <em>产物</em>,不是对输入的要求。老管线孵出的存量宠物照常工作:渲染器按包格式路由,两种格式 并行。早期动画草案里的&quot;失败&quot;反应类,按红线永久移除。</p>
 <p>同一条管线也生产了预置名册:八只猫狗——内置的 Choco,加上柯基、金毛、哈士奇、 柴犬、布偶、狸花和黑猫——全部由品种文字描述直接生成、不涉及任何照片,每只出 数张候选、逐只挑脸定版。八只包现已全部内置进应用,领养网格(第 3.6 节)在全新 安装下即是满的。预置宠物免费,所以完全不养动物的人也能完整使用这款应用;孵化 <em>自家</em>宠物同样免费,只封顶三次孵化机会,这是生成成本的约束,与收费无关。 应用里没有任何东西需要用钱购买:作为一个商业化已冻结的硕士毕设项目,它不带任何形式的 付费表面,候选的收费点留在项目台账里作为后续工作。猫狗之外的照片会被温柔谢绝, 并把用户想要的物种登记为未来模板的愿望。</p>
@@ -96,7 +96,7 @@ th { background:#f2f2f2; }
 <figure><figcaption><strong>图 6 — 一张照片对三张照片。</strong>上排:单张照片生成的四张候选。下排:同一只猫 三张照片生成的四张候选。身份两边都稳;多出来的照片修正的是单张照片从未拍到的 那一侧花色。</figcaption><img src="figures/multi-photo-test.png" alt="八只生成的像素猫,对比单照片与三照片输入"></figure>
 <h3>3.6 Onboarding:围绕关系重做</h3>
 <p>原版 onboarding 在介绍功能。重做后的流程先介绍宠物,依据正是第 1.3.2 节:应用是 为了看宠物才被打开的,所以第一分钟应该用来建立这层联结。用户先见到领养之问 ——&quot;Who&#x27;s coming home?&quot;——下面是一格从实时宠物注册表渲染的网格(永不写死; 第 3.5 节的八只名册已随应用内置,首次运行即是满格),挑一只, 给它起名——旁边有个骰子按钮,从预置名池里随机换一个,让唯一需要打字的时刻有 一条零成本退路。网格下方有一行安静的小字——&quot;Your real pet can live here too&quot;(你的真宠物也能住进来)——把自家宠物这条路露出来,但不施加任何压力。然后从可点选的 chips 里挑 最多三件&quot;小事&quot;(起床、喝点水、吃药……),只有自定义条目才需要键盘。中场庆祝 在任何真实任务完成<em>之前</em>就发出第一颗零食——奖励循环靠演示,不靠说明。Android 上,第 3.4 节的悬浮层以邀请的形式出现(&quot;Can I stay on your screen?&quot;),走同一套 拒绝即永不再问的权限流。用户落地 Home 时,预埋了一条白送的首胜任务——&quot;Give {name} a pat&quot;(摸摸它)——完成即触发正常庆祝,且不占一到七的上限。最后,晚间 问候的询问整个移出了 onboarding:应用在第一个晚上打开时,由宠物在场景里开口问, 通知权限也顺延到那个时刻才索取。老用户不会重走 onboarding。图 7 是全新安装下 这条流程的四个瞬间。</p>
-<figure><figcaption><strong>图 7 — Onboarding 四瞬间。</strong>从左到右:领养之问,自家宠物这条路只占安静的一行; 三件小事做成可点选的 chips,全程不需要打字;中场庆祝在任何任务存在之前就发出 第一颗零食;落地 Home,预埋的首胜任务——&quot;Give Choco a pat — a free one, to see how it feels&quot;(摸摸 Choco——白送的,感受一下)——等在清单最上方。</figcaption><img src="figures/app/09-onboarding.png" alt="四张 onboarding 截图:领养、chips、庆祝、首胜"></figure>
+<figure><figcaption><strong>图 7 — Onboarding 四瞬间。</strong>从左到右:领养之问,自家宠物这条路只占安静的一行; 三件小事做成可点选的 chips,全程不需要打字;中场庆祝在任何任务存在之前就发出 第一颗零食;落地 Home,预埋的首胜任务——&quot;Give Choco a pat — a free one, to see how it feels&quot;(摸摸 Choco——白送的,感受一下)——等在清单最上方。</figcaption><img src="figures/app/onboarding-v2.png" alt="四张 onboarding 截图:领养网格、chips、中场庆祝、首胜"></figure>
 <h3>3.7 通知层:冲突解决,已上线</h3>
 <p>期中时点,通知层的一次重做已实现却被刻意压着不合入,因为文献与其三个机制中的 两个相抵触。这个冲突后来解决了——靠的不是代码,而是一条写进项目宪法的裁定: <strong>宠物的幸福永远不是用户在场与否的函数。</strong>宠物过着自己的好日子;它可以开口, 但只谈自己——在场,但不索取。在这个语义上,重做合入上线。整个消息池现在都是 宠物在汇报自己的一天(晒到一束阳光、窗台来了只鸟、伸了个大懒腰);&quot;等你回来/ 想你了/别忘了&quot;这类措辞在屏幕两侧一并封禁,由一条构建即败的 lint 强制;触发 时间保留 ±10 分钟抖动;连续未打开则频率退避——每天、隔天、每周——一打开应用 即复位。文献最尖锐的反对(第 6 节)是:主动退避是模糊的疏远,而拒绝敏感会把 模糊读成拒绝;在&quot;自己过得很好&quot;的语义下,这个模糊消失了——一只从不等待的宠物 没法被读成&quot;放弃了你&quot;,只是它的近况来得少了。应用内两句违反此规的旧文案 (&quot;Just because I miss you&quot;)也在同一改动里重写。</p>
 <h3>3.8 陪伴层:房间、一起专注、投喂,与一次性邀请</h3>
@@ -107,21 +107,35 @@ th { background:#f2f2f2; }
 <hr>
 <h2>4. 结果</h2>
 <h3>4.1 可用的应用</h3>
-<p>以下截图出自 Android 模拟器上一次连续会话,跑的是现行 release 构建,与图 7 同一次全新安装——onboarding 里领养了预置宠物 Choco,首胜任务已完成。顺序按 用户遇到它们的顺序排列。</p>
-<figure><figcaption><strong>图 8 — Home:混合任务清单。</strong></figcaption><img src="figures/app/01-home-mixed-list.png" alt="Home 显示一条已完成的每日任务、两条未完成每日任务和一条一次性任务"></figure>
-<p>宠物占上半屏,任务列表占下半屏——这个比例本身就是论点:宠物不是挂在待办清单上 的装饰,它才是这块屏幕的主角,任务是用户去看它的路上顺便遇到的东西。列表里两种 任务并存——三条循环项和标着 &quot;Just once&quot; 的 <em>Call the vet</em>——区别只靠那行安静的 小字。刻意没有截止日期、没有任务年龄、没有逾期标记、没有剩余计数;几周前记下的 一次性任务和今早记的看起来一模一样。任务区是一块有边界的滚动区域,七条的上限 永远不会长成一面铺满全屏的墙。标题写着 &quot;Today&#x27;s little things&quot;,完成项以暖色 留在原地,不划线、不消失。</p>
-<figure><figcaption><strong>图 9 — 快速记录。</strong></figcaption><img src="figures/app/02-quick-capture.png" alt="Jot it down 弹窗,已输入 &quot;Call the vet&quot;"></figure>
-<p>记录只有两步:点 <em>Jot it down</em>,输入,确认。输入框自动聚焦,只要求一个标题, 占位文案——&quot;A thought before it slips away&quot;(趁念头溜走之前)——点名了这个 弹窗要解决的问题:几秒内就会离开工作记忆的念头,活不过一张表单。在这里记下的 默认是一次性任务,因为在记录时刻强迫用户做&quot;要不要循环&quot;的决定,恰恰是弄丢念头 的那种摩擦。取消按钮写的是 &quot;Not now&quot;,不是 &quot;Cancel&quot; 或 &quot;Discard&quot;。</p>
-<figure><figcaption><strong>图 10 — 完成一个任务。</strong></figcaption><img src="figures/app/03-completion-moment.png" alt="已完成任务卡片呈暖色,圆圈被填充,零食计数从 1 变为 2"></figure>
-<p>完成只产生温度,别的什么都不产生:卡片染上暖色,圆圈填满,宠物播放一小段开心 动画,掉下一颗零食——计数跳了一格。屏幕上没有分数、没有连击、没有进度条、 没有&quot;完成 3/4&quot;,因为进度指示器同时也是缺口指示器。零食是唯一货币,用途是喂 宠物,而且花不花随意。</p>
-<figure><figcaption><strong>图 11 — Little Theater(小剧场),当日清单全部完成时出现。</strong></figcaption><img src="figures/app/04-little-theater.png" alt="全屏庆祝:宠物放大、粒子上升、+3 零食奖励,文案 &quot;Choco nuzzles you happily — thank you for today&quot;"></figure>
-<p>清单全部做完,触发应用唯一一次大张旗鼓:宠物铺满屏幕,粒子升起,奖励三颗零食, 文案是 &quot;Choco nuzzles you happily — thank you for today&quot;(Choco 开心地蹭蹭你 ——谢谢你今天做的事)。关闭按钮写的是 &quot;Thank you, Choco&quot;,让这场 交换发生在用户与动物之间,而不是用户与记分板之间。这是整个设计的情感峰值,也是 整条奖励循环存在的意义所在。同时,按构造,它是<em>唯一</em>有这种分量的时刻——失败 没有对应的画面,因为失败态不存在。</p>
-<figure><figcaption><strong>图 12 — 正向历史。</strong></figcaption><img src="figures/app/05-positive-history.png" alt="&quot;Things we did together&quot; 页面,一周里只列出有三条完成记录的那一天"></figure>
-<p>历史页是安全架构最清晰的一次表达。它写着 &quot;This week, you and Choco did 4 things together&quot;(这周你和 Choco 一起做了 4 件事)——第四件正是预埋的首胜 任务——而且只列出周三,因为周三是唯一有完成记录的日子。没有完成记录的日子不是被画成空白、灰色或零:<strong>它们 在数据模型里根本不存在</strong>,所以任何视图都不可能失手把它们显示出来。没有连击 计数,没有带缺口可供解读为失败的日历网格,不与上一周比较。措辞是&quot;我们一起做过 的事&quot;,不是&quot;你的完成率&quot;。</p>
-<figure><figcaption><strong>图 13 — 收藏馆。</strong></figcaption><img src="figures/app/06-collection.png" alt="收藏页显示宠物架上的 Choco,下方是写着 &quot;A little mystery&quot; 的未解锁纪念品网格"></figure>
-<p>这块屏幕上有两件事。宠物架列出用户拥有的所有宠物——这里是领养的预置宠物 Choco——当前那只有描边;孵出的自家宠物会并排出现在它旁边,这正是第 3.2 节的 运行时注册表变得肉眼可见的地方,差异化功能也在这里第一次变得可触摸。宠物架末尾 是一个 adopt 格,打开的是 onboarding 网格所用的同一份预置名册,尚未领养的预置宠 任何时候都可以免费领进来——这补上了一个缺口:走过一次 onboarding 的老用户, 此前再没有入口去领名册上的其余宠物。 下方,已解锁的纪念品以插画形式出现;未解锁的只显示一个爪印剪影和 &quot;A little mystery&quot;(一个小谜)。它们没有进度条、没有解锁阈值、没有&quot;还差 2 个&quot;,所以这个 陈列柜没法被读成一张&quot;你还没挣到的东西&quot;的清单。</p>
-<figure><figcaption><strong>图 14 — 设置。</strong></figcaption><img src="figures/app/07-settings.png" alt="设置页显示宠物名字输入框、四条任务及其循环类型标注、晚间通知开关与时间选项"></figure>
-<p>设置刻意做得很短。任务逐条列出,类型用文字写明(&quot;Every day&quot; 对 &quot;Just once&quot;), 一个控件即可删除;没有归档、没有已完成列表、没有任何让做完的事堆积的地方。 第 3.4 节的悬浮层在这里是一行开关——&quot;Let Choco stay on your screen&quot;。通知区 就是一个开关加三个固定时间,而它的副标题正是第 3.7 节的宪法上屏:&quot;All quiet — Choco is happily minding its own day&quot;(一切安好——Choco 正快活地过自己的 日子)。通知默认关闭,直到用户明确打开;权限一旦被拒,永不再问。</p>
+<p>以下截图出自 Android 模拟器上的现行构建,状态为拍摄而备:onboarding 领养了预置宠物 Choco,三周任务历史,两条来路的家具,和靠投喂养起来的亲密度等级——相当于养了几周之后的样子。顺序按用户遇到它们的顺序排列。</p>
+<figure><figcaption><strong>图 8 — Home:宠物的房间在当日清单之上。</strong></figcaption><img src="figures/app/home-room.png" alt="Home:宠物在带家具的房间里,亲密度条与已完成任务"></figure>
+<p>Home 的上半屏现在是宠物的房间(第 3.8 节):Choco 坐在自己的地毯上,身边是里程碑挣来和商店买来的家具;名字下方是亲密度等级与称号——宪法唯一允许的常驻进度条。三个按钮点名了零食的全部去处——Collection、Shop、Snacks,带爪印饼干余额;专注入口在清单上方。清单本身规矩不变:完成的每日任务以暖色留在原位,依旧没有截止日期、没有年龄、没有逾期标记、没有剩余计数。</p>
+<figure><figcaption><strong>图 9 — &quot;Coming up&quot; 分组。</strong></figcaption><img src="figures/app/coming-up.png" alt="Home 下滚显示带未来日期时间标签的一次性任务"></figure>
+<p>带到时邀请的一次性任务在当日清单下方自成一组,佩着日期和时刻。时刻一过,标签自己消失,任务回到普通列表——不存在可供渲染的逾期痕迹(第 3.8 节)。</p>
+<figure><figcaption><strong>图 10 — 记录。</strong></figcaption><img src="figures/app/quick-capture.png" alt="Add one little thing 弹层:已输入标题与类型切换"></figure>
+<p>记录是一张底部弹层:自动聚焦的标题、可选的小备注、用文字写明的类型——&quot;Every day&quot; 对 &quot;Just once&quot;,默认一次性,因为在记录时刻强迫用户做&quot;要不要循环&quot;的决定,恰恰是弄丢念头的那种摩擦。提醒区默认关闭,措辞是一句承诺:&quot;One invitation at that moment, never repeated.&quot;(那一刻只邀请一次,绝不重复。)</p>
+<figure><figcaption><strong>图 11 — 提醒的两种形态:一次性(左)与每日(右)。</strong></figcaption><img src="figures/app/reminder-forms.png" alt="编辑器的一次性日期时刻形态与每日时刻形态"></figure>
+<p>编辑器随类型换形态(第 3.8 节)。一次性任务给 &quot;Remind me once&quot;,配日期加时刻;每日任务给 &quot;One gentle reminder&quot;,配每日时刻,副标题 &quot;Optional — your pet will not nag.&quot;(可选——你的宠物不会催你。)两者刻意是两种东西,不是同一个控件加个勾。</p>
+<figure><figcaption><strong>图 12 — 完成一个任务。</strong></figcaption><img src="figures/app/completion.png" alt="完成后房间里宠物旁升起 +1 零食"></figure>
+<p>完成只产生温度:卡片填色,宠物庆祝,一颗零食落袋,宠物身旁升起小小的 &quot;+1&quot;。完成的每日任务以暖色留在原地;完成的一次性任务直接离开清单——做完即走,不进归档。</p>
+<figure><figcaption><strong>图 13 — Little Theater(小剧场)。</strong></figcaption><img src="figures/app/little-theater.png" alt="全屏庆祝:放大的宠物与 Choco nuzzles you happily 文案"></figure>
+<p>做完当日清单触发应用唯一一次大张旗鼓:宠物铺满屏幕,粒子升起,奖励三颗零食,文案 &quot;Choco nuzzles you happily — thank you for today&quot;,由 &quot;Thank you, Choco&quot; 关闭——这场交换始终发生在用户与动物之间。同一轮里,累计第 30 次完成安安静静地往房间里放了一张宠物床:家具的里程碑来路没有自己的横幅。按构造,失败没有对应的画面。</p>
+<figure><figcaption><strong>图 14 — 正向历史。</strong></figcaption><img src="figures/app/history.png" alt="Things we did together:三周的完成与专注记录"></figure>
+<p>历史页写着 &quot;This week, you and Choco did 5 things together&quot;,而且只列出有条目的日子——完成记录,以及现在用自己的话写的专注时段(&quot;You and Choco focused together for 15 minutes&quot;)。没有完成的日子不是被画成空白或零:它们在数据模型里根本不存在,任何视图都不可能失手显示它们,周与周之间也从不比较。</p>
+<figure><figcaption><strong>图 15 — 收藏馆。</strong></figcaption><img src="figures/app/collection.png" alt="宠物架:Choco 与 Adopt 空位,下方是家具陈列"></figure>
+<p>宠物架列出用户拥有的每只宠物,旁边是一格明示的 &quot;Adopt&quot; 空位——第 3.2 节的注册表变得肉眼可见。下方,家具一经拥有即以插画陈列;未拥有的只显示爪印剪影和 &quot;Not owned&quot;,没有阈值,没有&quot;还差 2 个&quot;。</p>
+<figure><figcaption><strong>图 16 — 设置。</strong></figcaption><img src="figures/app/settings.png" alt="设置:任务按类型标注、悬浮层开关行与 Evening hello 区"></figure>
+<p>设置依然很短。任务逐条列出、类型用文字写明——&quot;Every day&quot;,或 &quot;Just once · One reminder at 3:00 PM&quot;,第 3.8 节存储的邀请就摆在明面——一个控件即可删除;没有任何东西归档。悬浮层是一行(&quot;Let Choco stay on your screen&quot;),晚间问候是一个开关加三个固定时间,措辞是宠物做的事。</p>
+<figure><figcaption><strong>图 17 — 家具商店。</strong></figcaption><img src="figures/app/shop.png" alt="家具商店:爪印标价,已拥有置灰"></figure>
+<p>商店是固定目录,爪印饼干标价,已拥有的置灰为 &quot;Owned&quot;。没有刷新、没有限时、没有折扣;零零食的访客可以随便逛,不会看到一句&quot;去挣一点&quot;。</p>
+<figure><figcaption><strong>图 18 — Snacks。</strong></figcaption><img src="figures/app/snacks.png" alt="七件食单:价格、拥有数与 Feed 按钮"></figure>
+<p>七件食单显示价格、拥有数,有存货的一行才有 Feed 按钮;页首一句 &quot;Every snack adds a little bond XP&quot;(每份零食都会加一点亲密度)就是全部的推销。没有限量,也没有任何东西开口求购买。</p>
+<figure><figcaption><strong>图 19 — 投喂(左)与亲密度升级(右)。</strong></figcaption><img src="figures/app/feeding-levelup.png" alt="投喂 +12 XP 与 Bond Lv 3 Close Pals 庆祝"></figure>
+<p>投喂消耗一份存货,XP 在宠物头顶升起(&quot;+12&quot;,&quot;Choco munched happily&quot;);跨过阈值时,亲密度轴举行它唯一的庆祝:&quot;Bond Lv 3 · Close Pals · You and Choco grew a little closer.&quot;(你和 Choco 又亲近了一点。)不解锁任何功能;奖励就是这句话本身。</p>
+<figure><figcaption><strong>图 20 — 专注:设置(左)与进行中(右)。</strong></figcaption><img src="figures/app/focus.png" alt="专注滑条页与倒计时页(蜷睡的宠物)"></figure>
+<p>专注页问 &quot;Want to focus for a bit? I&#x27;ll nap right beside you~&quot;(要不要专注一会儿?我就在旁边打个盹~),下方是 5–45 分钟的滑条并预告掉落(&quot;Finish to earn 1&quot;),绑定任务纯可选。进行中,画面只有倒计时和一只睡着的宠物;切走应用自动暂停(&quot;If you leave, I&#x27;ll pause for you&quot;),退出是一个虚线的 &quot;That&#x27;s enough for now&quot;——结束时段,无奖励、无痕迹。</p>
+<figure><figcaption><strong>图 21 — 专注结算。</strong></figcaption><img src="figures/app/focus-complete.png" alt="Focus complete:15 分钟、+1 零食、休息邀请"></figure>
+<p>完成的时段平实结算:&quot;You and Choco focused for 15 minutes&quot;,每满一刻钟一颗零食,以及一句休息邀请——&quot;Let&#x27;s rest a little — I&#x27;ll be here when you&#x27;re ready~&quot;。这段随后出现在历史里(图 14);被放弃的时段则哪儿都不会出现。</p>
 <h3>4.2 孵化环,端到端</h3>
 <p>下面这轮验收走查走的是第一代流程——靠导出请求档、再手工导入成品包;换代后的 管线(第 3.5 节)这两步都不需要了,但走查记录保留,因为它是真正在设备上端到端 验证过的东西。走查在同一台设备上从全新安装开始:onboarding → 孵化页 → 拍照 → 导出 139 KB 请求档 → 通过真实的 iOS 文件选择器导入 → 两只宠物并列且新宠 被选中 → 来回切换 → 完成 onboarding → Home 展示导入的宠物及其孵化仪式—— 结束时文档目录里零残留请求档。走查过程中另有两张截图,记录了仪式本身和最终的 Home 屏。</p>
 <h3>4.3 实现层发现</h3>
