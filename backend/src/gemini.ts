@@ -157,7 +157,7 @@ export class GeminiClient implements SpeciesClassifier {
         'tail',
         'leftFrontLeg',
         'rightFrontLeg',
-      ], 'front-facing seated pet. The head box must include both ears and the complete face. Left/right are from the viewer perspective');
+      ], 'front-facing seated pet. The head box must include both ears and the complete face. Left/right are from the viewer perspective', FRONT_NULLABLE_BOXES);
       if (content === undefined || (boxes.head !== null && isValidFrontHeadBox(boxes.head, content))) {
         return boxes;
       }
@@ -180,6 +180,7 @@ export class GeminiClient implements SpeciesClassifier {
     height: number,
     names: string[],
     viewDescription: string,
+    nullableNames: ReadonlySet<string> = EMPTY_NAME_SET,
   ): Promise<T> {
     const properties = Object.fromEntries(
       names.map((name) => [name, {
@@ -205,7 +206,14 @@ export class GeminiClient implements SpeciesClassifier {
     });
     const parsed = parseJsonText(response) as JsonRecord;
     return Object.fromEntries(
-      names.map((name) => [name, validateBox(parsed[name], width, height, name)]),
+      names.map((name) => {
+        try {
+          return [name, validateBox(parsed[name], width, height, name)];
+        } catch (error) {
+          if (nullableNames.has(name)) return [name, null];
+          throw error;
+        }
+      }),
     ) as T;
   }
 
@@ -279,6 +287,11 @@ function firstCandidateParts(response: unknown): unknown[] {
   }
   return candidate.content.parts;
 }
+
+const EMPTY_NAME_SET: ReadonlySet<string> = new Set();
+// A malformed head box degrades to null so the head-gate retry-then-absent path
+// (SPEC-017 四耳 ruling) owns it; every other part has no absent form in the rig.
+const FRONT_NULLABLE_BOXES: ReadonlySet<string> = new Set(['head']);
 
 function validateBox(value: unknown, width: number, height: number, name: string): Box {
   if (!Array.isArray(value) || value.length !== 4 || value.some((coordinate) => !Number.isFinite(coordinate))) {

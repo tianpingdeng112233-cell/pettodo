@@ -71,4 +71,34 @@ describe('front head-box geometry gate', () => {
     ).resolves.toEqual({ ...earsOnly, head: null });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('retries an out-of-bounds head box once, then returns an absent head box', async () => {
+    const outOfBounds = {
+      head: [182, 230, 609, 1200],
+      tail: [550, 650, 720, 1000],
+      leftFrontLeg: [280, 650, 390, 1068],
+      rightFrontLeg: [430, 650, 540, 1068],
+    };
+    const fetchMock = vi.fn(async () => geminiJson(outOfBounds));
+    const client = new GeminiClient('test-key', fetchMock);
+
+    await expect(
+      client.detectFrontBoxes(Buffer.from('front-pose'), 768, 1152, content),
+    ).resolves.toEqual({ ...outOfBounds, head: null });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('still rejects an out-of-bounds box for parts that cannot be absent', async () => {
+    const badTail = {
+      head: [182, 340, 609, 620],
+      tail: [550, 650, 800, 1000],
+      leftFrontLeg: [280, 650, 390, 1068],
+      rightFrontLeg: [430, 650, 540, 1068],
+    };
+    const client = new GeminiClient('test-key', vi.fn(async () => geminiJson(badTail)));
+
+    await expect(
+      client.detectFrontBoxes(Buffer.from('front-pose'), 768, 1152, content),
+    ).rejects.toThrow('out-of-bounds tail box');
+  });
 });
