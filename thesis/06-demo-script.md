@@ -5,6 +5,7 @@
 > 录制调度、造号清单、红线自查沿用 [05-demo-shotlist.md](./05-demo-shotlist.md)；
 > 本文件的分段时长与旁白为成片正典，与 05 冲突处以本文件为准。
 > 旁白配速按 **140 wpm** 写就，各段词数已对齐时长，照念即可。
+> 停顿标记：`/` 短停（约半秒）、`//` 长停（约一秒，换镜头/换意思）、**粗体** 重读。标记不念出来。
 
 ## 时长总表
 
@@ -22,22 +23,23 @@
 （宠物在房间 idle、bond 徽章、Today's little things 一屏收齐）→ 可插 1–2 张
 报告插图（如「工具本身变成任务」示意）。Clip 1 在此消化，功能段不再单列。
 
-> For adults with ADHD, the hardest part of a task is rarely doing it — it's
-> starting it. Conventional to-do apps answer this with more structure:
-> projects, priorities, streaks. But for this population, the tool itself
-> becomes one more task to maintain, and every red badge is one more reason
-> not to open the app. My user research pointed somewhere different: what
-> actually initiates action is an external, concrete anchor — a dependant,
-> another person, an animal that needs you. Pawside is my attempt to digitise
-> that mechanism. It pairs a deliberately minimal to-do list — one to seven
-> items, no projects, no calendar — with a virtual pet companion, and it
-> enforces one rule everywhere: zero punishment. There are no streaks, no
-> overdue states, and the pet never reacts negatively. Missing everything
-> produces silence, not guilt. Everything runs offline on the device — no
-> account, no server. Over the next five minutes I'll walk through the app the
-> way a user experiences it: onboarding, the task list, reminders, focus
-> sessions, feeding, the pet's room, and the floating companion. I'll close
-> with a minute on the architecture.
+> For adults with ADHD, / the hardest part of a task is rarely doing it — /
+> it's **starting** it. // Conventional to-do apps answer this with more
+> structure: / projects, / priorities, / streaks. / But for this population, /
+> the tool itself becomes one more task to maintain, / and every red badge is
+> one more reason **not** to open the app. // My user research pointed
+> somewhere different: / what actually initiates action is an external,
+> concrete anchor — / a dependant, / another person, / an animal that needs
+> you. // Pawside is my attempt to digitise that mechanism. / It pairs a
+> deliberately minimal to-do list — / one to seven items, no projects, no
+> calendar — / with a virtual pet companion, / and it enforces one rule
+> everywhere: / **zero punishment**. / There are no streaks, / no overdue
+> states, / and the pet never reacts negatively. / Missing everything produces
+> silence, / not guilt. // Everything you do stays on the device — / no
+> account. // Over the next five minutes I'll walk through the app the way a
+> user experiences it: / onboarding, / the task list, / reminders, / focus
+> sessions, / feeding, / the pet's room, / and the floating companion. / I'll
+> close with a minute on the architecture.
 
 ---
 
@@ -57,14 +59,14 @@
 5. 27–35s：常驻邀请页 → 点同意 → Android 悬浮授权系统页允许
 6. 35–40s：落到 Home，宠物已在房间，首胜提示收尾
 
-> Onboarding is built to establish the relationship before asking for any
-> productivity. You choose a pet from the adoption shelter, name it — there's
-> a dice button if naming feels like work — then pick three "little things"
-> from emoji chips, so the first list fills itself in seconds. Halfway
-> through, the app celebrates: the important part is already done. The final
-> step invites the pet to stay on your home screen — entirely optional. You
-> land with your pet already living there. Under a minute, no account, no
-> tutorial.
+> Onboarding is built to establish the relationship / **before** asking for
+> any productivity. // You choose a pet from the adoption shelter, / name it —
+> / there's a dice button if naming feels like work — / then pick three
+> "little things" from emoji chips, / so the first list fills itself in
+> seconds. // Halfway through, / the app celebrates: / the important part is
+> already done. // The final step invites the pet to stay on your home screen
+> — / entirely optional. / You land with your pet already living there. //
+> Under a minute, / no account, / no tutorial.
 
 ### Clip 2.5 · 孵化自家宠物（40s，≈75 词）
 
@@ -77,11 +79,12 @@
 4. 24–34s：**孵出时刻**：自家宠以像素形态现身，切换为当前宠
 5. 34–40s：回主屏，自家宠已在房间里 idle
 
-> And the pet doesn't have to be one of ours. Pick one to three photos of
-> your real pet, and Pawside hatches them: the photos go in, and after a
-> little wait, out comes your own pet, redrawn as a living pixel companion.
-> This is the heart of the design — the anchor isn't a mascot. It's your
-> pet, the one you already care for, now sitting beside your task list.
+> And the pet doesn't have to be one of ours. // Pick one to three photos of
+> your real pet, / and Pawside hatches them: / the photos go in, / and after a
+> little wait, / out comes **your own pet**, / redrawn as a living pixel
+> companion. // This is the heart of the design — / the anchor isn't a mascot.
+> / It's **your** pet, / the one you already care for, / now sitting beside
+> your task list.
 
 ### Clip 3 · Todo 及格线 + 正向历史（45s，≈100 词）
 
@@ -92,13 +95,14 @@
 4. 24–30s：进任务详情给它加一行 note，返回
 5. 30–45s：打开正向历史，停在「这周你和 {pet} 完成了 N 件」让旁白说完
 
-> The task list is capped at seven visible items — an upper bound from user
-> research, below the point where a list turns avoidant. Checking one off
-> drops in-game currency, and the pet reacts. Adding a one-off takes one line; notes
-> are there if you want them. And this is the history screen: it only tells
-> you how many things you and your pet finished this week. There is no streak,
-> no red, no count of what you didn't do. That's the zero-punishment red line,
-> and it's enforced everywhere in the app — not just here.
+> The task list is capped at seven visible items — / an upper bound from user
+> research, / below the point where a list turns avoidant. // Checking one off
+> drops in-game currency, / and the pet reacts. / Adding a one-off takes one
+> line; / notes are there if you want them. // And this is the history screen:
+> / it only tells you how many things you and your pet finished this week. /
+> There is no streak, / no red, / no count of what you didn't do. // That's
+> the zero-punishment red line, / and it's enforced everywhere in the app — /
+> not just here.
 
 ### Clip 4 · 到时提醒（40s + 通知补拍镜头，≈90 词）
 
@@ -111,13 +115,14 @@
    点通知进 app
 5. 补拍 B（时间过后）：回主屏拍标签自动摘掉、任务回普通列表、无过期痕迹
 
-> One-off tasks can carry a timed reminder — a concrete date and time,
-> distinct from the daily rhythm reminders. Once set, the task moves into a
-> "Coming up" section with its time tag. The notification, when it fires, is
-> written in the pet's voice — an invitation, not an alert — and it fires
-> exactly once. If the moment passes, the tag simply comes off and the task
-> returns to the list. No overdue state, no trace. This is prospective memory,
-> externalised, without the guilt debt reminders usually accumulate.
+> One-off tasks can carry a timed reminder — / a concrete date and time, /
+> distinct from the daily rhythm reminders. / Once set, / the task moves into
+> a "Coming up" section with its time tag. // The notification, when it fires,
+> / is written in the pet's voice — / an invitation, / not an alert — / and it
+> fires exactly once. // If the moment passes, / the tag simply comes off and
+> the task returns to the list. / No overdue state, / no trace. // This is
+> prospective memory, externalised, / without the guilt debt reminders usually
+> accumulate.
 
 ### Clip 5 · 专注 focus（40s，≈95 词）
 
@@ -130,14 +135,14 @@
    「顺手标为完成？」可选按钮
 6. 40–45s：补拍段：另起一次专注 → 中途提前结束 → 温暖回应特写（无惩罚）
 
-> Focus sessions digitise body doubling — working alongside someone. You pick
-> a length, five to forty-five minutes, optionally bind one of today's tasks,
-> and your pet curls up and sleeps beside the timer. Time becomes visible,
-> concrete, and shared. Finishing drops in-game currency and a warm
-> acknowledgement,
-> plus an optional one-tap "mark it done". And crucially — ending early gets
-> the same warmth. There is no "session failed", no withered plant. The
-> session simply ends, and the pet is glad you stayed as long as you did.
+> Focus sessions digitise body doubling — / working alongside someone. // You
+> pick a length, / five to forty-five minutes, / optionally bind one of
+> today's tasks, / and your pet curls up and sleeps beside the timer. / Time
+> becomes visible, / concrete, / and shared. // Finishing drops in-game
+> currency and a warm acknowledgement, / plus an optional one-tap "mark it
+> done". // And crucially — / ending early gets the **same** warmth. / There
+> is no "session failed", / no withered plant. / The session simply ends, /
+> and the pet is glad you stayed as long as you did.
 
 ### Clip 6 · 投喂与羁绊（40s，≈88 词）
 
@@ -148,14 +153,13 @@
 4. 28–40s：**升级庆祝触发**：新称号+徽章特写停一拍
 5. 40–45s：回到主屏，名字旁新徽章+XP 条收尾
 
-> The second growth axis is bond. You spend in-game currency on food, and
-> feeding
-> grants bond experience equal to the price. Here
-> the bar fills and the bond levels up: a new title, a new badge, a small
-> celebration. What's deliberately absent matters more: there is no hunger
-> meter. The pet is never hungry, never neglected, and being away costs
-> nothing. Feeding is a gift, not an obligation — the mechanic rewards
-> presence without ever punishing absence.
+> The second growth axis is bond. / You spend in-game currency on food, / and
+> feeding grants bond experience equal to the price. // Here the bar fills and
+> the bond levels up: / a new title, / a new badge, / a small celebration. //
+> What's deliberately **absent** matters more: / there is no hunger meter. /
+> The pet is never hungry, / never neglected, / and being away costs nothing.
+> // Feeding is a gift, / not an obligation — / the mechanic rewards presence
+> / without ever punishing absence.
 
 ### Clip 7 · 房间与家具（40s，≈90 词）
 
@@ -166,13 +170,13 @@
 4. 32–40s：摆上墙/角落槽
 5. 40–45s：拉远房间全景收一眼（呼应温馨度加成）
 
-> The pet lives in a room. Furniture arrives two ways: milestone pieces unlock
-> free at cumulative completion counts — here, the thirtieth completion
-> unlocks the pet bed — and shop pieces are bought with in-game currency.
-> Each piece
-> goes into a fixed slot: buy it, and it's placed — no fiddly dragging. The
-> room also feeds back into the system: a cozier room gives a small, capped
-> bonus to bond gains, so decorating the pet's home is itself an act of care.
+> The pet lives in a room. / Furniture arrives two ways: / milestone pieces
+> unlock free at cumulative completion counts — / here, the thirtieth
+> completion unlocks the pet bed — / and shop pieces are bought with in-game
+> currency. // Each piece goes into a fixed slot: / buy it, / and it's placed
+> — / no fiddly dragging. // The room also feeds back into the system: / a
+> cozier room gives a small, capped bonus to bond gains, / so decorating the
+> pet's home is itself an act of care.
 
 ### Clip 8 · 悬浮宠（35s，Android 桌面，≈75 词）
 
@@ -183,21 +187,21 @@
 3. 22–30s：点击气泡回到 app
 4. 30–35s：主屏承接一拍
 
-> Outside the app, the pet can live on the Android home screen as a floating
-> companion. It idles quietly, and occasionally offers a small speech-bubble
-> invitation — pure invitation copy, which disappears on its own after a few
-> seconds. Tapping it brings you back into the app. The anchor stays present
-> in your environment, the way a real animal does, without ever demanding
-> anything from you.
+> Outside the app, / the pet can live on the Android home screen as a floating
+> companion. / It idles quietly, / and occasionally offers a small speech-
+> bubble invitation — / pure invitation copy, / which disappears on its own
+> after a few seconds. // Tapping it brings you back into the app. // The
+> anchor stays present in your environment, / the way a real animal does, /
+> without ever demanding anything from you.
 
 ### Clip 9 · 功能段收束（10s，≈25 词）
 
 **画面与操作**：回到主屏全景，宠物 idle（呼吸/眨眼），镜头静止定格 10s，
 旁白念完直接切入 Part 3 画面。
 
-> Task anchoring, time externalisation, and warmth-only feedback — three
-> intervention axes, one companion. That's Pawside. Now, one minute on how
-> it's built.
+> Task anchoring, / time externalisation, / and warmth-only feedback — / three
+> intervention axes, / one companion. // That's Pawside. // Now, one minute on
+> how it's built.
 
 ---
 
@@ -208,19 +212,20 @@ IDE 里 `lib/` 目录树一扫 → 孵化后端一瞥（终端里 backend 运行
 `rig_pipeline` 产物：正典姿势图 + 部件框叠加）→ 终端 `flutter test`
 **202/202 全绿**收尾。
 
-> Under the hood, Pawside is a Flutter app with a strictly layered
-> architecture. The domain layer is pure Dart — it owns the task invariants,
-> day rollover, and unlock thresholds, with no Flutter imports, which makes it
-> exhaustively unit-testable. The data layer handles persistence: an atomic,
-> versioned JSON state file plus an append-only event log — everything you do
-> stays on the device, with no account. The one online step is hatching: a
-> small Node service turns your photos into canonical poses, detects the part
-> boxes, and returns a self-contained rig pack — after that, your pet lives
-> entirely offline. Pets render through a custom painter at eight frames per
-> second — no game engine — in two coexisting formats: legacy frame atlases,
-> and rig pack v3, where pose images plus part boxes drive a per-species
-> template skeleton. Two hundred automated tests, including golden-image
-> baselines, guard all of it.
+> Under the hood, / Pawside is a Flutter app with a strictly layered
+> architecture. / The domain layer is pure Dart — / it owns the task
+> invariants, day rollover, and unlock thresholds, / with no Flutter imports,
+> / which makes it exhaustively unit-testable. // The data layer handles
+> persistence: / an atomic, versioned JSON state file / plus an append-only
+> event log — / everything you do stays on the device, / with no account. //
+> The one online step is hatching: / a small Node service turns your photos
+> into canonical poses, / detects the part boxes, / and returns a self-
+> contained rig pack — / after that, / your pet lives entirely offline. //
+> Pets render through a custom painter at eight frames per second — / no game
+> engine — / in two coexisting formats: / legacy frame atlases, / and rig pack
+> v3, / where pose images plus part boxes drive a per-species template
+> skeleton. // Two hundred automated tests, / including golden-image
+> baselines, / guard all of it.
 
 ---
 
