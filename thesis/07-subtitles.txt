@@ -1,185 +1,115 @@
 For adults with ADHD,
 the hardest part of a task is rarely doing it —
 it's starting it.
-Conventional to-do apps answer this with more structure:
-projects,
-priorities,
-streaks.
+Conventional to-do apps answer this with more structure: projects, priorities, streaks.
 But for this population,
 the tool itself becomes one more task to maintain,
 and every red badge is one more reason not to open the app.
 My user research pointed somewhere different:
-what actually initiates action is an external, concrete anchor —
-a dependant,
-another person,
-an animal that needs you.
+what actually initiates action is an external, concrete anchor — a dependant,
+another person, an animal that needs you.
 Pawside is my attempt to digitise that mechanism.
 It pairs a deliberately minimal to-do list —
 one to seven items, no projects, no calendar —
-with a virtual pet companion,
-and it enforces one rule everywhere:
-zero punishment.
-There are no streaks,
-no overdue states,
-and the pet never reacts negatively.
-Missing everything produces silence,
-not guilt.
-Everything you do stays on the device —
-no account.
+with a virtual pet companion, and it enforces one rule everywhere:
+zero punishment. There are no streaks, no overdue states,
+and the pet never reacts negatively. Missing everything produces silence, not guilt.
+Everything you do stays on the device — no account.
 Over the next five minutes I'll walk through the app the way a user experiences it:
-onboarding,
-the task list,
-reminders,
-focus sessions,
-feeding,
-the pet's room,
-and the floating companion.
-I'll close with a minute on the architecture.
-Onboarding is built to establish the relationship
-before asking for any productivity.
+onboarding, the task list, reminders, focus sessions, feeding, the pet's room,
+and the floating companion. I'll close with a minute on the architecture.
+Onboarding is built to establish the relationship before asking for any productivity.
 You choose a pet from the adoption shelter,
 name it —
 there's a dice button if naming feels like work —
 then pick three "little things" from emoji chips,
 so the first list fills itself in seconds.
-Halfway through,
-the app celebrates:
-the important part is already done.
-The final step invites the pet to stay on your home screen —
-entirely optional.
+Halfway through, the app celebrates: the important part is already done.
+The final step invites the pet to stay on your home screen — entirely optional.
 You land with your pet already living there.
-Under a minute,
-no account,
-no tutorial.
+Under a minute, no account, no tutorial.
 And the pet doesn't have to be one of ours.
 Pick one to three photos of your real pet,
-and Pawside hatches them:
-the photos go in,
+and Pawside hatches them: the photos go in,
 and after a little wait,
-out comes your own pet,
-redrawn as a living pixel companion.
+out comes your own pet, redrawn as a living pixel companion.
 This is the heart of the design —
 the anchor isn't a mascot.
-It's your pet,
-the one you already care for,
+It's your pet, the one you already care for,
 now sitting beside your task list.
 The task list is capped at seven visible items —
 an upper bound from user research,
 below the point where a list turns avoidant.
-Checking one off drops in-game currency,
-and the pet reacts.
+Checking one off drops in-game currency, and the pet reacts.
 Adding a one-off takes one line;
 notes are there if you want them.
 And this is the history screen:
 it only tells you how many things you and your pet finished this week.
-There is no streak,
-no red,
+There is no streak, no red,
 no count of what you didn't do.
 That's the zero-punishment red line,
-and it's enforced everywhere in the app —
-not just here.
+and it's enforced everywhere in the app — not just here.
 One-off tasks can carry a timed reminder —
-a concrete date and time,
-distinct from the daily rhythm reminders.
-Once set,
+a concrete date and time, distinct from the daily rhythm reminders. Once set,
 the task moves into a "Coming up" section with its time tag.
-The notification, when it fires,
-is written in the pet's voice —
-an invitation,
-not an alert —
-and it fires exactly once.
+The notification, when it fires, is written in the pet's voice —
+an invitation, not an alert — and it fires exactly once.
 If the moment passes,
 the tag simply comes off and the task returns to the list.
-No overdue state,
-no trace.
-This is prospective memory, externalised,
-without the guilt debt reminders usually accumulate.
-Focus sessions digitise body doubling —
-working alongside someone.
-You pick a length,
-five to forty-five minutes,
+No overdue state, no trace.
+This is prospective memory, externalised, without the guilt debt reminders usually accumulate.
+Focus sessions digitise body doubling — working alongside someone.
+You pick a length, five to forty-five minutes,
 optionally bind one of today's tasks,
 and your pet curls up and sleeps beside the timer.
-Time becomes visible,
-concrete,
-and shared.
+Time becomes visible, concrete, and shared.
 Finishing drops in-game currency and a warm acknowledgement,
 plus an optional one-tap "mark it done".
-And crucially —
-ending early gets the same warmth.
-There is no "session failed",
-no withered plant.
-The session simply ends,
+And crucially — ending early gets the same warmth.
+There is no "session failed", no withered plant. The session simply ends,
 and the pet is glad you stayed as long as you did.
-The second growth axis is bond.
-You spend in-game currency on food,
+The second growth axis is bond. You spend in-game currency on food,
 and feeding grants bond experience equal to the price.
 Here the bar fills
-and the bond levels up:
-a new title,
-a new badge,
+and the bond levels up: a new title, a new badge,
 a small celebration.
-What's deliberately absent matters more:
-there is no hunger meter.
-The pet is never hungry,
-never neglected,
-and being away costs nothing.
-Feeding is a gift,
-not an obligation —
-the mechanic rewards presence
+What's deliberately absent matters more: there is no hunger meter.
+The pet is never hungry, never neglected, and being away costs nothing.
+Feeding is a gift, not an obligation — the mechanic rewards presence
 without ever punishing absence.
-The pet lives in a room.
-Furniture arrives two ways:
+The pet lives in a room. Furniture arrives two ways:
 milestone pieces unlock free at cumulative completion counts —
 here, the thirtieth completion unlocks the pet bed —
 and shop pieces are bought with in-game currency.
-Each piece goes into a fixed slot:
-buy it,
-and it's placed —
-no fiddly dragging.
+Each piece goes into a fixed slot: buy it,
+and it's placed — no fiddly dragging.
 The room also feeds back into the system:
 a cozier room gives a small, capped bonus to bond gains,
 so decorating the pet's home is itself an act of care.
 Outside the app,
 the pet can live on the Android home screen as a floating companion.
 It idles quietly,
-and occasionally offers a small speech-bubble invitation —
-pure invitation copy,
+and occasionally offers a small speech-bubble invitation — pure invitation copy,
 which disappears on its own after a few seconds.
 Tapping it brings you back into the app.
 The anchor stays present in your environment,
-the way a real animal does,
-without ever demanding anything from you.
-Task anchoring,
-time externalisation,
-and warmth-only feedback —
-three intervention axes,
-one companion.
-That's Pawside.
+the way a real animal does, without ever demanding anything from you.
+Task anchoring, time externalisation, and warmth-only feedback — three intervention axes, one companion. That's Pawside.
 Now, one minute on how it's built.
 Under the hood,
 Pawside is a Flutter app with a strictly layered architecture.
 The domain layer is pure Dart —
 it owns the task invariants, day rollover, and unlock thresholds,
-with no Flutter imports,
-which makes it exhaustively unit-testable.
-The data layer handles persistence:
-an atomic, versioned JSON state file
+with no Flutter imports, which makes it exhaustively unit-testable.
+The data layer handles persistence: an atomic, versioned JSON state file
 plus an append-only event log —
-everything you do stays on the device,
-with no account.
+everything you do stays on the device, with no account.
 The one online step is hatching:
 a small Node service turns your photos into canonical poses,
-detects the part boxes,
-and returns a self-contained rig pack —
-after that,
-your pet lives entirely offline.
+detects the part boxes, and returns a self-contained rig pack —
+after that, your pet lives entirely offline.
 Pets render through a custom painter at eight frames per second —
-no game engine —
-in two coexisting formats:
-legacy frame atlases,
+no game engine — in two coexisting formats: legacy frame atlases,
 and rig pack v3,
 where pose images plus part boxes drive a per-species template skeleton.
-Two hundred automated tests,
-including golden-image baselines,
-guard all of it.
+Two hundred automated tests, including golden-image baselines, guard all of it.
