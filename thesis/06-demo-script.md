@@ -31,10 +31,17 @@ Clip 1 冷启动全景在此消化，功能段不再单列。
 | 62–68 | 全景继续，可叠一行字幕「on-device · no account」 | Everything you do stays on the device — / no account. // |
 | 68–85 | 快切预告：后面各 clip 各取 1 秒截帧（onboarding / 列表 / Coming up / 专注 / 投喂 / 房间 / 悬浮宠） | Over the next five minutes I'll walk through the app the way a user experiences it: / onboarding, / the task list, / reminders, / focus sessions, / feeding, / the pet's room, / and the floating companion. / I'll close with a minute on the architecture. |
 
-**素材**（`figures/demo/`，1920×1080，可直接铺进时间线；Clip 1 全景与快切用你录的素材，下面第 6 张只是参考条）：
+**素材**（`figures/demo/`，全部 1080×1920 竖版，直接铺进竖屏时间线）：
 
-| 行           | 图                                                                                                                                                          |     |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| 行 | 图 |
+|---|---|
+| 0–10 标题卡 | ![](figures/demo/demo-01-title.png) |
+| 10–25 工具变任务 | ![](figures/demo/demo-02-tool-becomes-task.png) |
+| 25–38 外部锚点 | ![](figures/demo/demo-03-external-anchor.png) |
+| 38–62 全景 | 你录的 Clip 1 |
+| 68–85 快切预告 | 从你录的各 clip 各截 1 秒（onboarding / 列表 / Coming up / 专注 / 投喂 / 房间 / 悬浮宠） |
+
+----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
 | 0–10 标题卡    | ![](figures/demo/demo-01-title.png)                                                                                                                        |     |
 | 10–25 工具变任务 | ![](figures/demo/demo-02-tool-becomes-task.png)                                                                                                            |     |
 | 25–38 外部锚点  | ![](figures/demo/demo-03-external-anchor.png)                                                                                                              |     |
@@ -160,10 +167,17 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 | 35–50 | `sprite/` 目录 + 一只 v2 图集宠与一只 rig pack 宠并排（或 rig pack 文件结构） | Pets render through a custom painter at eight frames per second — / no game engine — / in two coexisting formats: / legacy frame atlases, / and rig pack v3, / where pose images plus part boxes drive a per-species template skeleton. // |
 | 50–60 | 终端 `flutter test` 跑到 **202/202 全绿**收尾 | Two hundred automated tests, / including golden-image baselines, / guard all of it. |
 
-**素材**（`figures/demo/` + 报告现成图）：
+**素材**（`figures/demo/`，1080×1920 竖版；报告里的横版架构图/管线图已重画成竖版）：
 
 | 行 | 图 |
 |---|---|
+| 0–12 分层架构 | ![](figures/demo/demo-08-architecture.png) |
+| 12–22 lib/ 目录树 | ![](figures/demo/demo-04-lib-tree.png)（也可直接录 IDE） |
+| 22–35 孵化在线步骤 | ![](figures/demo/demo-09-hatch-pipeline.png) |
+| 35–50 两种格式并排 | ![](figures/demo/demo-05-atlas-vs-rig.png) |
+| 50–60 测试全绿 | ![](figures/demo/demo-06-tests-green.png)（真实输出截取，也可现场录终端） |
+
+---|---|
 | 0–12 分层架构 | ![](figures/architecture.png) |
 | 12–22 lib/ 目录树 | ![](figures/demo/demo-04-lib-tree.png)（也可直接录 IDE） |
 | 22–35 孵化在线步骤 | ![](figures/hatch-pipeline.png) |
