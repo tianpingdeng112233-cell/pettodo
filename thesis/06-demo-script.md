@@ -73,13 +73,13 @@
 ⚠️ 每台设备孵化配额 3 次，排练别真提交；配额用完可清后端 `data/state.json`）：
 1. 0–8s：Settings → **Adopt your own pet**，入口特写
 2. 8–16s：相册选 1–3 张真狗/猫照片（用你泰迪的照片），提交
-3. 16–24s：**蛋出现**，孵化等待画面停一拍（真实生成几分钟，剪辑跳时）
+3. 16–24s：孵化等待画面停一拍（真实生成几分钟，剪辑跳时）
 4. 24–34s：**孵出时刻**：自家宠以像素形态现身，切换为当前宠
 5. 34–40s：回主屏，自家宠已在房间里 idle
 
 > And the pet doesn't have to be one of ours. Pick one to three photos of
-> your real animal, and Pawside hatches them: the photos go in, an egg
-> arrives, and out comes your own pet, redrawn as a living pixel companion.
+> your real animal, and Pawside hatches them: the photos go in, and after a
+> little wait, out comes your own pet, redrawn as a living pixel companion.
 > This is the heart of the design — the anchor isn't a mascot. It's your
 > animal, the one you already care for, now sitting beside your task list.
 
