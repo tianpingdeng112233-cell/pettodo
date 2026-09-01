@@ -78,23 +78,23 @@
 5. 34–40s：回主屏，自家宠已在房间里 idle
 
 > And the pet doesn't have to be one of ours. Pick one to three photos of
-> your real animal, and Pawside hatches them: the photos go in, and after a
+> your real pet, and Pawside hatches them: the photos go in, and after a
 > little wait, out comes your own pet, redrawn as a living pixel companion.
 > This is the heart of the design — the anchor isn't a mascot. It's your
-> animal, the one you already care for, now sitting beside your task list.
+> pet, the one you already care for, now sitting beside your task list.
 
 ### Clip 3 · Todo 及格线 + 正向历史（45s，≈100 词）
 
 **画面与操作**：
 1. 0–8s：主屏列表全貌停一拍（3 条常规 + 1 条 one-off，造号态）
-2. 8–16s：勾掉一条 daily——**等 Snacks 掉落动画和宠物开心反应放完**再动
+2. 8–16s：勾掉一条 daily——**等 treat 掉落动画和宠物开心反应放完**再动
 3. 16–24s：点添加，一行输入快速记一件 one-off
 4. 24–30s：进任务详情给它加一行 note，返回
 5. 30–45s：打开正向历史，停在「这周你和 {pet} 完成了 N 件」让旁白说完
 
 > The task list is capped at seven visible items — an upper bound from user
 > research, below the point where a list turns avoidant. Checking one off
-> drops a snack, and the pet reacts. Adding a one-off takes one line; notes
+> drops a treat, and the pet reacts. Adding a one-off takes one line; notes
 > are there if you want them. And this is the history screen: it only tells
 > you how many things you and your pet finished this week. There is no streak,
 > no red, no count of what you didn't do. That's the zero-punishment red line,
@@ -126,14 +126,14 @@
 2. 8–16s：滑条来回拖一下演示 5–45 分钟步长，停在 **15 分钟**
 3. 16–22s：绑定一条今日任务，开始
 4. 22–30s：计时屏停留——宠物蜷睡陪伴，时间在走
-5. 30–40s：（剪辑跳时）完成结算：+1 Snack、温暖反馈、点一下
+5. 30–40s：（剪辑跳时）完成结算：+1 treat、温暖反馈、点一下
    「顺手标为完成？」可选按钮
 6. 40–45s：补拍段：另起一次专注 → 中途提前结束 → 温暖回应特写（无惩罚）
 
 > Focus sessions digitise body doubling — working alongside someone. You pick
 > a length, five to forty-five minutes, optionally bind one of today's tasks,
 > and your pet curls up and sleeps beside the timer. Time becomes visible,
-> concrete, and shared. Finishing drops a snack and a warm acknowledgement,
+> concrete, and shared. Finishing drops a treat and a warm acknowledgement,
 > plus an optional one-tap "mark it done". And crucially — ending early gets
 > the same warmth. There is no "session failed", no withered plant. The
 > session simply ends, and the pet is glad you stayed as long as you did.
@@ -147,7 +147,7 @@
 4. 28–40s：**升级庆祝触发**：新称号+徽章特写停一拍
 5. 40–45s：回到主屏，名字旁新徽章+XP 条收尾
 
-> The second growth axis is bond. You spend snacks on food, and feeding
+> The second growth axis is bond. You spend treats on food, and feeding
 > grants bond experience equal to the price. Here
 > the bar fills and the bond levels up: a new title, a new badge, a small
 > celebration. What's deliberately absent matters more: there is no hunger
@@ -160,13 +160,13 @@
 **画面与操作**（造号累计 28 次完成，差 2 次到 30；留空槽位）：
 1. 0–10s：连勾 2 条任务，累计到 30
 2. 10–20s：**宠物床解锁时刻**完整入镜 → 摆进地面槽位
-3. 20–32s：逛商店家具区，用 Snacks 买星星串灯
+3. 20–32s：逛商店家具区，用 treats 买星星串灯
 4. 32–40s：摆上墙/角落槽
 5. 40–45s：拉远房间全景收一眼（呼应温馨度加成）
 
 > The pet lives in a room. Furniture arrives two ways: milestone pieces unlock
 > free at cumulative completion counts — here, the thirtieth completion
-> unlocks the pet bed — and shop pieces are bought with snacks. Each piece
+> unlocks the pet bed — and shop pieces are bought with treats. Each piece
 > goes into a fixed slot: buy it, and it's placed — no fiddly dragging. The
 > room also feeds back into the system: a cozier room gives a small, capped
 > bonus to bond gains, so decorating the pet's home is itself an act of care.
@@ -224,6 +224,7 @@ IDE 里 `lib/` 目录树一扫 → 孵化后端一瞥（终端里 backend 运行
 ## 配音自查
 
 - 全片旁白 ≈1,050 词 ≈ 7:30 @140 wpm；某段念快了别赶，宁可画面多停半秒。
-- 词汇跟 CONTEXT.md 正典：adopt（不说 buy/unlock）、snacks/treats、bond、
+- 词汇跟 CONTEXT.md 正典：adopt（不说 buy/unlock）、货币一律 **treats**
+  （Snacks 只作商店名）、bond、
   focus session（不说 pomodoro）、Coming up。
 - 红线自查沿用 05：全片不得出现 streak/overdue/惩罚反应/催促文案。
