@@ -11,7 +11,7 @@
 | 段 | 内容 | 目标时长 |
 |---|---|---|
 | Part 1 | 开头介绍（动机 + 设计论点） | 1:00–1:30 |
-| Part 2 | 产品功能（8 个 clip） | ≈5:15 |
+| Part 2 | 产品功能（9 个 clip，含孵化） | ≈5:30 |
 | Part 3 | 技术与代码结构 | ≈1:00 |
 
 ---
@@ -41,31 +41,47 @@
 
 ---
 
-## Part 2 · 产品功能（≈5:15）
+## Part 2 · 产品功能（≈5:30）
 
 每个 clip 自包含：「画面与操作」= 录制时在手机上做什么（秒标是节奏参考，
 画面先录、旁白后配，不必掐死）；引文块 = 旁白逐字稿。
 录制调度（fresh/熟号两态只切一次）与造号清单仍看 05。
 
-### Clip 2 · Onboarding（50s，fresh 态，≈105 词）
+### Clip 2 · Onboarding（40s，fresh 态，≈90 词）
 
 **画面与操作**（节奏加快，命名/选 chips 不犹豫）：
-1. 0–10s：领养所 3×3 九宫格，滑一眼后点选一只宠
-2. 10–18s：命名页，**点骰子按钮随机换名 2 次**再确认
-3. 18–28s：emoji chips 里点选三条 little things
-4. 28–34s：中场庆祝动画完整放完
-5. 34–44s：常驻邀请页 → 点同意 → Android 悬浮授权系统页允许
-6. 44–50s：落到 Home，宠物已在房间，首胜提示收尾
+1. 0–8s：领养所 3×3 九宫格，滑一眼后点选一只宠
+2. 8–14s：命名页，**点骰子按钮随机换名 1 次**再确认
+3. 14–22s：emoji chips 里点选三条 little things
+4. 22–27s：中场庆祝动画完整放完
+5. 27–35s：常驻邀请页 → 点同意 → Android 悬浮授权系统页允许
+6. 35–40s：落到 Home，宠物已在房间，首胜提示收尾
 
 > Onboarding is built to establish the relationship before asking for any
 > productivity. You choose a pet from the adoption shelter, name it — there's
 > a dice button if naming feels like work — then pick three "little things"
 > from emoji chips, so the first list fills itself in seconds. Halfway
 > through, the app celebrates: the important part is already done. The final
-> step invites the pet to stay on your home screen — that's the Android
-> overlay permission, framed as an invitation, and entirely optional. You land
-> on the home screen with your pet already living there. Total friction: under
-> a minute, no account, no tutorial.
+> step invites the pet to stay on your home screen — entirely optional. You
+> land with your pet already living there. Under a minute, no account, no
+> tutorial.
+
+### Clip 2.5 · 孵化自家宠物（40s，≈75 词）
+
+**画面与操作**（前置：Mac 上 `cd backend && GEMINI_API_KEY=… npm start` 起本地
+后端，手机与 Mac 同一 Wi-Fi，用拍摄包 v2——孵化地址已指向 192.168.88.13:3000。
+⚠️ 每台设备孵化配额 3 次，排练别真提交；配额用完可清后端 `data/state.json`）：
+1. 0–8s：Settings → **Adopt your own pet**，入口特写
+2. 8–16s：相册选 1–3 张真狗/猫照片（用你泰迪的照片），提交
+3. 16–24s：**蛋出现**，孵化等待画面停一拍（真实生成几分钟，剪辑跳时）
+4. 24–34s：**孵出时刻**：自家宠以像素形态现身，切换为当前宠
+5. 34–40s：回主屏，自家宠已在房间里 idle
+
+> And the pet doesn't have to be one of ours. Pick one to three photos of
+> your real animal, and Pawside hatches them: the photos go in, an egg
+> arrives, and out comes your own pet, redrawn as a living pixel companion.
+> This is the heart of the design — the anchor isn't a mascot. It's your
+> animal, the one you already care for, now sitting beside your task list.
 
 ### Clip 3 · Todo 及格线 + 正向历史（45s，≈100 词）
 
@@ -103,7 +119,7 @@
 > returns to the list. No overdue state, no trace. This is prospective memory,
 > externalised, without the guilt debt reminders usually accumulate.
 
-### Clip 5 · 专注 focus（45s，≈95 词）
+### Clip 5 · 专注 focus（40s，≈95 词）
 
 **画面与操作**：
 1. 0–8s：主屏点专注入口
@@ -122,7 +138,7 @@
 > the same warmth. There is no "session failed", no withered plant. The
 > session simply ends, and the pet is glad you stayed as long as you did.
 
-### Clip 6 · 投喂与羁绊（45s，≈95 词）
+### Clip 6 · 投喂与羁绊（40s，≈88 词）
 
 **画面与操作**（造号已把 bond XP 压到差一次投喂就升级）：
 1. 0–10s：打开 Snacks 商店食物区，慢扫 7 件三档价目
@@ -131,15 +147,15 @@
 4. 28–40s：**升级庆祝触发**：新称号+徽章特写停一拍
 5. 40–45s：回到主屏，名字旁新徽章+XP 条收尾
 
-> The second growth axis is bond. You spend snacks on food — seven items in
-> three tiers — and feeding grants bond experience equal to the price. Here
+> The second growth axis is bond. You spend snacks on food, and feeding
+> grants bond experience equal to the price. Here
 > the bar fills and the bond levels up: a new title, a new badge, a small
 > celebration. What's deliberately absent matters more: there is no hunger
 > meter. The pet is never hungry, never neglected, and being away costs
 > nothing. Feeding is a gift, not an obligation — the mechanic rewards
 > presence without ever punishing absence.
 
-### Clip 7 · 房间与家具（45s，≈90 词）
+### Clip 7 · 房间与家具（40s，≈90 词）
 
 **画面与操作**（造号累计 28 次完成，差 2 次到 30；留空槽位）：
 1. 0–10s：连勾 2 条任务，累计到 30
@@ -205,7 +221,7 @@ IDE 里 `lib/` 目录树一扫 → rig pipeline 产物（正典姿势图 + 部�
 
 ## 配音自查
 
-- 全片旁白 ≈1,000 词 ≈ 7:10 @140 wpm；某段念快了别赶，宁可画面多停半秒。
+- 全片旁白 ≈1,050 词 ≈ 7:30 @140 wpm；某段念快了别赶，宁可画面多停半秒。
 - 词汇跟 CONTEXT.md 正典：adopt（不说 buy/unlock）、snacks/treats、bond、
   focus session（不说 pomodoro）、Coming up。
 - 红线自查沿用 05：全片不得出现 streak/overdue/惩罚反应/催促文案。
