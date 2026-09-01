@@ -43,12 +43,19 @@
 
 ## Part 2 · 产品功能（≈5:15）
 
-各 clip 画面沿用 05 分镜，此处只标压缩后的时长与差异；旁白为逐字稿。
+每个 clip 自包含：「画面与操作」= 录制时在手机上做什么（秒标是节奏参考，
+画面先录、旁白后配，不必掐死）；引文块 = 旁白逐字稿。
+录制调度（fresh/熟号两态只切一次）与造号清单仍看 05。
 
 ### Clip 2 · Onboarding（50s，fresh 态，≈105 词）
 
-画面同 05（S1 领养所九宫格 → S2 命名骰子 → S3 emoji chips → S4 中场庆祝 →
-S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不犹豫。
+**画面与操作**（节奏加快，命名/选 chips 不犹豫）：
+1. 0–10s：领养所 3×3 九宫格，滑一眼后点选一只宠
+2. 10–18s：命名页，**点骰子按钮随机换名 2 次**再确认
+3. 18–28s：emoji chips 里点选三条 little things
+4. 28–34s：中场庆祝动画完整放完
+5. 34–44s：常驻邀请页 → 点同意 → Android 悬浮授权系统页允许
+6. 44–50s：落到 Home，宠物已在房间，首胜提示收尾
 
 > Onboarding is built to establish the relationship before asking for any
 > productivity. You choose a pet from the adoption shelter, name it — there's
@@ -62,6 +69,13 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 
 ### Clip 3 · Todo 及格线 + 正向历史（45s，≈100 词）
 
+**画面与操作**：
+1. 0–8s：主屏列表全貌停一拍（3 条常规 + 1 条 one-off，造号态）
+2. 8–16s：勾掉一条 daily——**等 Snacks 掉落动画和宠物开心反应放完**再动
+3. 16–24s：点添加，一行输入快速记一件 one-off
+4. 24–30s：进任务详情给它加一行 note，返回
+5. 30–45s：打开正向历史，停在「这周你和 {pet} 完成了 N 件」让旁白说完
+
 > The task list is capped at seven visible items — an upper bound from user
 > research, below the point where a list turns avoidant. Checking one off
 > drops a snack, and the pet reacts. Adding a one-off takes one line; notes
@@ -72,7 +86,14 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 
 ### Clip 4 · 到时提醒（40s + 通知补拍镜头，≈90 词）
 
-开拍即设 3 分钟后提醒，转录 Clip 5，到点回来补通知特写（同 05 调度）。
+**画面与操作**（开拍即设提醒，随即转录 Clip 5，到点回来补拍）：
+1. 0–10s：编辑那条 one-off，提醒区切到「日期+时间」形态——镜头先扫一眼
+   daily 的每日形态做对比
+2. 10–18s：设成 **3 分钟后**，保存
+3. 18–28s：回主屏，「Coming up」区块出现、时间标签特写
+4. 补拍 A（约 3 分钟后）：通知横幅一响就录——宠物口吻邀请文案特写 →
+   点通知进 app
+5. 补拍 B（时间过后）：回主屏拍标签自动摘掉、任务回普通列表、无过期痕迹
 
 > One-off tasks can carry a timed reminder — a concrete date and time,
 > distinct from the daily rhythm reminders. Once set, the task moves into a
@@ -84,6 +105,15 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 
 ### Clip 5 · 专注 focus（45s，≈95 词）
 
+**画面与操作**：
+1. 0–8s：主屏点专注入口
+2. 8–16s：滑条来回拖一下演示 5–45 分钟步长，停在 **15 分钟**
+3. 16–22s：绑定一条今日任务，开始
+4. 22–30s：计时屏停留——宠物蜷睡陪伴，时间在走
+5. 30–40s：（剪辑跳时）完成结算：+1 Snack、温暖反馈、点一下
+   「顺手标为完成？」可选按钮
+6. 40–45s：补拍段：另起一次专注 → 中途提前结束 → 温暖回应特写（无惩罚）
+
 > Focus sessions digitise body doubling — working alongside someone. You pick
 > a length, five to forty-five minutes, optionally bind one of today's tasks,
 > and your pet curls up and sleeps beside the timer. Time becomes visible,
@@ -93,6 +123,13 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 > session simply ends, and the pet is glad you stayed as long as you did.
 
 ### Clip 6 · 投喂与羁绊（45s，≈95 词）
+
+**画面与操作**（造号已把 bond XP 压到差一次投喂就升级）：
+1. 0–10s：打开 Snacks 商店食物区，慢扫 7 件三档价目
+2. 10–18s：买鸡肉丁（余额扣减入镜）
+3. 18–28s：投喂——宠物进食动画放完，XP 条上涨特写
+4. 28–40s：**升级庆祝触发**：新称号+徽章特写停一拍
+5. 40–45s：回到主屏，名字旁新徽章+XP 条收尾
 
 > The second growth axis is bond. You spend snacks on food — seven items in
 > three tiers — and feeding grants bond experience equal to the price. Here
@@ -104,6 +141,13 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 
 ### Clip 7 · 房间与家具（45s，≈90 词）
 
+**画面与操作**（造号累计 28 次完成，差 2 次到 30；留空槽位）：
+1. 0–10s：连勾 2 条任务，累计到 30
+2. 10–20s：**宠物床解锁时刻**完整入镜 → 摆进地面槽位
+3. 20–32s：逛商店家具区，用 Snacks 买星星串灯
+4. 32–40s：摆上墙/角落槽
+5. 40–45s：拉远房间全景收一眼（呼应温馨度加成）
+
 > The pet lives in a room. Furniture arrives two ways: milestone pieces unlock
 > free at cumulative completion counts — here, the thirtieth completion
 > unlocks the pet bed — and shop pieces are bought with snacks. Each piece
@@ -112,6 +156,13 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 > bonus to bond gains, so decorating the pet's home is itself an act of care.
 
 ### Clip 8 · 悬浮宠（35s，Android 桌面，≈75 词）
+
+**画面与操作**（录前先在 app 内刷新一次，让邀请时点落在近处）：
+1. 0–8s：从 app 退到桌面，悬浮宠出现（app 前台不显示，别在前台干等）
+2. 8–22s：等/掐点邀请气泡冒出——纯邀请文案特写，让它自然存在几秒
+   （8s 自动消失，别等满）
+3. 22–30s：点击气泡回到 app
+4. 30–35s：主屏承接一拍
 
 > Outside the app, the pet can live on the Android home screen as a floating
 > companion. It idles quietly, and occasionally offers a small speech-bubble
@@ -122,7 +173,8 @@ S5 悬浮授权 → Home 首胜），操作节奏加快，命名/选 chips 不�
 
 ### Clip 9 · 功能段收束（10s，≈25 词）
 
-主屏全景定格（同 05 Clip 9 画面），旁白直接切入 Part 3。
+**画面与操作**：回到主屏全景，宠物 idle（呼吸/眨眼），镜头静止定格 10s，
+旁白念完直接切入 Part 3 画面。
 
 > Task anchoring, time externalisation, and warmth-only feedback — three
 > intervention axes, one companion. That's Pawside. Now, one minute on how
