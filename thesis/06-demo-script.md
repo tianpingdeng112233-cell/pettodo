@@ -33,13 +33,13 @@ Clip 1 冷启动全景在此消化，功能段不再单列。
 
 **素材**（`figures/demo/`，1920×1080，可直接铺进时间线；Clip 1 全景与快切用你录的素材，下面第 6 张只是参考条）：
 
-| 行 | 图 |
-|---|---|
-| 0–10 标题卡 | ![](figures/demo/demo-01-title.png) |
-| 10–25 工具变任务 | ![](figures/demo/demo-02-tool-becomes-task.png) |
-| 25–38 外部锚点 | ![](figures/demo/demo-03-external-anchor.png) |
-| 38–62 全景 | 你录的 Clip 1；备用截图 ![](figures/app/home-room.png) |
-| 68–85 快切预告 | 单张用 `figures/app/` 里的 onboarding-v2 / home-room / coming-up / focus / feeding-levelup / shop / overlay-pet；参考条 ![](figures/demo/demo-07-preview-strip.png) |
+| 行           | 图                                                                                                                                                          |     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| 0–10 标题卡    | ![](figures/demo/demo-01-title.png)                                                                                                                        |     |
+| 10–25 工具变任务 | ![](figures/demo/demo-02-tool-becomes-task.png)                                                                                                            |     |
+| 25–38 外部锚点  | ![](figures/demo/demo-03-external-anchor.png)                                                                                                              |     |
+| 38–62 全景    | 你录的 Clip 1；备用截图 ![](figures/app/home-room.png)                                                                                                             |     |
+| 68–85 快切预告  | 单张用 `figures/app/` 里的 onboarding-v2 / home-room / coming-up / focus / feeding-levelup / shop / overlay-pet；参考条 ![](figures/demo/demo-07-preview-strip.png) |     |
 
 ---
 
