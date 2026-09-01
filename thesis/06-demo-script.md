@@ -201,21 +201,23 @@
 ## Part 3 · 技术与代码结构（60s，≈135 词）
 
 **画面**：分层架构图（domain/data/sprite/application/ui，可用报告插图）→
-IDE 里 `lib/` 目录树一扫 → rig pipeline 产物（正典姿势图 + 部件框叠加）→
-终端 `flutter test` 跑绿收尾。
+IDE 里 `lib/` 目录树一扫 → 孵化后端一瞥（终端里 backend 运行日志或
+`rig_pipeline` 产物：正典姿势图 + 部件框叠加）→ 终端 `flutter test`
+**202/202 全绿**收尾。
 
 > Under the hood, Pawside is a Flutter app with a strictly layered
 > architecture. The domain layer is pure Dart — it owns the task invariants,
 > day rollover, and unlock thresholds, with no Flutter imports, which makes it
 > exhaustively unit-testable. The data layer handles persistence: an atomic,
-> versioned JSON state file plus an append-only event log — fully local, no
-> account, no server. The sprite layer renders pets with a custom painter at
-> eight frames per second — no game engine. Pets ship in two coexisting
-> formats: legacy frame atlases, and rig pack v3, where canonical pose images
-> plus AI-detected part boxes drive a per-species template skeleton, produced
-> by a Python pipeline. An application coordinator keeps the UI a pure skin —
-> and two hundred automated tests, including golden-image baselines, guard all
-> of it.
+> versioned JSON state file plus an append-only event log — everything you do
+> stays on the device, with no account. The one online step is hatching: a
+> small Node service turns your photos into canonical poses, detects the part
+> boxes, and returns a self-contained rig pack — after that, your pet lives
+> entirely offline. Pets render through a custom painter at eight frames per
+> second — no game engine — in two coexisting formats: legacy frame atlases,
+> and rig pack v3, where pose images plus part boxes drive a per-species
+> template skeleton. Two hundred automated tests, including golden-image
+> baselines, guard all of it.
 
 ---
 
