@@ -31,6 +31,16 @@ Clip 1 冷启动全景在此消化，功能段不再单列。
 | 62–68 | 全景继续，可叠一行字幕「on-device · no account」 | Everything you do stays on the device — / no account. // |
 | 68–85 | 快切预告：后面各 clip 各取 1 秒截帧（onboarding / 列表 / Coming up / 专注 / 投喂 / 房间 / 悬浮宠） | Over the next five minutes I'll walk through the app the way a user experiences it: / onboarding, / the task list, / reminders, / focus sessions, / feeding, / the pet's room, / and the floating companion. / I'll close with a minute on the architecture. |
 
+**素材**（`figures/demo/`，1920×1080，可直接铺进时间线；Clip 1 全景与快切用你录的素材，下面第 6 张只是参考条）：
+
+| 行 | 图 |
+|---|---|
+| 0–10 标题卡 | ![](figures/demo/demo-01-title.png) |
+| 10–25 工具变任务 | ![](figures/demo/demo-02-tool-becomes-task.png) |
+| 25–38 外部锚点 | ![](figures/demo/demo-03-external-anchor.png) |
+| 38–62 全景 | 你录的 Clip 1；备用截图 ![](figures/app/home-room.png) |
+| 68–85 快切预告 | 单张用 `figures/app/` 里的 onboarding-v2 / home-room / coming-up / focus / feeding-levelup / shop / overlay-pet；参考条 ![](figures/demo/demo-07-preview-strip.png) |
+
 ---
 
 ## Part 2 · 产品功能（≈5:30）
@@ -125,17 +135,17 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 
 用拍摄包：打开 app 后 2 分钟必弹气泡；录前打开 app → 10 秒内回桌面 → 掐 2 分钟。
 
-| 秒 | 画面与操作 | 旁白 |
-|---|---|---|
-| 0–8 | 从 app 退到桌面，悬浮宠出现（app 前台不显示，别在前台干等） | Outside the app, / the pet can live on the Android home screen as a floating companion. / It idles quietly, / |
-| 8–22 | 邀请气泡冒出——纯邀请文案特写，让它自然存在几秒（8s 自动消失，别等满） | and occasionally offers a small speech-bubble invitation — / pure invitation copy, / which disappears on its own after a few seconds. // |
-| 22–30 | 点击气泡回到 app | Tapping it brings you back into the app. // |
-| 30–35 | 主屏承接一拍 | The anchor stays present in your environment, / the way a real animal does, / without ever demanding anything from you. |
+| 秒     | 画面与操作                                 | 旁白                                                                                                                                       |
+| ----- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 0–8   | 从 app 退到桌面，悬浮宠出现（app 前台不显示，别在前台干等）    | Outside the app, / the pet can live on the Android home screen as a floating companion. / It idles quietly, /                            |
+| 8–22  | 邀请气泡冒出——纯邀请文案特写，让它自然存在几秒（8s 自动消失，别等满） | and occasionally offers a small speech-bubble invitation — / pure invitation copy, / which disappears on its own after a few seconds. // |
+| 22–30 | 点击气泡回到 app                            | Tapping it brings you back into the app. //                                                                                              |
+| 30–35 | 主屏承接一拍                                | The anchor stays present in your environment, / the way a real animal does, / without ever demanding anything from you.                  |
 
 ### Clip 9 · 功能段收束（10s，≈25 词）
 
-| 秒 | 画面与操作 | 旁白 |
-|---|---|---|
+| 秒    | 画面与操作                                        | 旁白                                                                                                                                                                        |
+| ---- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0–10 | 回到主屏全景，宠物 idle（呼吸/眨眼），镜头静止定格，念完直接切 Part 3 画面 | Task anchoring, / time externalisation, / and warmth-only feedback — / three intervention axes, / one companion. // That's Pawside. // Now, one minute on how it's built. |
 
 ---
@@ -149,6 +159,16 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 | 22–35 | 孵化后端一瞥：终端里 backend 运行日志，或 `rig_pipeline` 产物（正典姿势图 + 部件框叠加） | The one online step is hatching: / a small Node service turns your photos into canonical poses, / detects the part boxes, / and returns a self-contained rig pack — / after that, / your pet lives entirely offline. // |
 | 35–50 | `sprite/` 目录 + 一只 v2 图集宠与一只 rig pack 宠并排（或 rig pack 文件结构） | Pets render through a custom painter at eight frames per second — / no game engine — / in two coexisting formats: / legacy frame atlases, / and rig pack v3, / where pose images plus part boxes drive a per-species template skeleton. // |
 | 50–60 | 终端 `flutter test` 跑到 **202/202 全绿**收尾 | Two hundred automated tests, / including golden-image baselines, / guard all of it. |
+
+**素材**（`figures/demo/` + 报告现成图）：
+
+| 行 | 图 |
+|---|---|
+| 0–12 分层架构 | ![](figures/architecture.png) |
+| 12–22 lib/ 目录树 | ![](figures/demo/demo-04-lib-tree.png)（也可直接录 IDE） |
+| 22–35 孵化在线步骤 | ![](figures/hatch-pipeline.png) |
+| 35–50 两种格式并排 | ![](figures/demo/demo-05-atlas-vs-rig.png) |
+| 50–60 测试全绿 | ![](figures/demo/demo-06-tests-green.png)（真实输出截取，也可现场录终端） |
 
 ---
 
