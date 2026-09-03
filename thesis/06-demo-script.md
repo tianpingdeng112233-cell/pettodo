@@ -17,7 +17,10 @@
    其余各段的 "no X, no Y" 收尾句全部剪掉（Clip 2/4/5/6/8、Part 3 共 7 处，≈75 词 ≈ 30s）。
 2. **补「怎么赚币」**：Clip 3 掉币那一拍叠一行字幕 **"Complete tasks → earn currency"**（不补录也必须有）；
    旁白改为一句明说「完成任务和专注就是赚币的方式」，Clip 6 开头呼应「花的是任务赚来的币」。
-   Clip 5 结算屏同样叠字幕 "Focus sessions → earn currency too"，旁白明说「专注是第二种赚币方式」。
+   数值来自代码（`treat_economy.dart` / `focus_economy.dart`），旁白与字幕都念具体数：
+   - 任务：每完成一条 +1；勾完当天最后一条 daily 那一下 +3（不叠加，替代那次的 +1）。
+   - 专注：每满 15 分钟 +1，15 / 30 / 45 分钟 → 1 / 2 / 3；提前结束 0 币，但反馈同样温暖。
+   Clip 5 结算屏同样叠字幕，旁白明说「专注是第二种赚币方式」并念出数值。
    只补录这三句（Clip 3 / Clip 5 / Clip 6），其余旁白不动。
 3. **硬卡时长 ≤ 8:00**（导师框 7:15–8:00）：旁白稿本身 ≈7:30，9:46 说明画面多出 ≈2 分钟——
    每个 clip 按下方「目标时长」硬卡，旁白句末 `//` 处直接切，动画放完即切、不留呼吸；
@@ -104,7 +107,7 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 | 秒 | 画面与操作 | 旁白 |
 |---|---|---|
 | 0–8 | 主屏列表全貌停一拍（3 条常规 + 1 条 one-off，造号态） | The task list is capped at seven visible items — / an upper bound from user research, / below the point where a list turns avoidant. // |
-| 8–16 | 勾掉一条 daily——**等游戏币掉落动画和宠物开心反应放完**再动；**【补】掉币瞬间叠字幕 "Complete tasks → earn currency"，停 3 秒** | **【补】** Checking one off drops in-game currency — / **this is how you earn it**: / every finished task, / and every focus session later on, / pays out. / And the pet reacts. / |
+| 8–16 | 勾掉一条 daily——**等游戏币掉落动画和宠物开心反应放完**再动；**【补】掉币瞬间叠字幕 "Each task done → +1 · finish all of today's dailies → +3"，停 3 秒** | **【补】** Checking one off drops in-game currency — / **this is how you earn it**: / **one** coin for every task you finish, / and **three** when you tick off the last of today's dailies. / And the pet reacts. / |
 | 16–24 | 点添加，一行输入快速记一件 one-off | Adding a one-off takes one line; / |
 | 24–30 | 进任务详情给它加一行 note，返回 | notes are there if you want them. // |
 | 30–45 | 打开正向历史，停在「这周你和 {pet} 完成了 N 件」直到旁白念完 | And this is the history screen: / it only tells you how many things you and your pet finished this week. / There is no streak, / no red, / no count of what you didn't do. // ~~That's the zero-punishment red line, / and it's enforced everywhere in the app — / not just here.~~ |
@@ -129,8 +132,8 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 | 8–16 | 滑条来回拖一下演示 5–45 分钟步长，停在 **15 分钟** | You pick a length, / five to forty-five minutes, / |
 | 16–22 | 绑定一条今日任务，开始 | optionally bind one of today's tasks, / |
 | 22–30 | 计时屏停留——宠物蜷睡陪伴，时间在走 | and your pet curls up and sleeps beside the timer. / Time becomes visible, / concrete, / and shared. // |
-| 30–40 | （剪辑跳时）完成结算：+1 游戏币、温暖反馈、点一下「顺手标为完成？」可选按钮；**【补】+1 币弹出瞬间叠字幕 "Focus sessions → earn currency too"，停 3 秒** | **【补】** Finishing a session **also earns in-game currency** — / the second way to earn it, / alongside completing tasks — / plus a warm acknowledgement / and an optional one-tap "mark it done". // |
-| 补拍段 | 另起一次专注 → 中途提前结束 → 温暖回应特写（无惩罚） | And crucially — / ending early gets the **same** warmth. ~~/ There is no "session failed", / no withered plant.~~ / The session simply ends, / and the pet is glad you stayed as long as you did. |
+| 30–40 | （剪辑跳时）完成结算：+1 游戏币、温暖反馈、点一下「顺手标为完成？」可选按钮；**【补】+1 币弹出瞬间叠字幕 "Focus: +1 per 15 min · 15 / 30 / 45 → 1 / 2 / 3"，停 3 秒** | **【补】** Finishing a session **also earns in-game currency** — / the second way to earn it: / **one** coin for every full fifteen minutes, / so this fifteen-minute session pays one, / and a forty-five-minute one pays three — / plus a warm acknowledgement / and an optional one-tap "mark it done". // |
+| 补拍段 | 另起一次专注 → 中途提前结束 → 温暖回应特写（无惩罚） | And crucially — / ending early pays no coin, / but gets the **same** warmth. ~~/ There is no "session failed", / no withered plant.~~ / The session simply ends, / and the pet is glad you stayed as long as you did. |
 | 第三刀备选 | 仍超 8:00 时，本补拍段整段删（-15s），前一行 "mark it done" 收尾即切 Clip 6 | — |
 
 ### Clip 6 · 投喂与羁绊（40s，≈88 词）
