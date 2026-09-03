@@ -17,7 +17,8 @@
    其余各段的 "no X, no Y" 收尾句全部剪掉（Clip 2/4/5/6/8、Part 3 共 7 处，≈75 词 ≈ 30s）。
 2. **补「怎么赚币」**：Clip 3 掉币那一拍叠一行字幕 **"Complete tasks → earn currency"**（不补录也必须有）；
    旁白改为一句明说「完成任务和专注就是赚币的方式」，Clip 6 开头呼应「花的是任务赚来的币」。
-   只补录这两句，其余旁白不动。
+   Clip 5 结算屏同样叠字幕 "Focus sessions → earn currency too"，旁白明说「专注是第二种赚币方式」。
+   只补录这三句（Clip 3 / Clip 5 / Clip 6），其余旁白不动。
 3. **硬卡时长 ≤ 8:00**（导师框 7:15–8:00）：旁白稿本身 ≈7:30，9:46 说明画面多出 ≈2 分钟——
    每个 clip 按下方「目标时长」硬卡，旁白句末 `//` 处直接切，动画放完即切、不留呼吸；
    Clip 2.5 孵化等待、Clip 4 等通知、Clip 5 计时屏三处跳时最容易超。
@@ -128,7 +129,7 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 | 8–16 | 滑条来回拖一下演示 5–45 分钟步长，停在 **15 分钟** | You pick a length, / five to forty-five minutes, / |
 | 16–22 | 绑定一条今日任务，开始 | optionally bind one of today's tasks, / |
 | 22–30 | 计时屏停留——宠物蜷睡陪伴，时间在走 | and your pet curls up and sleeps beside the timer. / Time becomes visible, / concrete, / and shared. // |
-| 30–40 | （剪辑跳时）完成结算：+1 游戏币、温暖反馈、点一下「顺手标为完成？」可选按钮 | Finishing drops in-game currency and a warm acknowledgement, / plus an optional one-tap "mark it done". // |
+| 30–40 | （剪辑跳时）完成结算：+1 游戏币、温暖反馈、点一下「顺手标为完成？」可选按钮；**【补】+1 币弹出瞬间叠字幕 "Focus sessions → earn currency too"，停 3 秒** | **【补】** Finishing a session **also earns in-game currency** — / the second way to earn it, / alongside completing tasks — / plus a warm acknowledgement / and an optional one-tap "mark it done". // |
 | 补拍段 | 另起一次专注 → 中途提前结束 → 温暖回应特写（无惩罚） | And crucially — / ending early gets the **same** warmth. ~~/ There is no "session failed", / no withered plant.~~ / The session simply ends, / and the pet is glad you stayed as long as you did. |
 | 第三刀备选 | 仍超 8:00 时，本补拍段整段删（-15s），前一行 "mark it done" 收尾即切 Clip 6 | — |
 
@@ -208,7 +209,7 @@ Wi-Fi，用拍摄包（孵化地址已指向 192.168.88.13:3000）。⚠️ 每�
 
 - 全片旁白 ≈1,050 词 ≈ 7:30 @140 wpm；~~某段念快了别赶，宁可画面多停半秒。~~ 2026-09-03 起反过来：画面跟旁白走，句末 `//` 即切，全片硬顶 8:00。
 - 零惩罚措辞全片只出现两次（Part 1 + Clip 3 历史屏），其余段落别再加 "no X, no Y"。
-- 「赚币」必须被看见：Clip 3 字幕卡 + 旁白明说一次，Clip 6 呼应一次。
+- 「赚币」必须被看见：Clip 3（任务）与 Clip 5（专注）各一张字幕卡 + 旁白各明说一次，Clip 6 花币时呼应一次。
 - 词汇跟 CONTEXT.md 正典：adopt（不说 buy/unlock）、货币一律说
   **in-game currency**（不说 snacks/treats；Snacks 只作商店名）、bond、
   focus session（不说 pomodoro）、Coming up。

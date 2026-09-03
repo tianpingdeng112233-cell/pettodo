@@ -63,8 +63,9 @@ You pick a length, five to forty-five minutes,
 optionally bind one of today's tasks,
 and your pet curls up and sleeps beside the timer.
 Time becomes visible, concrete, and shared.
-Finishing drops in-game currency and a warm acknowledgement,
-plus an optional one-tap "mark it done".
+Finishing a session also earns in-game currency —
+the second way to earn it, alongside completing tasks —
+plus a warm acknowledgement and an optional one-tap "mark it done".
 And crucially — ending early gets the same warmth.
 The session simply ends,
 and the pet is glad you stayed as long as you did.
