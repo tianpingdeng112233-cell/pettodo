@@ -8,16 +8,12 @@ and every red badge is one more reason not to open the app.
 My user research pointed somewhere different:
 what actually initiates action is an external, concrete anchor — a dependant,
 another person, an animal that needs you.
-Pawside is my attempt to digitise that mechanism.
-It pairs a deliberately minimal to-do list —
-one to seven items, no projects, no calendar —
-with a virtual pet companion, and it enforces one rule everywhere:
-zero punishment. There are no streaks, no overdue states,
-and the pet never reacts negatively. Missing everything produces silence, not guilt.
-Everything you do stays on the device — no account.
-Over the next five minutes I'll walk through the app the way a user experiences it:
-onboarding, the task list, reminders, focus sessions, feeding, the pet's room,
-and the floating companion. I'll close with a minute on the architecture.
+Pawside digitises that mechanism.
+A deliberately minimal to-do list — one to seven items —
+paired with a virtual pet companion, under one rule everywhere:
+zero punishment. No streaks, no overdue states,
+and the pet never reacts negatively.
+Here's the app the way a user meets it.
 Onboarding is built to establish the relationship before asking for any productivity.
 You choose a pet from the adoption shelter,
 name it —

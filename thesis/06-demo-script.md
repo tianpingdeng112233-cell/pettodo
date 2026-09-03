@@ -25,21 +25,22 @@
 3. **硬卡时长 ≤ 8:00**（导师框 7:15–8:00）：旁白稿本身 ≈7:30，9:46 说明画面多出 ≈2 分钟——
    每个 clip 按下方「目标时长」硬卡，旁白句末 `//` 处直接切，动画放完即切、不留呼吸；
    Clip 2.5 孵化等待、Clip 4 等通知、Clip 5 计时屏三处跳时最容易超。
-   删完 1 仍超 8:00 再动第三刀：Part 1 68–85 快切预告整段（-17s）→ Clip 5 提前结束补拍段（-15s）。
+   Part 1 已压到 ≤60s（0–38 不动，38s 后 47s→22s，快切预告压成 5 秒一句话）。
+   删完 1 仍超 8:00 再动第三刀：Clip 5 提前结束补拍段（-15s）。
 4. **BGM**：整轨拉到 -15 dB（约 25–30% 音量），有旁白处再压一档；只保留导师夸的柔和感，不要盖人声。
 
 ## 时长总表
 
 | 段 | 内容 | 目标时长 |
 |---|---|---|
-| Part 1 | 开头介绍（动机 + 设计论点） | 1:00–1:30 |
+| Part 1 | 开头介绍（动机 + 设计论点） | **≤ 1:00** |
 | Part 2 | 产品功能（9 个 clip，含孵化） | ≈5:15 |
 | Part 3 | 技术与代码结构 | ≈1:00 |
 | 全片 | 硬顶 | **≤ 8:00** |
 
 ---
 
-## Part 1 · 开头介绍（60–90s，≈190 词）
+## Part 1 · 开头介绍（≤60s，≈120 词；2026-09-03 把 38s 之后从 47s 压到 22s）
 
 Clip 1 冷启动全景在此消化，功能段不再单列。
 
@@ -48,9 +49,10 @@ Clip 1 冷启动全景在此消化，功能段不再单列。
 | 0–10  | 标题卡：Pawside · MSc project COMP66060                                          | For adults with ADHD, / the hardest part of a task is rarely doing it — / it's **starting** it. //                                                                                                                                                                                                                                                                                         |
 | 10–25 | 报告插图「工具本身变成任务」（或常规 todo app 满屏红角标的截图）                                        | Conventional to-do apps answer this with more structure: / projects, / priorities, / streaks. / But for this population, / the tool itself becomes one more task to maintain, / and every red badge is one more reason **not** to open the app. //                                                                                                                                         |
 | 25–38 | 报告插图：外部锚点示意（依赖者 / 他人 / 动物），或一句用户访谈引语卡                                        | My user research pointed somewhere different: / what actually initiates action is an external, concrete anchor — / a dependant, / another person, / an animal that needs you. //                                                                                                                                                                                                           |
-| 38–62 | Clip 1 冷启动全景慢镜：宠物在房间 idle（呼吸/眨眼）、名字旁 bond 徽章+XP 条、Today's little things 一屏收齐 | Pawside is my attempt to digitise that mechanism. / It pairs a deliberately minimal to-do list — / one to seven items, no projects, no calendar — / with a virtual pet companion, / and it enforces one rule everywhere: / **zero punishment**. / There are no streaks, / no overdue states, / and the pet never reacts negatively. / Missing everything produces silence, / not guilt. // |
-| 62–68 | 全景继续，可叠一行字幕「on-device · no account」                                          | Everything you do stays on the device — / no account. //                                                                                                                                                                                                                                                                                                                                   |
-| 68–85（第三刀备选，整段可删 -17s） | 快切预告：后面各 clip 各取 1 秒截帧（onboarding / 列表 / Coming up / 专注 / 投喂 / 房间 / 悬浮宠）     | Over the next five minutes I'll walk through the app the way a user experiences it: / onboarding, / the task list, / reminders, / focus sessions, / feeding, / the pet's room, / and the floating companion. / I'll close with a minute on the architecture.                                                                                                                               |
+| 38–55 | Clip 1 冷启动全景慢镜：宠物在房间 idle（呼吸/眨眼）、名字旁 bond 徽章+XP 条、Today's little things 一屏收齐；**尾段叠一行字幕「on-device · no account」**（旁白不再念） | Pawside digitises that mechanism. / A deliberately minimal to-do list — / one to seven items — / paired with a virtual pet companion, / under one rule everywhere: / **zero punishment**. / No streaks, / no overdue states, / and the pet never reacts negatively. // |
+| 55–60 | 全景继续，或 3–4 帧快切（每帧 1 秒）直接进 Clip 2 | Here's the app the way a user meets it. |
+
+剪掉的旁白（2026-09-03）：~~"It pairs… no projects, no calendar"~~ 压成一句；~~"Missing everything produces silence, not guilt."~~；~~"Everything you do stays on the device — no account."~~ 改为字幕；~~"Over the next five minutes I'll walk through… and the floating companion. I'll close with a minute on the architecture."~~ 压成一句。
 
 **素材**（`figures/demo/`，全部 1080×1920 竖版，直接铺进竖屏时间线）：
 
@@ -59,8 +61,8 @@ Clip 1 冷启动全景在此消化，功能段不再单列。
 | 0–10 标题卡 | ![](figures/demo/demo-01-title.png) |
 | 10–25 工具变任务 | ![](figures/demo/demo-02-tool-becomes-task.png) |
 | 25–38 外部锚点 | ![](figures/demo/demo-03-external-anchor.png) |
-| 38–62 全景 | 你录的 Clip 1 |
-| 68–85 快切预告 | 从你录的各 clip 各截 1 秒（onboarding / 列表 / Coming up / 专注 / 投喂 / 房间 / 悬浮宠） |
+| 38–55 全景 | 你录的 Clip 1 |
+| 55–60 快切预告 | 各 clip 截 1 秒取 3–4 帧，或省掉直接用 Clip 1 过渡 |
 
 ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
 | 0–10 标题卡    | ![](figures/demo/demo-01-title.png)                                                                                                                        |     |
