@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><title>Pawside MSc Project Report(中文审察稿)</title><style>
-@page { size: A4; margin: 20mm 18mm; }
+@page { size: A4; margin: 20mm 18mm 22mm; @bottom-center { content: counter(page); font-family: "Times New Roman", Georgia, serif; font-size: 10pt; color: #555; } }
 body { font-family: "Times New Roman", Georgia, serif; font-size: 11.5pt; line-height: 1.55; color:#1a1a1a; margin:0; }
 h1 { font-size: 20pt; margin: 0 0 4pt; line-height: 1.25; }
 h2 { font-size: 14.5pt; margin: 22pt 0 6pt; padding-top: 4pt; border-top: 1px solid #d8d8d8; }
@@ -85,7 +85,7 @@ th { background:#f2f2f2; }
 <h3>3.3 像素改版</h3>
 <p>第 4.4 节的像素实验敲定了风格问题,而且这个决定贯穿了整个产品,不只是精灵。&quot;Cozy Pixel&quot; 改版给应用换上阶梯描边、硬阴影、像素字体和像素图标;内置宠物 Choco 以 像素风重新生成为正典,带全套 QA 图集。因为改版被限制在 <code>lib/ui/</code> 和素材文件里, 它落地时没碰 domain 逻辑一行——第 2.1 节的架构主张第二次被实证。同一波里还有一次 更名:产品取了正式名 <strong>Pawside</strong>,取代工作名 PetTodo;爪印图形取代蛋的意象, 面向用户的文案从&quot;孵化&quot;改为&quot;领养&quot;叙事。本报告全文使用 Pawside;仓库路径与 <code>.pettodopet</code> 扩展名等技术标识刻意保留旧名。复古像素同时是一个定位回答:第 1.3.2 节 记录了成年人说品类第一名幼稚,而像素风读起来是成年人的怀旧,不是儿童玩具。</p>
 <h3>3.4 Android 常驻层</h3>
-<p>评论语料里最有力的单条用户证据,是一条五星评论:在用户已经放弃的那天,小组件里 的宠物对他说了话。这个表面现在在 Android 上做出来了:一个原生 Kotlin 悬浮层, 无论用户在干什么,宠物都以很小的环境尺寸待在屏幕上。第一版把宠物画成了三分之一 屏;上线版画 1 倍大——&quot;常驻&quot;的意思是待在余光里。按红线,悬浮层从不谈任务: 没有任何提醒从那里发出,它只是陪着。它对应用内发生的事只有单向反应——在应用里 完成一个任务,悬浮宠一秒内开始庆祝;任何负面的东西都不会传到它那里。宠物位置 可拖动,连应用进程被杀都记得住。用户拒绝悬浮层权限,应用就静默继续,并且永不 再问。悬浮层现在画的就是用户领养的那只宠物:活跃宠物变更时——孵化,或在收藏馆 里切换——应用把该宠物的待机与庆祝帧离线烘焙好交给原生服务;没有烘焙产物时回退 到内置宠物,表面永远不会开天窗。真实使用还带来两处打磨:应用自己在前台时,悬浮 宠会把自己藏起来——同一只动物出现两份,多了一份;它还多了一个邀请气泡:到了某 条任务的提醒时刻,一句宠物邀请口吻的话在它身旁出现几秒,点击进应用——与系统 通知同一套&quot;永不催促&quot;的语义,只是亲自来说。</p>
+<p>评论语料里最有力的单条用户证据,是一条五星评论:在用户已经放弃的那天,小组件里 的宠物对他说了话。这个表面现在在 Android 上做出来了:一个原生 Kotlin 悬浮层, 无论用户在干什么,宠物都以很小的环境尺寸待在屏幕上。第一版把宠物画成了三分之一 屏;上线版画 1 倍大——&quot;常驻&quot;的意思是待在余光里。按红线,悬浮层从不谈任务: 没有任何提醒从那里发出,它只是陪着。它对应用内发生的事只有单向反应——在应用里 完成一个任务,悬浮宠一秒内开始庆祝;任何负面的东西都不会传到它那里。宠物位置 可拖动,连应用进程被杀都记得住。用户拒绝悬浮层权限,应用就静默继续,并且永不 再问。悬浮层现在画的就是用户领养的那只宠物:活跃宠物变更时——孵化,或在收藏馆 里切换——应用把该宠物的待机与庆祝帧离线烘焙好交给原生服务;没有烘焙产物时回退 到内置宠物,表面永远不会开天窗。真实使用还带来两处打磨:应用自己在前台时,悬浮 宠会把自己藏起来——同一只动物出现两份,多了一份;它还多了一个邀请气泡:到了某 条任务的提醒时刻,一句宠物邀请口吻的话在它身旁出现几秒,点击进应用——与系统 通知同一套&quot;永不催促&quot;的语义,只是亲自来说（图 4）。</p>
 <figure><figcaption><strong>图 4 — 住进用户屏幕的宠物。</strong>左:悬浮宠在 Android 桌面上,和用户自己的图标 待在一起。右:同一只宠物浮在另一个应用之上。</figcaption><img src="figures/app/overlay-pet.png" alt="两张 Android 截图:领养的像素宠物在桌面上与 Chrome 之上"></figure>
 <h3>3.5 孵化管线,第二代</h3>
 <p>第一代管线(第 3.2 节)靠&quot;每一帧都单独生成一张图&quot;来产出宠物:约 14 次串行生成、每只 约 40 分钟,帧间漂移见第 3.2 节,成品包还要人工发回给用户。这条路线已经退役。 换代后的管线只生成四张正典姿势——坐姿睁眼、同姿闭眼、蜷卧睡姿、侧视——外加头、尾、腿 的部件框,打包成 &quot;rig pack&quot;。会动的部分全部是代码:模板骨架驱动呼吸、眨眼、 视线跟随、开心跳、吃零食、伸懒腰、入睡过渡和奔跑,位移按像素网格量化,不背叛 画风。图 5 对比两条路线。现在孵化一只约一分钟,模型费用约 £0.03(¥0.3),这让 应用内直接孵化变得可行:照片从应用发到一个小型代理后端,由它持有图像模型的 key、执行物种门(目前只收猫狗)、按设备计的孵化配额、限流和成本封顶——然后把成品包 直接送回设备。不建账号,服务端不留照片。照片本身什么角度都行——应用内的文案 只说&quot;提供不同角度可以提高生成质量&quot;,不指挥用户拍什么;那四张姿势是生成的 <em>产物</em>,不是对输入的要求。老管线孵出的存量宠物照常工作:渲染器按包格式路由,两种格式 并行。早期动画草案里的&quot;失败&quot;反应类,按红线永久移除。</p>
@@ -107,33 +107,33 @@ th { background:#f2f2f2; }
 <hr>
 <h2>4. 结果</h2>
 <h3>4.1 可用的应用</h3>
-<p>以下截图出自 Android 模拟器上的现行构建,状态为拍摄而备:onboarding 领养了预置宠物 Choco,三周任务历史,两条来路的家具,和靠投喂养起来的亲密度等级——相当于养了几周之后的样子。顺序按用户遇到它们的顺序排列。</p>
+<p>以下截图出自 Android 模拟器上的现行构建,状态为拍摄而备:onboarding 领养了预置宠物 Choco,三周任务历史,两条来路的家具,和靠投喂养起来的亲密度等级——相当于养了几周之后的样子。顺序按用户遇到它们的顺序排列（图 8）。</p>
 <figure><figcaption><strong>图 8 — Home:宠物的房间在当日清单之上。</strong></figcaption><img src="figures/app/home-room.png" alt="Home:宠物在带家具的房间里,亲密度条与已完成任务"></figure>
-<p>Home 的上半屏现在是宠物的房间(第 3.8 节):Choco 坐在自己的地毯上,身边是里程碑挣来和商店买来的家具;名字下方是亲密度等级与称号——宪法唯一允许的常驻进度条。三个按钮点名了零食的全部去处——Collection、Shop、Snacks,带爪印饼干余额;专注入口在清单上方。清单本身规矩不变:完成的每日任务以暖色留在原位,依旧没有截止日期、没有年龄、没有逾期标记、没有剩余计数。</p>
+<p>Home 的上半屏现在是宠物的房间(第 3.8 节):Choco 坐在自己的地毯上,身边是里程碑挣来和商店买来的家具;名字下方是亲密度等级与称号——宪法唯一允许的常驻进度条。三个按钮点名了零食的全部去处——Collection、Shop、Snacks,带爪印饼干余额;专注入口在清单上方。清单本身规矩不变:完成的每日任务以暖色留在原位,依旧没有截止日期、没有年龄、没有逾期标记、没有剩余计数（图 9）。</p>
 <figure><figcaption><strong>图 9 — &quot;Coming up&quot; 分组。</strong></figcaption><img src="figures/app/coming-up.png" alt="Home 下滚显示带未来日期时间标签的一次性任务"></figure>
-<p>带到时邀请的一次性任务在当日清单下方自成一组,佩着日期和时刻。时刻一过,标签自己消失,任务回到普通列表——不存在可供渲染的逾期痕迹(第 3.8 节)。</p>
+<p>带到时邀请的一次性任务在当日清单下方自成一组,佩着日期和时刻。时刻一过,标签自己消失,任务回到普通列表——不存在可供渲染的逾期痕迹(第 3.8 节)（图 10）。</p>
 <figure><figcaption><strong>图 10 — 记录。</strong></figcaption><img src="figures/app/quick-capture.png" alt="Add one little thing 弹层:已输入标题与类型切换"></figure>
-<p>记录是一张底部弹层:自动聚焦的标题、可选的小备注、用文字写明的类型——&quot;Every day&quot; 对 &quot;Just once&quot;,默认一次性,因为在记录时刻强迫用户做&quot;要不要循环&quot;的决定,恰恰是弄丢念头的那种摩擦。提醒区默认关闭,措辞是一句承诺:&quot;One invitation at that moment, never repeated.&quot;(那一刻只邀请一次,绝不重复。)</p>
+<p>记录是一张底部弹层:自动聚焦的标题、可选的小备注、用文字写明的类型——&quot;Every day&quot; 对 &quot;Just once&quot;,默认一次性,因为在记录时刻强迫用户做&quot;要不要循环&quot;的决定,恰恰是弄丢念头的那种摩擦。提醒区默认关闭,措辞是一句承诺:&quot;One invitation at that moment, never repeated.&quot;(那一刻只邀请一次,绝不重复。)（图 11）</p>
 <figure><figcaption><strong>图 11 — 提醒的两种形态:一次性(左)与每日(右)。</strong></figcaption><img src="figures/app/reminder-forms.png" alt="编辑器的一次性日期时刻形态与每日时刻形态"></figure>
-<p>编辑器随类型换形态(第 3.8 节)。一次性任务给 &quot;Remind me once&quot;,配日期加时刻;每日任务给 &quot;One gentle reminder&quot;,配每日时刻,副标题 &quot;Optional — your pet will not nag.&quot;(可选——你的宠物不会催你。)两者刻意是两种东西,不是同一个控件加个勾。</p>
+<p>编辑器随类型换形态(第 3.8 节)。一次性任务给 &quot;Remind me once&quot;,配日期加时刻;每日任务给 &quot;One gentle reminder&quot;,配每日时刻,副标题 &quot;Optional — your pet will not nag.&quot;(可选——你的宠物不会催你。)两者刻意是两种东西,不是同一个控件加个勾（图 12）。</p>
 <figure><figcaption><strong>图 12 — 完成一个任务。</strong></figcaption><img src="figures/app/completion.png" alt="完成后房间里宠物旁升起 +1 零食"></figure>
-<p>完成只产生温度:卡片填色,宠物庆祝,一颗零食落袋,宠物身旁升起小小的 &quot;+1&quot;。完成的每日任务以暖色留在原地;完成的一次性任务直接离开清单——做完即走,不进归档。</p>
+<p>完成只产生温度:卡片填色,宠物庆祝,一颗零食落袋,宠物身旁升起小小的 &quot;+1&quot;。完成的每日任务以暖色留在原地;完成的一次性任务直接离开清单——做完即走,不进归档（图 13）。</p>
 <figure><figcaption><strong>图 13 — Little Theater(小剧场)。</strong></figcaption><img src="figures/app/little-theater.png" alt="全屏庆祝:放大的宠物与 Choco nuzzles you happily 文案"></figure>
 <p>做完当日清单触发应用唯一一次大张旗鼓:宠物铺满屏幕,粒子升起,奖励三颗零食,文案 &quot;Choco nuzzles you happily — thank you for today&quot;,由 &quot;Thank you, Choco&quot; 关闭——这场交换始终发生在用户与动物之间。同一轮里,累计第 30 次完成安安静静地往房间里放了一张宠物床:家具的里程碑来路没有自己的横幅。按构造,失败没有对应的画面。</p>
 <figure><figcaption><strong>图 14 — 正向历史。</strong></figcaption><img src="figures/app/history.png" alt="Things we did together:三周的完成与专注记录"></figure>
-<p>历史页写着 &quot;This week, you and Choco did 5 things together&quot;,而且只列出有条目的日子——完成记录,以及现在用自己的话写的专注时段(&quot;You and Choco focused together for 15 minutes&quot;)。没有完成的日子不是被画成空白或零:它们在数据模型里根本不存在,任何视图都不可能失手显示它们,周与周之间也从不比较。</p>
+<p>历史页写着 &quot;This week, you and Choco did 5 things together&quot;,而且只列出有条目的日子——完成记录,以及现在用自己的话写的专注时段(&quot;You and Choco focused together for 15 minutes&quot;)。没有完成的日子不是被画成空白或零:它们在数据模型里根本不存在,任何视图都不可能失手显示它们,周与周之间也从不比较（图 15）。</p>
 <figure><figcaption><strong>图 15 — 收藏馆。</strong></figcaption><img src="figures/app/collection.png" alt="宠物架:Choco 与 Adopt 空位,下方是家具陈列"></figure>
-<p>宠物架列出用户拥有的每只宠物,旁边是一格明示的 &quot;Adopt&quot; 空位——第 3.2 节的注册表变得肉眼可见。下方,家具一经拥有即以插画陈列;未拥有的只显示爪印剪影和 &quot;Not owned&quot;,没有阈值,没有&quot;还差 2 个&quot;。</p>
+<p>宠物架列出用户拥有的每只宠物,旁边是一格明示的 &quot;Adopt&quot; 空位——第 3.2 节的注册表变得肉眼可见。下方,家具一经拥有即以插画陈列;未拥有的只显示爪印剪影和 &quot;Not owned&quot;,没有阈值,没有&quot;还差 2 个&quot;（图 16）。</p>
 <figure><figcaption><strong>图 16 — 设置。</strong></figcaption><img src="figures/app/settings.png" alt="设置:任务按类型标注、悬浮层开关行与 Evening hello 区"></figure>
-<p>设置依然很短。任务逐条列出、类型用文字写明——&quot;Every day&quot;,或 &quot;Just once · One reminder at 3:00 PM&quot;,第 3.8 节存储的邀请就摆在明面——一个控件即可删除;没有任何东西归档。悬浮层是一行(&quot;Let Choco stay on your screen&quot;),晚间问候是一个开关加三个固定时间,措辞是宠物做的事。</p>
+<p>设置依然很短。任务逐条列出、类型用文字写明——&quot;Every day&quot;,或 &quot;Just once · One reminder at 3:00 PM&quot;,第 3.8 节存储的邀请就摆在明面——一个控件即可删除;没有任何东西归档。悬浮层是一行(&quot;Let Choco stay on your screen&quot;),晚间问候是一个开关加三个固定时间,措辞是宠物做的事（图 17）。</p>
 <figure><figcaption><strong>图 17 — 家具商店。</strong></figcaption><img src="figures/app/shop.png" alt="家具商店:爪印标价,已拥有置灰"></figure>
-<p>商店是固定目录,爪印饼干标价,已拥有的置灰为 &quot;Owned&quot;。没有刷新、没有限时、没有折扣;零零食的访客可以随便逛,不会看到一句&quot;去挣一点&quot;。</p>
+<p>商店是固定目录,爪印饼干标价,已拥有的置灰为 &quot;Owned&quot;。没有刷新、没有限时、没有折扣;零零食的访客可以随便逛,不会看到一句&quot;去挣一点&quot;（图 18）。</p>
 <figure><figcaption><strong>图 18 — Snacks。</strong></figcaption><img src="figures/app/snacks.png" alt="七件食单:价格、拥有数与 Feed 按钮"></figure>
-<p>七件食单显示价格、拥有数,有存货的一行才有 Feed 按钮;页首一句 &quot;Every snack adds a little bond XP&quot;(每份零食都会加一点亲密度)就是全部的推销。没有限量,也没有任何东西开口求购买。</p>
+<p>七件食单显示价格、拥有数,有存货的一行才有 Feed 按钮;页首一句 &quot;Every snack adds a little bond XP&quot;(每份零食都会加一点亲密度)就是全部的推销。没有限量,也没有任何东西开口求购买（图 19）。</p>
 <figure><figcaption><strong>图 19 — 投喂(左)与亲密度升级(右)。</strong></figcaption><img src="figures/app/feeding-levelup.png" alt="投喂 +12 XP 与 Bond Lv 3 Close Pals 庆祝"></figure>
-<p>投喂消耗一份存货,XP 在宠物头顶升起(&quot;+12&quot;,&quot;Choco munched happily&quot;);跨过阈值时,亲密度轴举行它唯一的庆祝:&quot;Bond Lv 3 · Close Pals · You and Choco grew a little closer.&quot;(你和 Choco 又亲近了一点。)不解锁任何功能;奖励就是这句话本身。</p>
+<p>投喂消耗一份存货,XP 在宠物头顶升起(&quot;+12&quot;,&quot;Choco munched happily&quot;);跨过阈值时,亲密度轴举行它唯一的庆祝:&quot;Bond Lv 3 · Close Pals · You and Choco grew a little closer.&quot;(你和 Choco 又亲近了一点。)不解锁任何功能;奖励就是这句话本身（图 20）。</p>
 <figure><figcaption><strong>图 20 — 专注:设置(左)与进行中(右)。</strong></figcaption><img src="figures/app/focus.png" alt="专注滑条页与倒计时页(蜷睡的宠物)"></figure>
-<p>专注页问 &quot;Want to focus for a bit? I&#x27;ll nap right beside you~&quot;(要不要专注一会儿?我就在旁边打个盹~),下方是 5–45 分钟的滑条并预告掉落(&quot;Finish to earn 1&quot;),绑定任务纯可选。进行中,画面只有倒计时和一只睡着的宠物;切走应用自动暂停(&quot;If you leave, I&#x27;ll pause for you&quot;),退出是一个虚线的 &quot;That&#x27;s enough for now&quot;——结束时段,无奖励、无痕迹。</p>
+<p>专注页问 &quot;Want to focus for a bit? I&#x27;ll nap right beside you~&quot;(要不要专注一会儿?我就在旁边打个盹~),下方是 5–45 分钟的滑条并预告掉落(&quot;Finish to earn 1&quot;),绑定任务纯可选。进行中,画面只有倒计时和一只睡着的宠物;切走应用自动暂停(&quot;If you leave, I&#x27;ll pause for you&quot;),退出是一个虚线的 &quot;That&#x27;s enough for now&quot;——结束时段,无奖励、无痕迹（图 21）。</p>
 <figure><figcaption><strong>图 21 — 专注结算。</strong></figcaption><img src="figures/app/focus-complete.png" alt="Focus complete:15 分钟、+1 零食、休息邀请"></figure>
 <p>完成的时段平实结算:&quot;You and Choco focused for 15 minutes&quot;,每满一刻钟一颗零食,以及一句休息邀请——&quot;Let&#x27;s rest a little — I&#x27;ll be here when you&#x27;re ready~&quot;。这段随后出现在历史里(图 14);被放弃的时段则哪儿都不会出现。</p>
 <h3>4.2 孵化环,端到端</h3>
@@ -147,11 +147,10 @@ th { background:#f2f2f2; }
 <h3>5.1 软件测试</h3>
 <p>第 3 节描述的每一波都合入之后,<code>flutter test</code> 通过 194 个测试(45 个文件)。 生成管线有自己的套件:28 个测试、6 个文件;孵化后端另有 25 个、4 个文件——合计 247 个,且以上每个数字都是现场跑出来的,不是引用来的。套件里包含那条 lint:通知文案若 重新出现违禁措辞,构建直接失败(第 3.7 节)。 覆盖集中在产品对用户的承诺上:存储数据随格式演进的迁移,包括成长阶段折算为亲密度 初值的迁移(第 3.8 节);日翻转,包括连续漏掉多日 翻转后不留任何历史痕迹;一次性任务与每日翻转的隔离;零食与解锁的边界;亲密度 XP 的计入与每日静默递减;专注时段的结算,包括被放弃的时段不产生任何事件;提醒序列化 在旧式每日形态与新式一次性形态之间的双轨识别;排序、 封顶的通知窗口,每任务每天至多一次触发,权限被拒后不再索取;本地周口径的正向 历史聚合;JSONL 往返;精灵图集帧数学;包安装与校验;无障碍语义边界;以及投喂与 提醒路径上的文案扫描。意图是: 红线由测试执行,不靠自律。</p>
 <p>提交前的缺口:还没有端到端的自动化 UI 测试;Android 悬浮层和重做的 onboarding 需要在我自己之外的更多真机上走查;Android 通知时序需要设备级验证,因为评论语料 显示&quot;定时通知在厂商电池策略下失效或积压成批&quot;是品类级缺陷(Habitica Play 评论 1,537 条中 111 条,其中 63 条为一星或二星)。</p>
-<h3>5.2 用户评估</h3>
+<h3>5.2 对使用与前提的评估</h3>
+<p>评估实际立足于以下几点。其一,第 5.1 节的软件测试。其二,第 2.2 节的四类 证据核查——它本身就是对设计前提的一次评估,而且已经改变了设计:通知重做被 压住不合入(第 3.7 节)、三条说法被撤回(第 1.3.3 节),都是它的直接结果。 其三,结构化的自用:我本人在目标人群里,每天的使用对照着事件日志,并且已经 产出过真发现(第 3.2 节的待机动画测量)。其四,作者之外的非正式使用,目前就是 一位朋友——如实报告为一位朋友,不包装成研究。这四样都做不到的事只有一件:在 作者之外的用户身上检验锚点机制。这是本项目的首要局限,报告如实陈述;为此设计的用户研究见下文。</p>
 <p>本项目为用户研究做了完整设计,另有专门文档。概要:五到十名种子用户,ADHD 倾向的宠物主人,只经我个人网络招募;为期十四天;第 7、14 天各一份简短问卷; 用户主动发起的本地数据导出是唯一数据通道;对内疚、以及对自家动物的&quot;恐怖谷&quot; 反应做定性红灯监测,任何一例都比留存数字更重要。在 ADHD 社区隐蔽招募被排除, 既出于伦理也出于现实——社区调研记录过版主公开点名搞隐形营销的产品。</p>
 <p>这项研究不会在本项目窗口内执行,原因如实记录、不加掩饰。伦理审批是周期最长的 一项;而文献本身击穿了这项研究的时间表。社区口径&quot;&gt;50% 两周留存&quot;混淆了两个 不可比的框架:心理健康类应用真实世界的 15 天留存中位数是 3.9% (<a href="https://doi.org/10.2196/14567">Baumel et al. 2019a</a>),而招募式试验能到 75% 上下,且报告的使用量比同一批程序的真实世界使用高中位 4.06 倍 (<a href="https://doi.org/10.1093/tbm/ibz147">Baumel et al. 2019b</a>)——所以招募来的种子 组两周过 50%,几乎什么都证明不了。评论语料还把真实的失败点定位在第 2–4 天 (布置热情消退)和第二个月前后(新鲜感消退)——可信的一轮至少要跑到第 60 天。 未设盲的自我报告又是这个领域最容易膨胀的指标——儿童行为干预的效应在大概率 设盲的评估下塌缩为不显著 (<a href="https://doi.org/10.1176/appi.ajp.2012.12070991">Sonuga-Barke et al. 2013</a>)。 一场值得跑的研究塞不进从现在到提交的时间里;一场硬塞进去的研究,跑出来的数字 支撑不了任何主张。</p>
-<p>评估实际立足于什么,在此写明。其一,第 5.1 节的软件测试。其二,第 2.2 节的四类 证据核查——它本身就是对设计前提的一次评估,而且已经改变了设计:通知重做被 压住不合入(第 3.7 节)、三条说法被撤回(第 1.3.3 节),都是它的直接结果。 其三,结构化的自用:我本人在目标人群里,每天的使用对照着事件日志,并且已经 产出过真发现(第 3.2 节的待机动画测量)。其四,作者之外的非正式使用,目前就是 一位朋友——如实报告为一位朋友,不包装成研究。这四样都做不到的事只有一件:在 作者之外的用户身上检验锚点机制。这是本项目的首要局限,报告如实陈述;完整的 研究设计保留在案,提交之后随时可以启动。</p>
-<hr>
 <h2>6. 结论与后续工作</h2>
 <p>应用现在做到了规格要求它做的事,而为本报告做的研究说明,规格本身有一部分是错的。 这是诚实的总结,剩余工作由此推出,而不是按原计划照抄。对照第 1.2 节的四条目标: 离线、无账号的核心循环 (i) 与含自家宠孵化的宠物 (ii) 已完整构建并交付;安全红线 (iii) 由代码结构与测试执行(第 5.1 节);评估目标 (iv) 以一种始料未及的方式达成 ——那条留存标准如约被审视,结论是它支撑不了任何主张,建立在它之上的研究被推迟, 而不是被硬跑一遍(第 5.2 节)。(ii) 里的依恋假设,在作者之外仍未经检验。</p>
 <p><strong>通知冲突,留档在案。</strong>当初压住重做的证据,即便第 3.7 节已经上线,也值得留在 视野里:最接近的检验发现,精心构建的 30 句消息库不比一句固定文案更好 (<a href="https://doi.org/10.2196/38342">Bell et al. 2023</a>);时间抖动与习惯养成的线索 一致性论相抵触(<a href="https://doi.org/10.1002/ejsp.674">Lally et al. 2010</a>);一项 试验发现<em>更低频</em>的通知带来更少的查看与执行 (<a href="https://doi.org/10.1371/journal.pone.0169162">Morrison et al. 2017</a>);而主动 减少联系在构造上就是模糊行为,拒绝敏感会把模糊读成拒绝 (<a href="https://doi.org/10.1037/0022-3514.70.6.1327">Downey &amp; Feldman 1996</a>)。宪法 式的解法——宠物永远只谈自己的一天——是一个论证:危险的是模糊,不是退避本身。 这是一个设计判断,不是一个实证发现;它成不成立,正是提交后那场用户研究要盯着 看的东西。</p>
